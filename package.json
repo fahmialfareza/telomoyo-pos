@@ -22,7 +22,7 @@
     "clean": "rm -rf node_modules .turbo apps/**/node_modules apps/**/.turbo apps/**/.expo apps/**/dist packages/**/node_modules packages/**/dist dist",
     "reset": "pnpm run clean && pnpm install --frozen-lockfile",
     "refresh-lockfile": "rm -f pnpm-lock.yaml && pnpm install",
-    "releases-android": "bash scripts/release-mobile.sh android"
+    "release:mobile": "scripts/tag-release.sh"
   },
   "devDependencies": {
     "@redocly/cli": "^2.0.0",
