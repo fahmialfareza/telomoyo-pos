@@ -1,19 +1,21 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
 const ANDROID_APPLICATION_ID = "com.fahmialfareza.sewamotorpos";
+const appVersion = process.env.EXPO_APP_VERSION || "1.0.0";
+const appVersionCode = process.env.EXPO_APP_VERSION_CODE || "1";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: "Telomoyo POS",
   slug: "telomoyo-pos",
-  version: "0.2.0",
+  version: appVersion,
   icon: "./assets/branding/app-icon.png",
   orientation: "portrait",
   userInterfaceStyle: "light",
   scheme: "sewamotor",
   android: {
     package: ANDROID_APPLICATION_ID,
-    versionCode: 2,
+    versionCode: parseInt(appVersionCode || "1", 10) || 1,
     adaptiveIcon: {
       backgroundColor: "#003D9B",
       foregroundImage: "./assets/branding/adaptive-icon.png",
