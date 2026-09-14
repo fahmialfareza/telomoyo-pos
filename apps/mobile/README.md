@@ -49,6 +49,11 @@ the generated Android project cannot retain stale values.
 signed APK/AAB still requires EAS project ownership, keystore/Play
 configuration, and an environment-specific API URL.
 
+For the responsive controls and management/transaction workflow changes, use
+the [mobile UI acceptance checklist](../../docs/mobile-ui-acceptance.md). Native
+keyboard, footer placement, and Bluetooth/integrated MPOS printing still need
+device acceptance in addition to the automated suite.
+
 ## Printer boundary
 
 The local Expo module exposes integrated and Bluetooth adapter boundaries plus a

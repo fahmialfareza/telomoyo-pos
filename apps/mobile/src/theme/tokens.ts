@@ -52,6 +52,13 @@ export const typography = {
 } as const;
 
 export const textStyles = {
+  subpage: {
+    fontFamily: typography.heading,
+    fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: -0.2,
+    color: colors.text,
+  } satisfies TextStyle,
   title: {
     fontFamily: typography.heading,
     fontSize: 24,

@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
@@ -16,6 +17,7 @@ import type { RentalPackage } from "@/domain/types";
 import { spacing } from "@/theme/tokens";
 
 export default function EditPackageScreen() {
+  const responsive = useResponsiveStyles(styles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session } = useAuth();
@@ -50,7 +52,7 @@ export default function EditPackageScreen() {
         title="Edit Paket"
       />
       {item ? (
-        <Card style={styles.form}>
+        <Card style={responsive.form}>
           <PackageForm create={false} initial={item} onSubmit={save} />
         </Card>
       ) : null}

@@ -1,3 +1,7 @@
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -27,6 +31,8 @@ const adapterLabels: Record<PrinterConfig["adapter"], string> = {
 };
 
 export default function PrinterSettingsScreen() {
+  const responsive = useResponsiveStyles(styles);
+  const responsiveText = useResponsiveTextStyles();
   const [config, setConfig] = useState<PrinterConfig | null>(null);
   const [devices, setDevices] = useState<PrinterDevice[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -63,8 +69,8 @@ export default function PrinterSettingsScreen() {
         subtitle="Development build diperlukan"
         title="Pengaturan Printer"
       />
-      <Text style={textStyles.label}>JENIS PRINTER</Text>
-      <View style={styles.options}>
+      <Text style={responsiveText.label}>JENIS PRINTER</Text>
+      <View style={responsive.options}>
         {(Object.keys(adapterLabels) as PrinterConfig["adapter"][]).map(
           (adapter) => (
             <Pressable
@@ -82,13 +88,13 @@ export default function PrinterSettingsScreen() {
                 )
               }
               style={[
-                styles.option,
-                config.adapter === adapter && styles.selected,
+                responsive.option,
+                config.adapter === adapter && responsive.selected,
               ]}
             >
               <Text
                 style={[
-                  styles.optionText,
+                  responsive.optionText,
                   config.adapter === adapter && { color: colors.primary },
                 ]}
               >
@@ -98,18 +104,18 @@ export default function PrinterSettingsScreen() {
           ),
         )}
       </View>
-      <Text style={textStyles.label}>LEBAR KERTAS</Text>
-      <View style={styles.options}>
+      <Text style={responsiveText.label}>LEBAR KERTAS</Text>
+      <View style={responsive.options}>
         {([32, 48] as const).map((columns) => (
           <Pressable
             key={columns}
             onPress={() => setConfig({ ...config, paperColumns: columns })}
             style={[
-              styles.option,
-              config.paperColumns === columns && styles.selected,
+              responsive.option,
+              config.paperColumns === columns && responsive.selected,
             ]}
           >
-            <Text style={styles.optionText}>
+            <Text style={responsive.optionText}>
               {columns === 32 ? "58 mm • 32 kolom" : "80 mm • 48 kolom"}
             </Text>
           </Pressable>
@@ -138,22 +144,24 @@ export default function PrinterSettingsScreen() {
         >
           <Card
             style={
-              config.address === device.id ? styles.deviceSelected : undefined
+              config.address === device.id
+                ? responsive.deviceSelected
+                : undefined
             }
           >
-            <Text style={styles.deviceName}>{device.name}</Text>
-            <Text style={styles.deviceId}>{device.id}</Text>
+            <Text style={responsive.deviceName}>{device.name}</Text>
+            <Text style={responsive.deviceId}>{device.id}</Text>
           </Card>
         </Pressable>
       ))}
-      <Card style={styles.current}>
-        <Text style={textStyles.label}>KONFIGURASI AKTIF</Text>
-        <Text style={styles.deviceName}>{config.displayName}</Text>
-        <Text style={styles.deviceId}>
+      <Card style={responsive.current}>
+        <Text style={responsiveText.label}>KONFIGURASI AKTIF</Text>
+        <Text style={responsive.deviceName}>{config.displayName}</Text>
+        <Text style={responsive.deviceId}>
           {config.address ?? "Tidak memerlukan alamat perangkat"}
         </Text>
       </Card>
-      {message ? <Text style={styles.message}>{message}</Text> : null}
+      {message ? <Text style={responsive.message}>{message}</Text> : null}
       <Button icon="content-save-outline" onPress={() => void save()}>
         Simpan konfigurasi
       </Button>

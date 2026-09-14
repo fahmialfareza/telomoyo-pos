@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Keyboard, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { HistoryTransactionCard } from "@/components/history/HistoryTransactionCard";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { StateView } from "@/components/ui/StateView";
+import { useResponsiveStyles } from "@/theme/responsive";
 import {
   listHistoryCreatorOptions,
   listHistoryPackageOptions,
@@ -45,10 +46,12 @@ const syncFilters: { label: string; value?: SyncState }[] = [
 ];
 
 export default function HistoryScreen() {
+  const styles = useResponsiveStyles(baseStyles);
   const router = useRouter();
   const { session } = useAuth();
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [searchExpanded, setSearchExpanded] = useState(false);
   const [mode, setMode] = useState<ReportingMode>("date");
   const [selectedDate, setSelectedDate] = useState(currentJakartaDate);
   const [selectedMonth, setSelectedMonth] = useState(currentJakartaMonth);
@@ -155,6 +158,7 @@ export default function HistoryScreen() {
   );
 
   const submitSearch = () => {
+    Keyboard.dismiss();
     const next = searchInput.trim();
     if (next === search) {
       void load(false);
@@ -179,15 +183,52 @@ export default function HistoryScreen() {
         subtitle="Cari transaksi, cek status, dan buka detailnya."
         title="Riwayat"
       />
-      <Field
-        autoCapitalize="characters"
-        label="Cari transaksi"
-        onChangeText={setSearchInput}
-        onSubmitEditing={submitSearch}
-        placeholder="ID transaksi atau nama kasir"
-        returnKeyType="search"
-        value={searchInput}
-      />
+      <View style={styles.searchControls}>
+        <Button
+          accessibilityLabel={
+            searchExpanded ? "Sembunyikan pencarian" : "Tampilkan pencarian"
+          }
+          accessibilityState={{ expanded: searchExpanded }}
+          icon={searchExpanded ? "chevron-up" : "magnify"}
+          onPress={() => {
+            Keyboard.dismiss();
+            setSearchExpanded((expanded) => !expanded);
+          }}
+          variant="secondary"
+        >
+          {searchExpanded ? "Sembunyikan pencarian" : "Cari transaksi"}
+        </Button>
+        {searchExpanded ? (
+          <Field
+            autoCapitalize="characters"
+            label="Cari transaksi"
+            onChangeText={setSearchInput}
+            onSubmitEditing={submitSearch}
+            placeholder="ID transaksi atau nama kasir"
+            returnKeyType="search"
+            value={searchInput}
+          />
+        ) : null}
+        {search ? (
+          <Pressable
+            accessibilityLabel={`Hapus pencarian ${search}`}
+            accessibilityRole="button"
+            onPress={() => {
+              Keyboard.dismiss();
+              setSearchInput("");
+              setSearch("");
+            }}
+            style={({ pressed }) => [
+              styles.searchChip,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Icon color={colors.primary} name="magnify" size={18} />
+            <Text style={styles.searchChipText}>Pencarian: {search}</Text>
+            <Icon color={colors.primary} name="close" size={20} />
+          </Pressable>
+        ) : null}
+      </View>
 
       <DateMonthFilter
         date={selectedDate}
@@ -360,6 +401,7 @@ function FilterGroup({
   title: string;
   children: React.ReactNode;
 }) {
+  const styles = useResponsiveStyles(baseStyles);
   return (
     <View style={styles.group}>
       <Text style={styles.groupTitle}>{title}</Text>
@@ -377,6 +419,7 @@ function FilterChip({
   selected: boolean;
   onPress: () => void;
 }) {
+  const styles = useResponsiveStyles(baseStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -395,7 +438,21 @@ function FilterChip({
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
+  searchControls: { gap: spacing.sm },
+  searchChip: {
+    minHeight: minimumTouchTarget,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+  },
+  searchChipText: { ...textStyles.body, color: colors.primary, flex: 1 },
   resultToolbar: {
     flexDirection: "row",
     alignItems: "center",

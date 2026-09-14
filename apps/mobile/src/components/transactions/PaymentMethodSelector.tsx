@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { SelectablePaymentMethod } from "@/domain/types";
@@ -11,6 +12,7 @@ import {
 } from "@/theme/tokens";
 
 import { Icon } from "../ui/Icon";
+import { ActionGroup } from "../ui/ActionGroup";
 
 const methods: {
   value: SelectablePaymentMethod;
@@ -32,10 +34,11 @@ export function PaymentMethodSelector({
   qrisDisabled?: boolean;
   qrisDisabledReason?: string;
 }) {
+  const responsive = useResponsiveStyles(styles);
   return (
-    <View accessibilityLabel="Metode pembayaran" style={styles.container}>
-      <Text style={styles.label}>METODE PEMBAYARAN</Text>
-      <View style={styles.options}>
+    <View accessibilityLabel="Metode pembayaran" style={responsive.container}>
+      <Text style={responsive.label}>METODE PEMBAYARAN</Text>
+      <ActionGroup horizontal>
         {methods.map((method) => {
           const selected = value === method.value;
           const disabled = method.value === "qris" && qrisDisabled;
@@ -49,10 +52,10 @@ export function PaymentMethodSelector({
               key={method.value}
               onPress={() => onChange(method.value)}
               style={({ pressed }) => [
-                styles.option,
-                selected && styles.optionSelected,
-                disabled && styles.optionDisabled,
-                pressed && styles.pressed,
+                responsive.option,
+                selected && responsive.optionSelected,
+                disabled && responsive.optionDisabled,
+                pressed && responsive.pressed,
               ]}
             >
               <Icon
@@ -68,9 +71,9 @@ export function PaymentMethodSelector({
               />
               <Text
                 style={[
-                  styles.optionText,
-                  selected && styles.selectedText,
-                  disabled && styles.disabledText,
+                  responsive.optionText,
+                  selected && responsive.selectedText,
+                  disabled && responsive.disabledText,
                 ]}
               >
                 {method.label}
@@ -78,9 +81,9 @@ export function PaymentMethodSelector({
             </Pressable>
           );
         })}
-      </View>
+      </ActionGroup>
       {qrisDisabled && qrisDisabledReason ? (
-        <Text style={styles.disabledReason}>{qrisDisabledReason}</Text>
+        <Text style={responsive.disabledReason}>{qrisDisabledReason}</Text>
       ) : null}
     </View>
   );
@@ -89,10 +92,8 @@ export function PaymentMethodSelector({
 const styles = StyleSheet.create({
   container: { gap: spacing.xs },
   label: { ...textStyles.label, color: colors.textMuted, fontSize: 10 },
-  options: { flexDirection: "row", gap: spacing.sm },
   option: {
     minHeight: minimumTouchTarget,
-    flex: 1,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.primary,
@@ -102,6 +103,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing.sm,
     paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   optionSelected: {
     backgroundColor: colors.primary,
@@ -112,6 +114,8 @@ const styles = StyleSheet.create({
     opacity: 0.72,
   },
   optionText: {
+    flexShrink: 1,
+    textAlign: "center",
     fontFamily: typography.bodySemibold,
     fontSize: 14,
     color: colors.primary,

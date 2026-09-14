@@ -1,9 +1,13 @@
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 
 import {
   ManagedUsersScreen as UsersScreen,
   ManagedUserEditor,
+  ManagedUserCreateScreen,
+  ManagedTenantsScreen,
+  managedPasswordError,
+  managedUsernameError,
 } from "@/tenant/screens";
 import type { UserSummary } from "@/domain/types";
 import { SERVER_UNREACHABLE_MESSAGE } from "@/utils/errors";
@@ -11,6 +15,39 @@ import { SERVER_UNREACHABLE_MESSAGE } from "@/utils/errors";
 const mockApiRequest = jest.fn();
 const mockRouterPush = jest.fn();
 const mockRouterBack = jest.fn();
+const mockRouterReplace = jest.fn();
+const mockReturnToBusiness = jest.fn();
+const mockConfirm = jest.fn();
+
+function resetManagementMocks() {
+  // Preserve React Native's native-component registry implementations. Switch
+  // loads its generated view lazily, after beforeEach; resetAllMocks clears the
+  // preset's registry factories and turns that native boundary into undefined.
+  jest.clearAllMocks();
+  [
+    mockApiRequest,
+    mockRouterPush,
+    mockRouterBack,
+    mockRouterReplace,
+    mockReturnToBusiness,
+    mockConfirm,
+  ].forEach((mock) => mock.mockReset());
+}
+
+jest.mock("@/navigation/context-navigation", () => ({
+  useContextNavigation: () => ({
+    busy: false,
+    returnToBusiness: mockReturnToBusiness,
+  }),
+}));
+
+jest.mock("@/components/ui/ConfirmationProvider", () => ({
+  useConfirmation: () => ({ confirm: mockConfirm }),
+}));
+
+jest.mock("@/tenant/configuration", () => ({
+  cacheTenantConfiguration: jest.fn(),
+}));
 
 const sessionUser: UserSummary = {
   id: "USER-1",
@@ -48,7 +85,12 @@ jest.mock("@/auth/AuthProvider", () => ({
 jest.mock("expo-router", () => {
   const React = jest.requireActual<typeof import("react")>("react");
   return {
-    useRouter: () => ({ push: mockRouterPush, back: mockRouterBack }),
+    useRouter: () => ({
+      push: mockRouterPush,
+      back: mockRouterBack,
+      replace: mockRouterReplace,
+    }),
+    Redirect: () => null,
     useLocalSearchParams: () => ({ id: loadedUser.id }),
     useFocusEffect: (effect: () => void | (() => void)) =>
       React.useEffect(effect, [effect]),
@@ -82,11 +124,21 @@ jest.mock("@/components/ui/Card", () => {
 });
 
 jest.mock("@/components/ui/Field", () => {
-  const { TextInput } =
+  const { TextInput, Text, View } =
     jest.requireActual<typeof import("react-native")>("react-native");
   return {
-    Field: ({ label }: { label: string }) => (
-      <TextInput accessibilityLabel={label} />
+    Field: ({
+      label,
+      error,
+      ...props
+    }: import("react-native").TextInputProps & {
+      label: string;
+      error?: string;
+    }) => (
+      <View>
+        <TextInput accessibilityLabel={label} {...props} />
+        {error ? <Text>{error}</Text> : null}
+      </View>
     ),
   };
 });
@@ -98,11 +150,28 @@ jest.mock("@/components/ui/Button", () => {
     Button: ({
       children,
       onPress,
+      disabled,
+      loading,
+      accessibilityLabel,
+      accessibilityState,
     }: {
       children: ReactNode;
       onPress?: () => void;
+      disabled?: boolean;
+      loading?: boolean;
+      accessibilityLabel?: string;
+      accessibilityState?: import("react-native").AccessibilityState;
     }) => (
-      <Pressable accessibilityRole="button" onPress={onPress}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityState={{
+          ...accessibilityState,
+          disabled: disabled || loading,
+        }}
+        disabled={disabled || loading}
+        onPress={onPress}
+      >
         <Text>{children}</Text>
       </Pressable>
     ),
@@ -153,7 +222,7 @@ const nativeConnectionError = new Error(
 
 describe("user screen connection errors", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    resetManagementMocks();
   });
 
   it("shows an understandable list error and retries", async () => {
@@ -194,5 +263,295 @@ describe("user screen connection errors", () => {
       expect(screen.getByText(loadedUser.fullName)).toBeTruthy();
       expect(screen.queryByText(SERVER_UNREACHABLE_MESSAGE)).toBeNull();
     });
+  });
+});
+
+describe("management directory and account forms", () => {
+  beforeEach(resetManagementMocks);
+
+  it("shows loading, searchable staff, no results, and direct account actions without tenant shortcuts", async () => {
+    let resolve!: (users: UserSummary[]) => void;
+    mockApiRequest.mockReturnValueOnce(
+      new Promise((done) => {
+        resolve = done;
+      }),
+    );
+    const screen = render(<UsersScreen />);
+    expect(screen.getByText("Memuat daftar pengguna…")).toBeTruthy();
+    await act(async () => resolve([loadedUser, sessionUser]));
+    expect(screen.queryByText("Memuat daftar pengguna…")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Kelola tenant" })).toBeNull();
+    fireEvent.changeText(screen.getByLabelText("Cari pengguna"), "ADMIN.TOKO");
+    expect(screen.getByText(loadedUser.fullName)).toBeTruthy();
+    expect(screen.queryByText(sessionUser.fullName)).toBeNull();
+    fireEvent.changeText(
+      screen.getByLabelText("Cari pengguna"),
+      "does not exist",
+    );
+    expect(
+      screen.getByText("Tidak ada pengguna yang cocok dengan pencarian."),
+    ).toBeTruthy();
+    fireEvent.press(screen.getByRole("button", { name: "Hapus pencarian" }));
+    fireEvent.press(
+      screen.getByRole("button", {
+        name: `Kelola akun ${loadedUser.fullName}`,
+      }),
+    );
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      pathname: "/management/users/[id]",
+      params: { id: loadedUser.id },
+    });
+    fireEvent.press(screen.getByRole("button", { name: "Kembali ke bisnis" }));
+    expect(mockReturnToBusiness).toHaveBeenCalledTimes(1);
+  });
+
+  it("distinguishes an empty directory from no matching search results", async () => {
+    mockApiRequest.mockResolvedValueOnce([]);
+    const screen = render(<UsersScreen />);
+    await waitFor(() =>
+      expect(
+        screen.getByText("Belum ada pengguna. Tambahkan akun untuk staf."),
+      ).toBeTruthy(),
+    );
+    expect(
+      screen.queryByText("Tidak ada pengguna yang cocok dengan pencarian."),
+    ).toBeNull();
+    expect(
+      screen.getAllByRole("button", { name: "Tambah pengguna" }),
+    ).toHaveLength(1);
+  });
+
+  it("matches account username and UTF-8 password limits", () => {
+    expect(managedUsernameError(" ADMIN.TOKO ")).toBeUndefined();
+    expect(managedUsernameError("ab")).toBeTruthy();
+    expect(managedUsernameError(".admin")).toBeTruthy();
+    expect(managedUsernameError("a".repeat(65))).toBeTruthy();
+    expect(managedPasswordError("12345678901")).toBeTruthy();
+    expect(managedPasswordError("123456789012")).toBeUndefined();
+    expect(managedPasswordError("é".repeat(128))).toBeUndefined();
+    expect(managedPasswordError("é".repeat(129))).toBeTruthy();
+  });
+
+  it("starts with Admin and submits a validated normalized account once", async () => {
+    mockApiRequest.mockResolvedValueOnce(loadedUser);
+    const screen = render(<ManagedUserCreateScreen />);
+    const create = screen.getByRole("button", { name: "Buat akun" });
+    expect(create).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Admin" }).props.accessibilityState
+        .selected,
+    ).toBe(true);
+    fireEvent.changeText(screen.getByLabelText("Nama lengkap"), " Kasir Baru ");
+    fireEvent.changeText(
+      screen.getByLabelText("Nama pengguna"),
+      " ADMIN.BARU ",
+    );
+    fireEvent.changeText(
+      screen.getByLabelText("Kata sandi sementara"),
+      "short",
+    );
+    expect(create).toBeDisabled();
+    fireEvent.changeText(
+      screen.getByLabelText("Kata sandi sementara"),
+      "temporary-password",
+    );
+    fireEvent.press(create);
+    await waitFor(() =>
+      expect(mockRouterReplace).toHaveBeenCalledWith("/management/users"),
+    );
+    expect(mockApiRequest).toHaveBeenCalledTimes(1);
+    expect(mockApiRequest).toHaveBeenCalledWith("/management/users", {
+      method: "POST",
+      token: "session-token",
+      body: {
+        fullName: "Kasir Baru",
+        username: "admin.baru",
+        role: "admin",
+        temporaryPassword: "temporary-password",
+      },
+    });
+  });
+
+  it("cancels account creation without a request", () => {
+    const screen = render(<ManagedUserCreateScreen />);
+    fireEvent.changeText(
+      screen.getByLabelText("Kata sandi sementara"),
+      "temporary-password",
+    );
+    fireEvent.press(screen.getByRole("button", { name: "Batal" }));
+    expect(mockRouterBack).toHaveBeenCalledTimes(1);
+    expect(mockApiRequest).not.toHaveBeenCalled();
+  });
+
+  it("separates role/status editing from password reset and waits for confirmation", async () => {
+    mockApiRequest.mockResolvedValue(loadedUser);
+    const screen = render(<ManagedUserEditor id={loadedUser.id} />);
+    await waitFor(() =>
+      expect(screen.getByText("Akses pengguna")).toBeTruthy(),
+    );
+    expect(screen.getByText("Pemulihan kata sandi")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Simpan akses akun" }),
+    ).toBeDisabled();
+    fireEvent(screen.getByLabelText("Akun aktif"), "valueChange", false);
+    fireEvent.press(screen.getByRole("button", { name: "Simpan akses akun" }));
+    expect(mockConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Simpan akses akun?",
+        destructive: true,
+      }),
+    );
+    expect(mockApiRequest).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await mockConfirm.mock.calls[0][0].onConfirm();
+    });
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      `/management/users/${loadedUser.id}`,
+      expect.objectContaining({
+        method: "PATCH",
+        body: { role: "admin", active: false },
+      }),
+    );
+    expect(
+      screen.getByRole("button", { name: "Reset kata sandi" }),
+    ).toBeDisabled();
+    fireEvent.changeText(
+      screen.getByLabelText("Kata sandi sementara baru"),
+      "temporary-password",
+    );
+    fireEvent.press(screen.getByRole("button", { name: "Reset kata sandi" }));
+    expect(mockConfirm).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        title: "Reset kata sandi?",
+        destructive: true,
+      }),
+    );
+    await act(async () => {
+      await mockConfirm.mock.calls[1][0].onConfirm();
+    });
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      `/management/users/${loadedUser.id}/reset-password`,
+      expect.objectContaining({
+        method: "POST",
+        body: { temporaryPassword: "temporary-password" },
+      }),
+    );
+    expect(screen.getByLabelText("Kata sandi sementara baru").props.value).toBe(
+      "",
+    );
+  });
+
+  it("protects self-demotion, self-deactivation, and self-reset", async () => {
+    mockApiRequest.mockResolvedValueOnce(sessionUser);
+    const screen = render(<ManagedUserEditor id={sessionUser.id} />);
+    await waitFor(() =>
+      expect(screen.getByText(sessionUser.fullName)).toBeTruthy(),
+    );
+    expect(screen.getByRole("button", { name: "Admin" })).toBeDisabled();
+    expect(screen.getByLabelText("Akun aktif").props.disabled).toBe(true);
+    expect(
+      screen.queryByRole("button", { name: "Simpan akses akun" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Reset kata sandi" }),
+    ).toBeNull();
+  });
+});
+
+describe("tenant management", () => {
+  const tenants = [
+    {
+      id: "tenant-a",
+      name: "Bisnis A",
+      slug: "bisnis-a",
+      status: "active",
+      revision: 1,
+    },
+    {
+      id: "tenant-b",
+      name: "Bisnis B",
+      slug: "bisnis-b",
+      status: "pending_setup",
+      revision: 1,
+    },
+  ];
+  beforeEach(() => {
+    resetManagementMocks();
+    mockApiRequest.mockImplementation((path: string) =>
+      Promise.resolve(
+        path === "/auth/contexts"
+          ? { tenantProvisioningEnabled: true }
+          : tenants,
+      ),
+    );
+  });
+
+  it("lists businesses first and shows only one editor or creation form", async () => {
+    const screen = render(<ManagedTenantsScreen />);
+    await waitFor(() => expect(screen.getByText("Bisnis A")).toBeTruthy());
+    expect(screen.queryByLabelText("Nama bisnis")).toBeNull();
+    fireEvent.press(
+      screen.getByRole("button", { name: "Kelola bisnis Bisnis A" }),
+    );
+    expect(screen.getByLabelText("Nama pengelolaan bisnis").props.value).toBe(
+      "Bisnis A",
+    );
+    fireEvent.press(
+      screen.getByRole("button", { name: "Kelola bisnis Bisnis B" }),
+    );
+    expect(screen.getAllByLabelText("Nama pengelolaan bisnis")).toHaveLength(1);
+    expect(screen.getByLabelText("Nama pengelolaan bisnis").props.value).toBe(
+      "Bisnis B",
+    );
+    fireEvent.press(screen.getByRole("button", { name: "Tambah bisnis" }));
+    expect(screen.queryByLabelText("Nama pengelolaan bisnis")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Buat bisnis aktif" }),
+    ).toBeDisabled();
+    fireEvent.changeText(screen.getByLabelText("Nama bisnis"), "New tenant");
+    fireEvent.changeText(screen.getByLabelText("Kode bisnis"), "valid-code");
+    expect(
+      screen.getByRole("button", { name: "Buat bisnis aktif" }),
+    ).not.toBeDisabled();
+    fireEvent.press(screen.getByRole("button", { name: "Batal" }));
+    expect(
+      mockApiRequest.mock.calls.every(([, options]) => !options?.method),
+    ).toBe(true);
+  });
+
+  it("confirms suspension and preserves existing tenant management when provisioning is disabled", async () => {
+    mockApiRequest.mockImplementation((path: string) =>
+      Promise.resolve(
+        path === "/auth/contexts"
+          ? { tenantProvisioningEnabled: false }
+          : tenants,
+      ),
+    );
+    const screen = render(<ManagedTenantsScreen />);
+    await waitFor(() => expect(screen.getByText("Bisnis A")).toBeTruthy());
+    expect(screen.queryByRole("button", { name: "Tambah bisnis" })).toBeNull();
+    fireEvent.press(
+      screen.getByRole("button", { name: "Kelola bisnis Bisnis A" }),
+    );
+    fireEvent.press(screen.getByRole("button", { name: "Tangguhkan bisnis" }));
+    expect(mockConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        destructive: true,
+        title: "Tangguhkan bisnis?",
+      }),
+    );
+    expect(
+      mockApiRequest.mock.calls.every(([, options]) => !options?.method),
+    ).toBe(true);
+    await act(async () => {
+      await mockConfirm.mock.calls[0][0].onConfirm();
+    });
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      "/management/tenants/tenant-a/status",
+      expect.objectContaining({
+        method: "POST",
+        body: { status: "suspended" },
+      }),
+    );
   });
 });

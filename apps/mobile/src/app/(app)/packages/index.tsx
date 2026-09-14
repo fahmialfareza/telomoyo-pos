@@ -1,3 +1,7 @@
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -17,6 +21,8 @@ import { formatRupiah } from "@/utils/format";
 import { toUserFacingErrorMessage } from "@/utils/errors";
 
 export default function PackagesScreen() {
+  const responsive = useResponsiveStyles(styles);
+  const responsiveText = useResponsiveTextStyles();
   const router = useRouter();
   const { session } = useAuth();
   const [packages, setPackages] = useState<RentalPackage[]>([]);
@@ -60,7 +66,7 @@ export default function PackagesScreen() {
         title="Paket & Harga"
       />
       {error ? (
-        <Text accessibilityRole="alert" style={textStyles.body}>
+        <Text accessibilityRole="alert" style={responsiveText.body}>
           {error}
         </Text>
       ) : null}
@@ -80,10 +86,10 @@ export default function PackagesScreen() {
             })
           }
         >
-          <Card style={styles.package}>
+          <Card style={responsive.package}>
             <View
               style={[
-                styles.accent,
+                responsive.accent,
                 {
                   backgroundColor:
                     item.accent === "sunrise"
@@ -94,14 +100,18 @@ export default function PackagesScreen() {
                 },
               ]}
             />
-            <View style={styles.copy}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.description}>{item.description}</Text>
-              <Text style={styles.revision}>REVISI {item.revision}</Text>
+            <View style={responsive.copy}>
+              <Text style={responsive.name}>{item.name}</Text>
+              <Text style={responsive.description}>{item.description}</Text>
+              <Text style={responsive.revision}>REVISI {item.revision}</Text>
             </View>
-            <View style={styles.right}>
-              <Text style={styles.price}>{formatRupiah(item.unitPrice)}</Text>
-              <Text style={item.active ? styles.active : styles.inactive}>
+            <View style={responsive.right}>
+              <Text style={responsive.price}>
+                {formatRupiah(item.unitPrice)}
+              </Text>
+              <Text
+                style={item.active ? responsive.active : responsive.inactive}
+              >
                 {item.active ? "AKTIF" : "NONAKTIF"}
               </Text>
             </View>

@@ -10,6 +10,9 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { ModeOperationCard } from "@/components/settings/ModeOperationCard";
 import { Card } from "@/components/ui/Card";
 import { MenuRow } from "@/components/ui/MenuRow";
+import { useConfirmation } from "@/components/ui/ConfirmationProvider";
+import { useContextNavigation } from "@/navigation/context-navigation";
+import { useResponsiveStyles } from "@/theme/responsive";
 import {
   colors,
   radius,
@@ -22,8 +25,11 @@ import { initials } from "@/utils/format";
 const appVersion = Constants.expoConfig?.version ?? "0.2.0";
 
 export default function SettingsScreen() {
+  const styles = useResponsiveStyles(baseStyles);
   const router = useRouter();
-  const { session, logout, switchContext } = useAuth();
+  const { session, logout } = useAuth();
+  const navigation = useContextNavigation();
+  const { confirm } = useConfirmation();
   const [error, setError] = useState<string | null>(null);
 
   return (
@@ -60,19 +66,9 @@ export default function SettingsScreen() {
             icon="store-cog-outline"
             title="Kelola tenant"
             detail="Tambah bisnis, ubah nama, tangguhkan atau aktifkan"
-            onPress={() => {
-              setError(null);
-              void switchContext("account")
-                .then(() => router.replace("/management/tenants"))
-                .catch((reason) =>
-                  setError(
-                    toUserFacingErrorMessage(
-                      reason,
-                      "Pengelolaan belum dapat dibuka.",
-                    ),
-                  ),
-                );
-            }}
+            onPress={() =>
+              void navigation.openManagement("/management/tenants")
+            }
           />
         ) : null}
         {session?.user.role === "superadmin" &&
@@ -96,7 +92,7 @@ export default function SettingsScreen() {
         {session?.dataMode === "production" ? (
           <MenuRow
             icon="lock-outline"
-            onPress={() => router.push("/settings/password")}
+            onPress={() => router.push("/account-password")}
             title="Ganti kata sandi"
           />
         ) : null}
@@ -138,23 +134,42 @@ export default function SettingsScreen() {
           destructive
           icon="logout"
           onPress={() => {
-            setError(null);
-            void logout().catch((reason: unknown) =>
-              setError(
-                reason instanceof Error ? reason.message : "Logout gagal.",
-              ),
-            );
+            if (navigation.busy) return;
+            confirm({
+              title: "Keluar dari akun?",
+              message:
+                "Anda perlu masuk kembali untuk menggunakan aplikasi. Data yang belum tersinkron tetap disimpan pada perangkat.",
+              confirmLabel: "Keluar",
+              destructive: true,
+              onConfirm: async () => {
+                setError(null);
+                try {
+                  await logout();
+                } catch (reason) {
+                  setError(
+                    toUserFacingErrorMessage(
+                      reason,
+                      "Belum dapat keluar dari akun. Coba lagi.",
+                    ),
+                  );
+                }
+              },
+            });
           }}
           title="Keluar"
         />
       </Card>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {error}
+        </Text>
+      ) : null}
       <Text style={styles.version}>TELOMOYO POS • v{appVersion}</Text>
     </AppScreen>
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   profile: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
@@ -172,14 +187,14 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontFamily: typography.heading,
-    fontSize: 20,
+    fontSize: 18,
     color: colors.primary,
   },
   profileCopy: { flex: 1, gap: 2 },
   name: {
     fontFamily: typography.heading,
     color: colors.onPrimary,
-    fontSize: 19,
+    fontSize: 18,
   },
   username: { ...textStyles.body, color: colors.primarySoft },
   role: {

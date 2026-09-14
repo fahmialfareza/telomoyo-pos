@@ -16,11 +16,23 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { useAuthStore } from "@/auth/auth-store";
 import { SyncProvider } from "@/sync/SyncProvider";
+import { ConfirmationProvider } from "@/components/ui/ConfirmationProvider";
+import {
+  ContextNavigationCoordinator,
+  ContextNavigationFeedback,
+  ContextNavigationLifecycle,
+} from "@/navigation/context-navigation";
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { colors, spacing, textStyles } from "@/theme/tokens";
 
 void SplashScreen.preventAutoHideAsync();
 
 function AppRoutes() {
+  const styles = useResponsiveStyles(baseStyles);
+  const textStyles = useResponsiveTextStyles();
   // Keep the router tree unmounted for the full transition, including the
   // brief interval before recovery clears the retired session. This prevents
   // redirects to Login and stale screen reads while SQLite changes scope.
@@ -40,11 +52,15 @@ function AppRoutes() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(app)" />
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(app)" />
+      </Stack>
+      <ContextNavigationCoordinator />
+      <ContextNavigationFeedback />
+    </>
   );
 }
 
@@ -69,17 +85,20 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <KeyboardProvider>
         <AuthProvider>
-          <SyncProvider>
-            <StatusBar style="light" />
-            <AppRoutes />
-          </SyncProvider>
+          <ConfirmationProvider>
+            <ContextNavigationLifecycle />
+            <SyncProvider>
+              <StatusBar style="light" />
+              <AppRoutes />
+            </SyncProvider>
+          </ConfirmationProvider>
         </AuthProvider>
       </KeyboardProvider>
     </SafeAreaProvider>
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   recovery: {
     flex: 1,
     alignItems: "center",

@@ -1,6 +1,6 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { BackHandler, StyleSheet, Text, View } from "react-native";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { AppScreen } from "@/components/layout/AppScreen";
@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { ReceiptPreview } from "@/components/transactions/ReceiptPreview";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ActionGroup } from "@/components/ui/ActionGroup";
 import { PaymentMethodBadge } from "@/components/ui/PaymentBadge";
 import { StateView } from "@/components/ui/StateView";
 import {
@@ -31,8 +32,14 @@ import {
   typography,
 } from "@/theme/tokens";
 import { displayTransactionId, formatRupiah } from "@/utils/format";
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 
 export default function PrintTransactionScreen() {
+  const styles = useResponsiveStyles(baseStyles);
+  const textStyles = useResponsiveTextStyles();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session } = useAuth();
@@ -48,6 +55,18 @@ export default function PrintTransactionScreen() {
   const [simulatedSuccess, setSimulatedSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const activeAttempt = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      // A physical printer must finish and release its mutation lease before
+      // this screen is left. Read the ref to also cover the first tap frame.
+      const listener = BackHandler.addEventListener(
+        "hardwareBackPress",
+        () => activeAttempt.current,
+      );
+      return () => listener.remove();
+    }, []),
+  );
 
   useEffect(() => {
     let current = true;
@@ -200,9 +219,66 @@ export default function PrintTransactionScreen() {
   };
 
   return (
-    <AppScreen>
+    <AppScreen
+      stickyFooter={
+        <ActionGroup>
+          {error ? (
+            <Text accessibilityRole="alert" style={styles.error}>
+              {error}
+            </Text>
+          ) : null}
+          {success ? (
+            <ActionGroup>
+              <Button
+                disabled={printing}
+                icon="home-outline"
+                onPress={() => {
+                  if (!activeAttempt.current)
+                    router.replace("/(app)/(tabs)/home");
+                }}
+              >
+                Kembali ke Beranda
+              </Button>
+              <Button
+                icon="printer-outline"
+                disabled={printing}
+                loading={printing}
+                variant="secondary"
+                onPress={() => {
+                  setSuccess(false);
+                  void print(true);
+                }}
+              >
+                Cetak salinan
+              </Button>
+            </ActionGroup>
+          ) : (
+            <ActionGroup>
+              <Button
+                icon="printer-outline"
+                disabled={!printerConfig}
+                loading={printing}
+                onPress={() => void print()}
+              >
+                {isCopy ? "Cetak salinan" : "Cetak struk"}
+              </Button>
+              <Button
+                disabled={printing}
+                onPress={() => {
+                  if (!activeAttempt.current)
+                    router.replace("/(app)/(tabs)/history");
+                }}
+                variant="secondary"
+              >
+                Cetak nanti
+              </Button>
+            </ActionGroup>
+          )}
+        </ActionGroup>
+      }
+    >
       <PageHeader
-        back
+        back={!printing}
         title={
           success
             ? simulatedSuccess
@@ -240,7 +316,7 @@ export default function PrintTransactionScreen() {
         </Card>
       ) : null}
       <Card style={styles.summary}>
-        <View style={styles.summaryHeader}>
+        <View testID="print-summary-header" style={styles.summaryHeader}>
           <Text style={styles.id}>
             {displayTransactionId(transaction.id, session.dataMode)}
           </Text>
@@ -254,9 +330,9 @@ export default function PrintTransactionScreen() {
             <Text style={styles.lineValue}>{formatRupiah(item.lineTotal)}</Text>
           </View>
         ))}
-        <View style={styles.total}>
+        <View testID="print-summary-total" style={styles.total}>
           <Text style={textStyles.heading}>Total</Text>
-          <Text style={textStyles.price}>
+          <Text style={[textStyles.price, styles.totalAmount]}>
             {formatRupiah(transaction.total)}
           </Text>
         </View>
@@ -279,52 +355,11 @@ export default function PrintTransactionScreen() {
           }
         />
       ) : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {success ? (
-        <>
-          <Button
-            icon="home-outline"
-            onPress={() => router.replace("/(app)/(tabs)/home")}
-          >
-            Kembali ke Beranda
-          </Button>
-          <Button
-            icon="printer-outline"
-            disabled={printing}
-            loading={printing}
-            onPress={() => {
-              setSuccess(false);
-              void print(true);
-            }}
-            variant="secondary"
-          >
-            Cetak salinan
-          </Button>
-        </>
-      ) : (
-        <>
-          <Button
-            icon="printer-outline"
-            disabled={!printerConfig}
-            loading={printing}
-            onPress={() => void print()}
-          >
-            {isCopy ? "Cetak salinan" : "Cetak struk"}
-          </Button>
-          <Button
-            disabled={printing}
-            onPress={() => router.replace("/(app)/(tabs)/history")}
-            variant="ghost"
-          >
-            Cetak nanti
-          </Button>
-        </>
-      )}
     </AppScreen>
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   icon: {
     width: 84,
     height: 84,
@@ -349,11 +384,17 @@ const styles = StyleSheet.create({
   summary: { gap: spacing.sm },
   summaryHeader: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "space-between",
     gap: spacing.sm,
   },
-  id: { ...textStyles.technical, color: colors.primary },
+  id: {
+    ...textStyles.technical,
+    color: colors.primary,
+    flexShrink: 1,
+    maxWidth: "100%",
+  },
   line: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
   lineName: { ...textStyles.body, flex: 1 },
   lineValue: { ...textStyles.body, fontFamily: typography.bodySemibold },
@@ -363,9 +404,12 @@ const styles = StyleSheet.create({
     borderTopColor: colors.outline,
     borderTopWidth: 1,
     flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
     justifyContent: "space-between",
     alignItems: "center",
   },
+  totalAmount: { flexShrink: 1, maxWidth: "100%" },
   error: {
     ...textStyles.body,
     color: colors.error,

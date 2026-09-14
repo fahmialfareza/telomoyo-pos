@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { useFocusEffect, useRouter } from "expo-router";
 import { memo, useCallback, useMemo, useState } from "react";
 import {
@@ -43,6 +44,7 @@ import {
 import { formatRupiah } from "@/utils/format";
 
 export default function SaleComposerScreen() {
+  const responsive = useResponsiveStyles(styles);
   const router = useRouter();
   const { session } = useAuth();
   const sync = useSyncRuntime();
@@ -195,7 +197,7 @@ export default function SaleComposerScreen() {
 
   return (
     <AppScreen
-      contentStyle={styles.screen}
+      contentStyle={responsive.screen}
       scroll={false}
       stickyFooter={
         <StickyTransactionSummary
@@ -216,7 +218,7 @@ export default function SaleComposerScreen() {
       }
     >
       <FlatList
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={responsive.listContent}
         data={packages}
         initialNumToRender={6}
         ItemSeparatorComponent={PackageSeparator}
@@ -224,9 +226,9 @@ export default function SaleComposerScreen() {
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           loadingPackages ? (
-            <View style={styles.loading}>
+            <View style={responsive.loading}>
               <ActivityIndicator color={colors.primary} />
-              <Text style={styles.loadingText}>Memuat paket aktif…</Text>
+              <Text style={responsive.loadingText}>Memuat paket aktif…</Text>
             </View>
           ) : (
             <StateView
@@ -246,31 +248,33 @@ export default function SaleComposerScreen() {
           )
         }
         ListHeaderComponent={
-          <View style={styles.listHeader}>
+          <View style={responsive.listHeader}>
             <PageHeader
               subtitle={`Kasir • ${session?.user.fullName ?? "-"}`}
               title="Transaksi baru"
             />
-            <View style={styles.guidance}>
-              <View style={styles.guidanceIcon}>
+            <View style={responsive.guidance}>
+              <View style={responsive.guidanceIcon}>
                 <Icon color={colors.primary} name="information-outline" />
               </View>
-              <Text style={styles.instruction}>
+              <Text style={responsive.instruction}>
                 Tentukan jumlah pada paket yang dipilih. Harga tersimpan sebagai
                 snapshot transaksi.
               </Text>
             </View>
-            <View style={styles.sectionHeader}>
+            <View style={responsive.sectionHeader}>
               <View>
-                <Text style={styles.sectionEyebrow}>KATALOG AKTIF</Text>
-                <Text style={styles.sectionTitle}>Pilih paket</Text>
+                <Text style={responsive.sectionEyebrow}>KATALOG AKTIF</Text>
+                <Text style={responsive.sectionTitle}>Pilih paket</Text>
               </View>
-              <View style={styles.packageCount}>
-                <Text style={styles.packageCountText}>{packages.length}</Text>
+              <View style={responsive.packageCount}>
+                <Text style={responsive.packageCountText}>
+                  {packages.length}
+                </Text>
               </View>
             </View>
             {packageError && packages.length > 0 ? (
-              <Text accessibilityRole="alert" style={styles.error}>
+              <Text accessibilityRole="alert" style={responsive.error}>
                 {packageError}
               </Text>
             ) : null}
@@ -280,7 +284,7 @@ export default function SaleComposerScreen() {
         refreshing={loadingPackages && packages.length > 0}
         renderItem={renderPackage}
         showsVerticalScrollIndicator={false}
-        style={styles.list}
+        style={responsive.list}
       />
     </AppScreen>
   );
@@ -295,6 +299,7 @@ const PackageSelectorCard = memo(function PackageSelectorCard({
   quantity: number;
   onChange: (packageId: string, quantity: number) => void;
 }) {
+  const responsive = useResponsiveStyles(styles);
   const accent =
     item.accent === "sunrise"
       ? colors.sunrise
@@ -311,31 +316,33 @@ const PackageSelectorCard = memo(function PackageSelectorCard({
   return (
     <Card
       style={[
-        styles.packageCard,
+        responsive.packageCard,
         {
           borderColor: quantity > 0 ? accent : colors.outline,
           borderLeftColor: accent,
         },
       ]}
     >
-      <View style={styles.packageTop}>
-        <View style={styles.packageCopy}>
-          <Text style={[styles.packageLabel, { color: accent }]}>{label}</Text>
-          <Text style={styles.packageName}>{item.name}</Text>
+      <View style={responsive.packageTop}>
+        <View style={responsive.packageCopy}>
+          <Text style={[responsive.packageLabel, { color: accent }]}>
+            {label}
+          </Text>
+          <Text style={responsive.packageName}>{item.name}</Text>
         </View>
         {quantity > 0 ? (
-          <View style={[styles.selectedBadge, { backgroundColor: accent }]}>
+          <View style={[responsive.selectedBadge, { backgroundColor: accent }]}>
             <Icon color={colors.onPrimary} name="check" size={16} />
           </View>
         ) : null}
       </View>
-      <Text numberOfLines={2} style={styles.description}>
+      <Text numberOfLines={2} style={responsive.description}>
         {item.description}
       </Text>
-      <View style={styles.packageBottom}>
+      <View style={responsive.packageBottom}>
         <View>
-          <Text style={styles.priceLabel}>HARGA SATUAN</Text>
-          <Text style={[styles.packagePrice, { color: accent }]}>
+          <Text style={responsive.priceLabel}>HARGA SATUAN</Text>
+          <Text style={[responsive.packagePrice, { color: accent }]}>
             {formatRupiah(item.unitPrice)}
           </Text>
         </View>
@@ -349,7 +356,8 @@ const PackageSelectorCard = memo(function PackageSelectorCard({
 });
 
 function PackageSeparator() {
-  return <View style={styles.packageSeparator} />;
+  const responsive = useResponsiveStyles(styles);
+  return <View style={responsive.packageSeparator} />;
 }
 
 function StickyTransactionSummary({
@@ -381,12 +389,13 @@ function StickyTransactionSummary({
   selectedPackages: RentalPackage[];
   quantities: Record<string, number>;
 }) {
+  const responsive = useResponsiveStyles(styles);
   return (
-    <Card style={styles.stickySummary}>
-      <View style={styles.stickySummaryHeader}>
+    <Card style={responsive.stickySummary}>
+      <View style={responsive.stickySummaryHeader}>
         <View>
-          <Text style={styles.sectionEyebrow}>RINGKASAN</Text>
-          <Text style={styles.stickySummaryMeta}>
+          <Text style={responsive.sectionEyebrow}>RINGKASAN</Text>
+          <Text style={responsive.stickySummaryMeta}>
             {packageCount === 0
               ? "Belum ada paket dipilih"
               : `${packageCount} paket • ${itemCount} item`}
@@ -395,25 +404,25 @@ function StickyTransactionSummary({
       </View>
       {selectedPackages.length > 0 ? (
         <ScrollView
-          contentContainerStyle={styles.summaryLinesContent}
+          contentContainerStyle={responsive.summaryLinesContent}
           nestedScrollEnabled
           showsVerticalScrollIndicator={selectedPackages.length > 2}
-          style={styles.summaryLines}
+          style={responsive.summaryLines}
         >
           {selectedPackages.map((item) => {
             const quantity = quantities[item.id] ?? 0;
 
             return (
-              <View key={item.id} style={styles.summaryLine}>
-                <View style={styles.summaryLineCopy}>
-                  <Text numberOfLines={1} style={styles.summaryLineName}>
+              <View key={item.id} style={responsive.summaryLine}>
+                <View style={responsive.summaryLineCopy}>
+                  <Text numberOfLines={1} style={responsive.summaryLineName}>
                     {item.name}
                   </Text>
-                  <Text style={styles.summaryLineCalculation}>
+                  <Text style={responsive.summaryLineCalculation}>
                     {quantity} × {formatRupiah(item.unitPrice)}
                   </Text>
                 </View>
-                <Text style={styles.summaryLineTotal}>
+                <Text style={responsive.summaryLineTotal}>
                   {formatRupiah(quantity * item.unitPrice)}
                 </Text>
               </View>
@@ -421,9 +430,9 @@ function StickyTransactionSummary({
           })}
         </ScrollView>
       ) : null}
-      <View style={styles.stickyTotalRow}>
-        <Text style={styles.stickyTotalLabel}>Total pembayaran</Text>
-        <Text accessibilityLiveRegion="polite" style={styles.stickyTotal}>
+      <View style={responsive.stickyTotalRow}>
+        <Text style={responsive.stickyTotalLabel}>Total pembayaran</Text>
+        <Text accessibilityLiveRegion="polite" style={responsive.stickyTotal}>
           {formatRupiah(total)}
         </Text>
       </View>
@@ -438,7 +447,7 @@ function StickyTransactionSummary({
         value={paymentMethod}
       />
       {error ? (
-        <Text accessibilityRole="alert" style={styles.stickyError}>
+        <Text accessibilityRole="alert" style={responsive.stickyError}>
           {error}
         </Text>
       ) : null}
@@ -538,6 +547,7 @@ const styles = StyleSheet.create({
   },
   packageBottom: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "flex-end",
     justifyContent: "space-between",
     gap: spacing.sm,
@@ -558,6 +568,7 @@ const styles = StyleSheet.create({
   },
   stickySummaryHeader: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "space-between",
     gap: spacing.sm,
@@ -601,6 +612,7 @@ const styles = StyleSheet.create({
   },
   stickyTotalRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "space-between",
     gap: spacing.sm,

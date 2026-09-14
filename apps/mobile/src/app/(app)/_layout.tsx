@@ -2,12 +2,22 @@ import { Redirect, Stack } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { useContextNavigationStore } from "@/navigation/context-navigation-store";
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { colors, spacing, textStyles } from "@/theme/tokens";
 
 export default function ProtectedLayout() {
+  const styles = useResponsiveStyles(baseStyles);
+  const textStyles = useResponsiveTextStyles();
+  const pendingNavigation = useContextNavigationStore(
+    (state) => state.status === "running" || state.status === "ready",
+  );
   const { bootError, booting, session, terminalEnrolled, scopeLocked } =
     useAuth();
-  if (booting) return null;
+  if (booting || pendingNavigation) return null;
   if (bootError) {
     return (
       <View style={styles.failure}>
@@ -41,7 +51,7 @@ export default function ProtectedLayout() {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   failure: {
     flex: 1,
     padding: spacing.lg,

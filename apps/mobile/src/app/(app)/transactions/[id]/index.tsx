@@ -1,6 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { AppScreen } from "@/components/layout/AppScreen";
@@ -8,6 +8,8 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { DynamicQrisCard } from "@/components/payments/DynamicQrisCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ActionGroup } from "@/components/ui/ActionGroup";
+import { useConfirmation } from "@/components/ui/ConfirmationProvider";
 import {
   PaymentMethodBadge,
   PaymentStatusBadge,
@@ -35,6 +37,10 @@ import { qrisPayloadForTransaction } from "@/tenant/configuration";
 import { useSyncRuntime } from "@/sync/SyncProvider";
 import { colors, spacing, textStyles, typography } from "@/theme/tokens";
 import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
+import {
   displayTransactionId,
   formatJakartaDateTime,
   formatRupiah,
@@ -49,6 +55,9 @@ interface QrisPresentation {
 }
 
 export default function TransactionDetailScreen() {
+  const styles = useResponsiveStyles(baseStyles);
+  const textStyles = useResponsiveTextStyles();
+  const { confirm } = useConfirmation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session } = useAuth();
@@ -298,27 +307,91 @@ export default function TransactionDetailScreen() {
         : transaction.paymentMethod === "qris"
           ? "Pastikan aplikasi penyedia atau bank menampilkan pembayaran berhasil. Status berhasil akan final untuk revisi transaksi ini."
           : "Pastikan pembayaran sudah diterima. Status berhasil akan final untuk revisi transaksi ini.";
-    Alert.alert(
-      status === "success"
-        ? "Konfirmasi pembayaran berhasil?"
-        : "Tandai pembayaran gagal?",
-      status === "success"
-        ? successMessage
-        : "Transaksi tetap tersimpan, tidak dihitung sebagai pendapatan, dan tidak dapat dicetak sampai pembayaran berhasil.",
-      [
-        { text: "Batal", style: "cancel" },
-        {
-          text:
-            status === "success" ? "Ya, pembayaran berhasil" : "Tandai gagal",
-          style: status === "failed" ? "destructive" : "default",
-          onPress: () => void updatePayment(status),
-        },
-      ],
-    );
+    confirm({
+      title:
+        status === "success"
+          ? "Konfirmasi pembayaran berhasil?"
+          : "Tandai pembayaran gagal?",
+      message:
+        status === "success"
+          ? successMessage
+          : "Transaksi tetap tersimpan, tidak dihitung sebagai pendapatan, dan tidak dapat dicetak sampai pembayaran berhasil.",
+      confirmLabel:
+        status === "success" ? "Ya, pembayaran berhasil" : "Tandai gagal",
+      destructive: status === "failed",
+      onConfirm: () => updatePayment(status),
+    });
   };
 
   return (
-    <AppScreen>
+    <AppScreen
+      stickyFooter={
+        mayCorrect || mayManagePayment || paymentConfirmed || paymentError ? (
+          <ActionGroup>
+            {mayCorrect ? (
+              <Button
+                disabled={paymentUpdating !== null}
+                icon="pencil-outline"
+                onPress={() =>
+                  router.push({
+                    pathname: "/transactions/[id]/correct",
+                    params: { id: transaction.id },
+                  })
+                }
+                variant="secondary"
+              >
+                Koreksi transaksi
+              </Button>
+            ) : null}
+            {mayManagePayment && !paymentConfirmed ? (
+              <ActionGroup>
+                <Button
+                  disabled={paymentUpdating !== null}
+                  icon="check-circle-outline"
+                  loading={paymentUpdating === "success"}
+                  onPress={() => confirmPayment("success")}
+                >
+                  Pembayaran berhasil
+                </Button>
+                {transaction.paymentStatus !== "failed" ? (
+                  <Button
+                    disabled={paymentUpdating !== null}
+                    icon="close-circle-outline"
+                    loading={paymentUpdating === "failed"}
+                    onPress={() => confirmPayment("failed")}
+                    variant="danger"
+                  >
+                    Pembayaran gagal
+                  </Button>
+                ) : null}
+              </ActionGroup>
+            ) : null}
+            {paymentError ? (
+              <Text accessibilityRole="alert" style={styles.paymentError}>
+                {paymentError}
+              </Text>
+            ) : null}
+            {paymentConfirmed ? (
+              <Button
+                icon="printer-outline"
+                onPress={() =>
+                  router.push({
+                    pathname: "/transactions/[id]/print",
+                    params: { id: transaction.id },
+                  })
+                }
+              >
+                {transaction.printState === "success" ||
+                transaction.printState === "unknown" ||
+                transaction.printState === "needs-reprint"
+                  ? "Cetak salinan"
+                  : "Cetak struk"}
+              </Button>
+            ) : null}
+          </ActionGroup>
+        ) : undefined
+      }
+    >
       <PageHeader
         back
         subtitle={formatJakartaDateTime(transaction.occurredAt)}
@@ -484,65 +557,7 @@ export default function TransactionDetailScreen() {
         </Text>
       </Card>
 
-      {mayCorrect ? (
-        <Button
-          icon="pencil-outline"
-          onPress={() =>
-            router.push({
-              pathname: "/transactions/[id]/correct",
-              params: { id: transaction.id },
-            })
-          }
-          variant="secondary"
-        >
-          Koreksi transaksi
-        </Button>
-      ) : null}
-      {mayManagePayment && !paymentConfirmed ? (
-        <View style={styles.paymentActions}>
-          <Button
-            disabled={paymentUpdating !== null}
-            icon="check-circle-outline"
-            loading={paymentUpdating === "success"}
-            onPress={() => confirmPayment("success")}
-          >
-            Pembayaran berhasil
-          </Button>
-          {transaction.paymentStatus !== "failed" ? (
-            <Button
-              disabled={paymentUpdating !== null}
-              icon="close-circle-outline"
-              loading={paymentUpdating === "failed"}
-              onPress={() => confirmPayment("failed")}
-              variant="danger"
-            >
-              Pembayaran gagal
-            </Button>
-          ) : null}
-        </View>
-      ) : null}
-      {paymentError ? (
-        <Text accessibilityRole="alert" style={styles.paymentError}>
-          {paymentError}
-        </Text>
-      ) : null}
-      {paymentConfirmed ? (
-        <Button
-          icon="printer-outline"
-          onPress={() =>
-            router.push({
-              pathname: "/transactions/[id]/print",
-              params: { id: transaction.id },
-            })
-          }
-        >
-          {transaction.printState === "success" ||
-          transaction.printState === "unknown" ||
-          transaction.printState === "needs-reprint"
-            ? "Cetak salinan"
-            : "Cetak struk"}
-        </Button>
-      ) : (
+      {!paymentConfirmed ? (
         <Card style={styles.printLocked}>
           <Text style={styles.printLockedTitle}>Pencetakan terkunci</Text>
           <Text style={styles.muted}>
@@ -551,7 +566,7 @@ export default function TransactionDetailScreen() {
               : "Tandai pembayaran berhasil agar tombol cetak tersedia."}
           </Text>
         </Card>
-      )}
+      ) : null}
       {session?.user.role === "superadmin" ? (
         <Text style={styles.onlineOnly}>
           Penghapusan transaksi hanya tersedia saat online dan dilakukan dari
@@ -562,7 +577,7 @@ export default function TransactionDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   badges: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
   conflict: { gap: spacing.sm, backgroundColor: colors.warningSoft },
   conflictTitle: { ...textStyles.heading, color: colors.warning },
@@ -608,7 +623,6 @@ const styles = StyleSheet.create({
   },
   paymentCopy: { flex: 1 },
   paymentTitle: { ...textStyles.heading, marginTop: spacing.xs },
-  paymentActions: { gap: spacing.sm },
   paymentError: { ...textStyles.body, color: colors.error },
   printLocked: { gap: spacing.xs, backgroundColor: colors.container },
   printLockedTitle: { ...textStyles.heading, color: colors.textMuted },

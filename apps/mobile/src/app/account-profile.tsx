@@ -1,9 +1,8 @@
-import { Redirect } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text } from "react-native";
 
 import { useAuth } from "@/auth/AuthProvider";
-import { PasswordForm } from "@/components/forms/PasswordForm";
 import { AppScreen } from "@/components/layout/AppScreen";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -11,9 +10,16 @@ import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Field";
 import { colors, spacing, textStyles } from "@/theme/tokens";
 import { toUserFacingErrorMessage } from "@/utils/errors";
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 
 export default function AccountProfileScreen() {
-  const { session, scopeLocked, updateProfile, changePassword } = useAuth();
+  const { session, scopeLocked, updateProfile } = useAuth();
+  const router = useRouter();
+  const styles = useResponsiveStyles(baseStyles);
+  const textStyles = useResponsiveTextStyles();
   const [fullName, setFullName] = useState(session?.user.fullName ?? "");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -86,16 +92,18 @@ export default function AccountProfileScreen() {
         ) : null}
       </Card>
       {!readOnly ? (
-        <Card style={styles.card}>
-          <Text style={textStyles.heading}>Ganti kata sandi</Text>
-          <PasswordForm onSubmit={changePassword} />
-        </Card>
+        <Button
+          variant="secondary"
+          onPress={() => router.push("/account-password")}
+        >
+          Ganti kata sandi
+        </Button>
       ) : null}
     </AppScreen>
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   card: { gap: spacing.md },
   note: { ...textStyles.body, color: colors.textMuted },
   error: { ...textStyles.body, color: colors.error },

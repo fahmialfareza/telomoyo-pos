@@ -1,3 +1,7 @@
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -14,6 +18,7 @@ import { colors, spacing, textStyles, typography } from "@/theme/tokens";
 import { displayTransactionId, formatRupiah } from "@/utils/format";
 
 export default function ConflictReviewScreen() {
+  const responsive = useResponsiveStyles(styles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session } = useAuth();
@@ -63,7 +68,7 @@ export default function ConflictReviewScreen() {
     return (
       <AppScreen>
         <PageHeader back title="Tinjau konflik" />
-        <Text style={styles.muted}>
+        <Text style={responsive.muted}>
           Konflik sudah diselesaikan atau belum tersedia.
         </Text>
       </AppScreen>
@@ -80,7 +85,7 @@ export default function ConflictReviewScreen() {
         )} • Pilih hasil setelah membandingkan kedua versi`}
         title="Konflik Revisi"
       />
-      <View style={styles.columns}>
+      <View style={responsive.columns}>
         <SnapshotCard
           label="VERSI PERANGKAT"
           tone="local"
@@ -92,16 +97,16 @@ export default function ConflictReviewScreen() {
           transaction={conflict.serverSnapshot}
         />
       </View>
-      <Card style={styles.warning}>
-        <Text style={styles.warningTitle}>Keputusan manual diperlukan</Text>
-        <Text style={styles.muted}>
+      <Card style={responsive.warning}>
+        <Text style={responsive.warningTitle}>Keputusan manual diperlukan</Text>
+        <Text style={responsive.muted}>
           {conflict.serverSnapshot.deletedAt
             ? "Transaksi sudah dihapus di server. Versi server harus digunakan agar transaksi tidak muncul kembali."
             : "“Kirim ulang lokal” membuat operasi baru dengan base revision server dan tanda tangan baru. Pastikan jumlah lokal memang yang benar."}
         </Text>
       </Card>
       {error ? (
-        <Text accessibilityRole="alert" style={styles.error}>
+        <Text accessibilityRole="alert" style={responsive.error}>
           {error}
         </Text>
       ) : null}
@@ -130,10 +135,12 @@ function SnapshotCard({
   transaction: Transaction;
   tone: "local" | "server";
 }) {
+  const responsive = useResponsiveStyles(styles);
+  const responsiveText = useResponsiveTextStyles();
   return (
     <Card
       style={[
-        styles.snapshot,
+        responsive.snapshot,
         {
           borderColor: tone === "local" ? colors.warning : colors.secondary,
         },
@@ -141,23 +148,23 @@ function SnapshotCard({
     >
       <Text
         style={[
-          textStyles.label,
+          responsiveText.label,
           { color: tone === "local" ? colors.warning : colors.secondary },
         ]}
       >
         {label}
       </Text>
-      <Text style={styles.revision}>Revisi #{transaction.revision}</Text>
+      <Text style={responsive.revision}>Revisi #{transaction.revision}</Text>
       {transaction.deletedAt ? (
-        <Text style={styles.deleted}>DIHAPUS DI SERVER</Text>
+        <Text style={responsive.deleted}>DIHAPUS DI SERVER</Text>
       ) : null}
       {transaction.items.map((item) => (
-        <View key={item.packageId} style={styles.snapshotLine}>
-          <Text style={styles.itemName}>{item.name}</Text>
-          <Text style={styles.quantity}>× {item.quantity}</Text>
+        <View key={item.packageId} style={responsive.snapshotLine}>
+          <Text style={responsive.itemName}>{item.name}</Text>
+          <Text style={responsive.quantity}>× {item.quantity}</Text>
         </View>
       ))}
-      <Text style={styles.amount}>{formatRupiah(transaction.total)}</Text>
+      <Text style={responsive.amount}>{formatRupiah(transaction.total)}</Text>
     </Card>
   );
 }

@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { StyleSheet, View, type ViewProps, type ViewStyle } from "react-native";
 
 import { cardStyle, spacing } from "@/theme/tokens";
@@ -8,8 +9,12 @@ interface CardProps extends ViewProps {
 }
 
 export function Card({ padded = true, style, ...props }: CardProps) {
+  const responsive = useResponsiveStyles(styles);
   return (
-    <View style={[styles.card, padded && styles.padded, style]} {...props} />
+    <View
+      style={[responsive.card, padded && responsive.padded, style]}
+      {...props}
+    />
   );
 }
 

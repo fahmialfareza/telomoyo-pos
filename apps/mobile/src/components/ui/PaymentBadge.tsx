@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { StyleSheet, Text, View } from "react-native";
 
 import { paymentMethodLabel } from "@/domain/payments";
@@ -5,6 +6,7 @@ import type { PaymentMethod, PaymentStatus } from "@/domain/types";
 import { colors, radius, spacing, typography } from "@/theme/tokens";
 
 export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
+  const responsive = useResponsiveStyles(styles);
   const tone =
     status === "success"
       ? "success"
@@ -18,17 +20,18 @@ export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
   }[status];
 
   return (
-    <View style={[styles.badge, styles[`${tone}Background`]]}>
-      <View style={[styles.dot, styles[`${tone}Dot`]]} />
-      <Text style={[styles.text, styles[`${tone}Text`]]}>{label}</Text>
+    <View style={[responsive.badge, styles[`${tone}Background`]]}>
+      <View style={[responsive.dot, styles[`${tone}Dot`]]} />
+      <Text style={[responsive.text, styles[`${tone}Text`]]}>{label}</Text>
     </View>
   );
 }
 
 export function PaymentMethodBadge({ method }: { method: PaymentMethod }) {
+  const responsive = useResponsiveStyles(styles);
   return (
-    <View style={[styles.badge, styles.methodBackground]}>
-      <Text style={[styles.text, styles.methodText]}>
+    <View style={[responsive.badge, responsive.methodBackground]}>
+      <Text style={[responsive.text, responsive.methodText]}>
         {method === "legacy"
           ? "TIDAK TERCATAT"
           : paymentMethodLabel[method].toUpperCase()}

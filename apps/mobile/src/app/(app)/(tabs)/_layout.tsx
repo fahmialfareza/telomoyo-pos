@@ -1,6 +1,10 @@
 import { Tabs } from "expo-router";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { useContextNavigation } from "@/navigation/context-navigation";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useWindowDimensions } from "react-native";
+import { useResponsiveSizing } from "@/theme/responsive";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { colors, minimumTouchTarget, typography } from "@/theme/tokens";
 
@@ -18,6 +22,10 @@ const tabs: {
 
 export default function TabsLayout() {
   const { session } = useAuth();
+  const navigation = useContextNavigation();
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
+  const sizing = useResponsiveSizing();
 
   return (
     <Tabs
@@ -28,12 +36,13 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
           fontFamily: typography.bodyMedium,
-          fontSize: 11,
+          fontSize: sizing.caption,
+          lineHeight: Math.ceil(sizing.caption * 1.3),
         },
         tabBarStyle: {
-          height: 68,
+          height: 56 + insets.bottom + Math.max(0, fontScale - 1) * 16,
           paddingTop: 6,
-          paddingBottom: 6,
+          paddingBottom: Math.max(6, insets.bottom),
           borderTopColor: colors.outline,
           backgroundColor: colors.card,
         },
@@ -46,6 +55,17 @@ export default function TabsLayout() {
         <Tabs.Screen
           key={tab.name}
           name={tab.name}
+          listeners={
+            tab.name === "users"
+              ? {
+                  tabPress: (event) => {
+                    event.preventDefault();
+                    if (!navigation.busy)
+                      void navigation.openManagement("/management/users");
+                  },
+                }
+              : {}
+          }
           options={{
             title: tab.title,
             ...(tab.name === "users" && session?.user.role !== "superadmin"

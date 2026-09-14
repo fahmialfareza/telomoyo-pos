@@ -1,3 +1,7 @@
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text } from "react-native";
@@ -11,6 +15,8 @@ import { StateView } from "@/components/ui/StateView";
 import { colors, spacing, textStyles } from "@/theme/tokens";
 
 export default function TerminalEnrollmentScreen() {
+  const responsive = useResponsiveStyles(styles);
+  const responsiveText = useResponsiveTextStyles();
   const router = useRouter();
   const { enrollTerminal, session, switchMode, switchingMode, logout } =
     useAuth();
@@ -48,7 +54,7 @@ export default function TerminalEnrollmentScreen() {
           Keluar untuk masuk sebagai Superadmin
         </Button>
         {error ? (
-          <Text accessibilityRole="alert" style={styles.error}>
+          <Text accessibilityRole="alert" style={responsive.error}>
             {error}
           </Text>
         ) : null}
@@ -80,7 +86,7 @@ export default function TerminalEnrollmentScreen() {
           Kembali ke Mode Produksi
         </Button>
         {error ? (
-          <Text accessibilityRole="alert" style={styles.error}>
+          <Text accessibilityRole="alert" style={responsive.error}>
             {error}
           </Text>
         ) : null}
@@ -110,13 +116,13 @@ export default function TerminalEnrollmentScreen() {
   };
 
   return (
-    <AppScreen authenticated={false} contentStyle={styles.screen}>
-      <Text style={textStyles.title}>Daftarkan terminal</Text>
-      <Text style={styles.subtitle}>
+    <AppScreen authenticated={false} contentStyle={responsive.screen}>
+      <Text style={responsiveText.title}>Daftarkan terminal</Text>
+      <Text style={responsive.subtitle}>
         Terminal membuat pasangan kunci Ed25519 yang tersimpan aman di
         perangkat. Pendaftaran pertama memerlukan internet.
       </Text>
-      <Card style={styles.card}>
+      <Card style={responsive.card}>
         <Field
           error={error ?? undefined}
           label="Nama terminal"

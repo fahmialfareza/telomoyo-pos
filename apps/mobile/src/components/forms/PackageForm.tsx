@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { useState } from "react";
 import { StyleSheet, Text } from "react-native";
 
@@ -22,6 +23,7 @@ export function PackageForm({
   create: boolean;
   onSubmit: (value: PackageFormValue) => Promise<void>;
 }) {
+  const responsive = useResponsiveStyles(styles);
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [price, setPrice] = useState(initial ? String(initial.unitPrice) : "");
@@ -60,7 +62,7 @@ export function PackageForm({
         multiline
         numberOfLines={3}
         onChangeText={setDescription}
-        style={styles.description}
+        style={responsive.description}
         value={description}
       />
       <Field
@@ -69,11 +71,11 @@ export function PackageForm({
         onChangeText={(value) => setPrice(value.replace(/\D/g, ""))}
         value={price}
       />
-      <Text style={styles.note}>
+      <Text style={responsive.note}>
         Perubahan harga membuat revisi baru dan hanya berlaku untuk baris
         transaksi yang dibuat setelahnya.
       </Text>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={responsive.error}>{error}</Text> : null}
       <Button
         icon="content-save-outline"
         loading={saving}

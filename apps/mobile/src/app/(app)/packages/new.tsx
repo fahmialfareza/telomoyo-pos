@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { useRouter } from "expo-router";
 import { StyleSheet } from "react-native";
 
@@ -13,6 +14,7 @@ import { Card } from "@/components/ui/Card";
 import { spacing } from "@/theme/tokens";
 
 export default function NewPackageScreen() {
+  const responsive = useResponsiveStyles(styles);
   const router = useRouter();
   const { session } = useAuth();
   const save = async (value: PackageFormValue) => {
@@ -31,7 +33,7 @@ export default function NewPackageScreen() {
   return (
     <AppScreen>
       <PageHeader back title="Tambah Paket" />
-      <Card style={styles.form}>
+      <Card style={responsive.form}>
         <PackageForm create onSubmit={save} />
       </Card>
     </AppScreen>

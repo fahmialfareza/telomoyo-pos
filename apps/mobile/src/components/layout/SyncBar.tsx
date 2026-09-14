@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
@@ -7,6 +8,7 @@ import { colors, spacing, typography } from "@/theme/tokens";
 import { Icon } from "../ui/Icon";
 
 export function SyncBar() {
+  const responsive = useResponsiveStyles(styles);
   const router = useRouter();
   const { online, pendingCount, syncing, lastSyncedAt } = useSyncRuntime();
 
@@ -22,20 +24,21 @@ export function SyncBar() {
     <Pressable
       accessibilityRole="button"
       onPress={() => router.push("/sync")}
-      style={[styles.bar, !online && styles.offline]}
+      style={[responsive.bar, !online && responsive.offline]}
     >
-      <View style={styles.left}>
+      <View style={responsive.left}>
         <View
-          style={[styles.dot, online ? styles.dotOnline : styles.dotOffline]}
+          style={[
+            responsive.dot,
+            online ? responsive.dotOnline : responsive.dotOffline,
+          ]}
         />
-        <Text numberOfLines={1} style={styles.text}>
+        <Text style={responsive.text}>
           {online ? "SISTEM ONLINE" : "MODE OFFLINE"}
         </Text>
       </View>
-      <View style={styles.right}>
-        <Text numberOfLines={1} style={styles.detail}>
-          {label}
-        </Text>
+      <View style={responsive.right}>
+        <Text style={responsive.detail}>{label}</Text>
         <Icon
           color={colors.onPrimary}
           name={syncing ? "sync" : "chevron-right"}
@@ -58,7 +61,8 @@ function relativeTime(iso: string): string {
 
 const styles = StyleSheet.create({
   bar: {
-    minHeight: 36,
+    minHeight: 48,
+    paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
     backgroundColor: colors.primary,
     flexDirection: "row",
@@ -70,6 +74,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.warning,
   },
   left: {
+    flexShrink: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,

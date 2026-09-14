@@ -1,3 +1,7 @@
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { StyleSheet, Text, View } from "react-native";
 
 import { colors, spacing, textStyles } from "@/theme/tokens";
@@ -20,11 +24,13 @@ export function StateView({
   actionLabel,
   onAction,
 }: StateViewProps) {
+  const responsive = useResponsiveStyles(styles);
+  const responsiveText = useResponsiveTextStyles();
   return (
-    <View style={styles.wrapper}>
+    <View style={responsive.wrapper}>
       <Icon color={colors.textMuted} name={icon} size={36} />
-      <Text style={textStyles.heading}>{title}</Text>
-      <Text style={styles.message}>{message}</Text>
+      <Text style={responsiveText.heading}>{title}</Text>
+      <Text style={responsive.message}>{message}</Text>
       {actionLabel && onAction ? (
         <Button compact onPress={onAction} variant="secondary">
           {actionLabel}

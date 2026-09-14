@@ -1,3 +1,7 @@
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -29,6 +33,8 @@ export function UserForm({
   create: boolean;
   onSubmit: (value: UserFormValue) => Promise<void>;
 }) {
+  const responsive = useResponsiveStyles(styles);
+  const responsiveText = useResponsiveTextStyles();
   const [value, setValue] = useState<UserFormValue>({
     fullName: initial?.fullName ?? "",
     username: initial?.username ?? "",
@@ -98,26 +104,26 @@ export function UserForm({
           value={value.temporaryPassword}
         />
       ) : null}
-      <Text style={textStyles.label}>PERAN PENGGUNA</Text>
-      <View style={styles.options}>
+      <Text style={responsiveText.label}>PERAN PENGGUNA</Text>
+      <View style={responsive.options}>
         {(["admin", "superadmin"] as const).map((role) => (
           <Pressable
             key={role}
             onPress={() => setValue((current) => ({ ...current, role }))}
             style={[
-              styles.option,
-              value.role === role && styles.optionSelected,
+              responsive.option,
+              value.role === role && responsive.optionSelected,
             ]}
           >
             <Text
               style={[
-                styles.optionTitle,
+                responsive.optionTitle,
                 value.role === role && { color: colors.primary },
               ]}
             >
               {role === "superadmin" ? "Superadmin" : "Admin"}
             </Text>
-            <Text style={styles.optionDetail}>
+            <Text style={responsive.optionDetail}>
               {role === "superadmin"
                 ? "Kelola pengguna, paket, dan penghapusan."
                 : "Transaksi, laporan, dan koreksi."}
@@ -127,16 +133,16 @@ export function UserForm({
       </View>
       {!create ? (
         <>
-          <Text style={textStyles.label}>STATUS AKUN</Text>
+          <Text style={responsiveText.label}>STATUS AKUN</Text>
           <Pressable
             onPress={() =>
               setValue((current) => ({ ...current, active: !current.active }))
             }
-            style={[styles.toggle, value.active && styles.toggleActive]}
+            style={[responsive.toggle, value.active && responsive.toggleActive]}
           >
             <Text
               style={[
-                styles.toggleText,
+                responsive.toggleText,
                 value.active && { color: colors.success },
               ]}
             >
@@ -145,7 +151,7 @@ export function UserForm({
           </Pressable>
         </>
       ) : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={responsive.error}>{error}</Text> : null}
       <Button
         icon="content-save-outline"
         loading={saving}

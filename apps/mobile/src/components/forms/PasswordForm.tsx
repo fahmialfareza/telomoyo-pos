@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { StyleSheet, Text } from "react-native";
@@ -30,6 +31,7 @@ export function PasswordForm({
   onSubmit: (currentPassword: string, newPassword: string) => Promise<void>;
   submitLabel?: string;
 }) {
+  const responsive = useResponsiveStyles(styles);
   const {
     control,
     handleSubmit,
@@ -61,7 +63,7 @@ export function PasswordForm({
 
   return (
     <>
-      <Text style={styles.help}>
+      <Text style={responsive.help}>
         Gunakan 12–256 karakter. Mengubah kata sandi akan mencabut sesi lain.
       </Text>
       <Controller
@@ -107,10 +109,10 @@ export function PasswordForm({
         )}
       />
       {errors.root?.message ? (
-        <Text style={styles.error}>{errors.root.message}</Text>
+        <Text style={responsive.error}>{errors.root.message}</Text>
       ) : null}
       {isSubmitSuccessful ? (
-        <Text style={styles.success}>Kata sandi berhasil diperbarui.</Text>
+        <Text style={responsive.success}>Kata sandi berhasil diperbarui.</Text>
       ) : null}
       <Button
         icon="lock-check-outline"

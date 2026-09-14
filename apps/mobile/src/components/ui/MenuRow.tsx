@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import {
@@ -23,18 +24,22 @@ export function MenuRow({
   onPress: () => void;
   destructive?: boolean;
 }) {
+  const responsive = useResponsiveStyles(styles);
   const color = destructive ? colors.error : colors.primary;
   return (
     <Pressable
+      accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      style={({ pressed }) => [responsive.row, pressed && responsive.pressed]}
     >
-      <View style={styles.icon}>
+      <View style={responsive.icon}>
         <Icon color={color} name={icon} />
       </View>
-      <View style={styles.copy}>
-        <Text style={[styles.title, destructive && { color }]}>{title}</Text>
-        {detail ? <Text style={styles.detail}>{detail}</Text> : null}
+      <View style={responsive.copy}>
+        <Text style={[responsive.title, destructive && { color }]}>
+          {title}
+        </Text>
+        {detail ? <Text style={responsive.detail}>{detail}</Text> : null}
       </View>
       <Icon color={colors.outline} name="chevron-right" />
     </Pressable>
@@ -45,6 +50,7 @@ const styles = StyleSheet.create({
   row: {
     minHeight: minimumTouchTarget + 12,
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,

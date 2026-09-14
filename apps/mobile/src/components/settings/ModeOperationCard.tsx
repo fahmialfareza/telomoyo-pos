@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -19,6 +20,7 @@ import { Field } from "../ui/Field";
 const RESET_CONFIRMATION = "RESET SANDBOX";
 
 export function ModeOperationCard() {
+  const responsive = useResponsiveStyles(styles);
   const { session, switchMode, upgradeSession, switchingMode } = useAuth();
   const sync = useSyncRuntime();
   const [status, setStatus] = useState<SandboxStatusResponse | null>(null);
@@ -130,22 +132,29 @@ export function ModeOperationCard() {
   };
 
   return (
-    <Card style={[styles.card, ...(sandbox ? [styles.sandboxCard] : [])]}>
-      <View style={styles.header}>
-        <View style={styles.copy}>
-          <Text style={styles.label}>MODE OPERASI</Text>
-          <Text style={styles.title}>
+    <Card
+      style={[responsive.card, ...(sandbox ? [responsive.sandboxCard] : [])]}
+    >
+      <View style={responsive.header}>
+        <View style={responsive.copy}>
+          <Text style={responsive.label}>MODE OPERASI</Text>
+          <Text style={responsive.title}>
             {sandbox ? "Mode Uji" : "Mode Produksi"}
           </Text>
         </View>
-        <View style={[styles.badge, sandbox && styles.sandboxBadge]}>
-          <Text style={[styles.badgeText, sandbox && styles.sandboxBadgeText]}>
+        <View style={[responsive.badge, sandbox && responsive.sandboxBadge]}>
+          <Text
+            style={[
+              responsive.badgeText,
+              sandbox && responsive.sandboxBadgeText,
+            ]}
+          >
             {sandbox ? "UJI" : "LIVE"}
           </Text>
         </View>
       </View>
 
-      <Text style={styles.description}>
+      <Text style={responsive.description}>
         {sandbox
           ? needsUpgrade
             ? "Sesi lama perlu diperbarui sebelum membuat atau mengoreksi transaksi Mode Uji. Pembayaran lama tetap memakai nominal aslinya."
@@ -177,7 +186,7 @@ export function ModeOperationCard() {
         </Button>
       ) : null}
       {sandbox && session.sandboxGeneration ? (
-        <Text style={styles.generation}>
+        <Text style={responsive.generation}>
           GENERASI UJI {session.sandboxGeneration}
         </Text>
       ) : null}
@@ -193,21 +202,23 @@ export function ModeOperationCard() {
         {sandbox ? "Kembali ke Produksi" : "Masuk ke Mode Uji"}
       </Button>
       {sync.pendingCount > 0 ? (
-        <Text style={styles.hint}>
+        <Text style={responsive.hint}>
           {sync.pendingCount} operasi akan disinkronkan sebelum mode diganti.
         </Text>
       ) : null}
       {!loading && !sandbox && status?.enabled === false ? (
-        <Text style={styles.hint}>
+        <Text style={responsive.hint}>
           Mode Uji belum diaktifkan pada server produksi.
         </Text>
       ) : null}
 
       {canReset ? (
         resetExpanded ? (
-          <View style={styles.resetPanel}>
-            <Text style={styles.resetTitle}>Reset seluruh data Mode Uji</Text>
-            <Text style={styles.hint}>
+          <View style={responsive.resetPanel}>
+            <Text style={responsive.resetTitle}>
+              Reset seluruh data Mode Uji
+            </Text>
+            <Text style={responsive.hint}>
               Perangkat offline akan kehilangan generasi lama. Pembayaran QRIS
               nyata dengan nominal transaksi masing-masing tetap perlu
               direkonsiliasi. Ketik {RESET_CONFIRMATION}
@@ -220,15 +231,15 @@ export function ModeOperationCard() {
               placeholder={RESET_CONFIRMATION}
               value={confirmation}
             />
-            <View style={styles.actions}>
+            <View style={responsive.actions}>
               <Button
                 disabled={resetting}
                 onPress={() => {
                   setConfirmation("");
                   setResetExpanded(false);
                 }}
-                style={styles.action}
-                variant="ghost"
+                style={responsive.action}
+                variant="danger"
               >
                 Batal
               </Button>
@@ -236,8 +247,8 @@ export function ModeOperationCard() {
                 disabled={confirmation.trim() !== RESET_CONFIRMATION}
                 loading={resetting}
                 onPress={() => void resetSandbox()}
-                style={styles.action}
-                variant="danger"
+                style={responsive.action}
+                variant="dangerSolid"
               >
                 Reset Mode Uji
               </Button>
@@ -249,9 +260,9 @@ export function ModeOperationCard() {
           </Button>
         )
       ) : null}
-      {message ? <Text style={styles.success}>{message}</Text> : null}
+      {message ? <Text style={responsive.success}>{message}</Text> : null}
       {error ? (
-        <Text accessibilityRole="alert" style={styles.error}>
+        <Text accessibilityRole="alert" style={responsive.error}>
           {error}
         </Text>
       ) : null}

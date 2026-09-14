@@ -1,3 +1,7 @@
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -39,6 +43,8 @@ interface TransactionLoadResult {
 }
 
 export default function CorrectTransactionScreen() {
+  const responsive = useResponsiveStyles(styles);
+  const responsiveText = useResponsiveTextStyles();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session } = useAuth();
@@ -251,19 +257,21 @@ export default function CorrectTransactionScreen() {
         )} • Revisi saat ini #${transaction.revision}`}
         title="Koreksi Transaksi"
       />
-      <Card style={styles.notice}>
-        <Text style={styles.noticeTitle}>Revisi tidak menghapus riwayat</Text>
-        <Text style={styles.muted}>
+      <Card style={responsive.notice}>
+        <Text style={responsive.noticeTitle}>
+          Revisi tidak menghapus riwayat
+        </Text>
+        <Text style={responsive.muted}>
           Nilai sebelum dan sesudah disimpan permanen. Struk yang sudah dicetak
           akan ditandai perlu cetak ulang dan pembayaran harus dikonfirmasi
           kembali untuk total hasil koreksi.
         </Text>
       </Card>
       {transaction.items.map((item) => (
-        <Card key={item.packageId} style={styles.line}>
-          <View style={styles.copy}>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.muted}>{formatRupiah(item.unitPrice)}</Text>
+        <Card key={item.packageId} style={responsive.line}>
+          <View style={responsive.copy}>
+            <Text style={responsive.name}>{item.name}</Text>
+            <Text style={responsive.muted}>{formatRupiah(item.unitPrice)}</Text>
           </View>
           <QuantityStepper
             onChange={(quantity) =>
@@ -287,7 +295,7 @@ export default function CorrectTransactionScreen() {
         value={paymentMethod}
       />
       {transaction.paymentMethod === "legacy" && !paymentMethod ? (
-        <Text style={styles.legacyMethod}>
+        <Text style={responsive.legacyMethod}>
           Metode transaksi lama tidak tercatat. Pilih Tunai atau QRIS sebelum
           menyimpan koreksi.
         </Text>
@@ -303,14 +311,14 @@ export default function CorrectTransactionScreen() {
         numberOfLines={3}
         onChangeText={setReason}
         placeholder="Contoh: jumlah paket salah input"
-        style={styles.reason}
+        style={responsive.reason}
         value={reason}
       />
-      <Card style={styles.total}>
-        <Text style={textStyles.heading}>Total setelah koreksi</Text>
-        <Text style={textStyles.price}>{formatRupiah(total)}</Text>
+      <Card style={responsive.total}>
+        <Text style={responsiveText.heading}>Total setelah koreksi</Text>
+        <Text style={responsiveText.price}>{formatRupiah(total)}</Text>
       </Card>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={responsive.error}>{error}</Text> : null}
     </AppScreen>
   );
 }

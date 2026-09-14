@@ -101,10 +101,10 @@ describe("tenant-scoped encrypted storage", () => {
     ]);
     for (const scope of scopes) await getOrCreateDatabaseKey(scope);
     expect(mockGetItemAsync.mock.calls.map(([key]) => key)).toEqual([
-      "telomoyo.database-key.v1",
-      "telomoyo.database-key.sandbox.v1",
-      `telomoyo.database-key.tenant.${secondTenant}.production.v1`,
-      `telomoyo.database-key.tenant.${secondTenant}.sandbox.v1`,
+      "sewa-motor.database-key.v1",
+      "sewa-motor.database-key.sandbox.v1",
+      `sewa-motor.database-key.tenant.${secondTenant}.production.v1`,
+      `sewa-motor.database-key.tenant.${secondTenant}.sandbox.v1`,
     ]);
     expect(mockSetItemAsync).not.toHaveBeenCalled();
     expect(mockDeleteItemAsync).not.toHaveBeenCalled();
@@ -247,7 +247,7 @@ describe("tenant-scoped encrypted storage", () => {
       identity,
     );
     expect(mockGetItemAsync).toHaveBeenCalledWith(
-      "telomoyo.terminal-identity.v1",
+      "sewa-motor.terminal-identity.v1",
     );
     const secondIdentity = {
       ...identity,
@@ -259,12 +259,12 @@ describe("tenant-scoped encrypted storage", () => {
     await preserveTerminalIdentity(identity, INITIAL_TENANT_ID);
     expect(mockSetItemAsync.mock.calls).toEqual([
       [
-        `telomoyo.terminal-identity.v1.${secondTenant}`,
+        `sewa-motor.terminal-identity.v1.${secondTenant}`,
         JSON.stringify(secondIdentity),
         expect.any(Object),
       ],
       [
-        `telomoyo.terminal-identity.v1.${INITIAL_TENANT_ID}.retired.terminal-a`,
+        `sewa-motor.terminal-identity.v1.${INITIAL_TENANT_ID}.retired.terminal-a`,
         JSON.stringify(identity),
         expect.any(Object),
       ],

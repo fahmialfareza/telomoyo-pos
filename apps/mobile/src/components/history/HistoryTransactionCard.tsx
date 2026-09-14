@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type {
@@ -49,6 +50,7 @@ export function HistoryTransactionCard({
   onPress: () => void;
   dataMode?: DataMode;
 }) {
+  const responsive = useResponsiveStyles(styles);
   const transactionId = compactTransactionId(transaction.id, dataMode);
   const itemQuantity = transaction.items.reduce(
     (sum, item) => sum + item.quantity,
@@ -81,42 +83,42 @@ export function HistoryTransactionCard({
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [responsive.card, pressed && responsive.pressed]}
     >
-      <View style={[styles.accent, { backgroundColor: accent }]} />
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text numberOfLines={1} style={styles.id}>
+      <View style={[responsive.accent, { backgroundColor: accent }]} />
+      <View style={responsive.content}>
+        <View style={responsive.header}>
+          <Text numberOfLines={1} style={responsive.id}>
             {transactionId}
           </Text>
           <StatusBadge kind={transaction.syncState} />
         </View>
 
-        <View style={styles.summary}>
-          <View style={styles.summaryCopy}>
-            <Text numberOfLines={1} style={styles.packageNames}>
+        <View style={responsive.summary}>
+          <View style={responsive.summaryCopy}>
+            <Text numberOfLines={1} style={responsive.packageNames}>
               {packageNames}
             </Text>
-            <Text style={styles.date}>
+            <Text style={responsive.date}>
               {formatJakartaDateTime(transaction.occurredAt)} · {itemQuantity}{" "}
               item
             </Text>
           </View>
-          <Text numberOfLines={1} style={styles.amount}>
+          <Text numberOfLines={1} style={responsive.amount}>
             {formatRupiah(transaction.total)}
           </Text>
         </View>
 
-        <View style={styles.footer}>
-          <View style={styles.actor}>
+        <View style={responsive.footer}>
+          <View style={responsive.actor}>
             <Icon color={colors.textMuted} name="account-outline" size={18} />
-            <Text numberOfLines={1} style={styles.actorName}>
+            <Text numberOfLines={1} style={responsive.actorName}>
               {transaction.updatedActorName}
             </Text>
           </View>
           <PaymentMethodBadge method={transaction.paymentMethod} />
           <PaymentStatusBadge status={transaction.paymentStatus} />
-          <View style={styles.chevron}>
+          <View style={responsive.chevron}>
             <Icon color={colors.primary} name="chevron-right" size={22} />
           </View>
         </View>

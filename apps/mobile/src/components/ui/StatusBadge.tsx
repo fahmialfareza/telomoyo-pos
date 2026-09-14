@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { StyleSheet, Text, View } from "react-native";
 
 import type { PrintState, SyncState } from "@/domain/types";
@@ -20,6 +21,7 @@ const label: Record<BadgeKind, string> = {
 };
 
 export function StatusBadge({ kind }: { kind: BadgeKind }) {
+  const responsive = useResponsiveStyles(styles);
   const tone =
     kind === "synced" ||
     kind === "success" ||
@@ -31,9 +33,11 @@ export function StatusBadge({ kind }: { kind: BadgeKind }) {
         : "error";
 
   return (
-    <View style={[styles.badge, styles[`${tone}Background`]]}>
-      <View style={[styles.dot, styles[`${tone}Dot`]]} />
-      <Text style={[styles.text, styles[`${tone}Text`]]}>{label[kind]}</Text>
+    <View style={[responsive.badge, styles[`${tone}Background`]]}>
+      <View style={[responsive.dot, styles[`${tone}Dot`]]} />
+      <Text style={[responsive.text, styles[`${tone}Text`]]}>
+        {label[kind]}
+      </Text>
     </View>
   );
 }

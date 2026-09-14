@@ -1,6 +1,12 @@
-import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
+import {
+  act,
+  fireEvent,
+  render as renderScreen,
+  waitFor,
+} from "@testing-library/react-native";
 import type { ReactNode } from "react";
-import { Alert, TextInput } from "react-native";
+import { TextInput } from "react-native";
+import { ConfirmationProvider } from "@/components/ui/ConfirmationProvider";
 
 import QrisSettingsScreen from "@/app/(app)/settings/qris";
 
@@ -30,6 +36,24 @@ const mockLaunchCamera = jest.fn();
 const mockLaunchImageLibrary = jest.fn();
 const mockScanFromURL = jest.fn();
 const mockApiRequest = jest.fn();
+
+jest.mock("@/auth/auth-store", () => ({
+  useAuthStore: Object.assign(
+    (select: (state: { session: typeof mockSession }) => unknown) =>
+      select({ session: mockSession }),
+    {
+      getState: () => ({ session: mockSession }),
+      subscribe: () => () => undefined,
+    },
+  ),
+}));
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 24, bottom: 24, left: 0, right: 0 }),
+}));
+
+function render(element: React.ReactElement) {
+  return renderScreen(element, { wrapper: ConfirmationProvider });
+}
 
 jest.mock("@/api/client", () => ({
   apiRequest: (...args: unknown[]) => mockApiRequest(...args),
@@ -262,7 +286,6 @@ describe("QRIS settings image flow", () => {
   it("requires confirmation and preserves the old QRIS when replacement scanning fails", async () => {
     mockReadQrisConfig.mockResolvedValue({ staticPayload: STATIC_QRIS });
     mockLaunchImageLibrary.mockResolvedValue(pickedImage("file:///empty.jpg"));
-    const alert = jest.spyOn(Alert, "alert");
     const screen = render(<QrisSettingsScreen />);
 
     await waitFor(() => {
@@ -270,11 +293,11 @@ describe("QRIS settings image flow", () => {
     });
     fireEvent.press(screen.getByRole("button", { name: "Ganti QRIS statis" }));
 
-    const buttons = alert.mock.calls[0]?.[2];
-    const proceed = buttons?.find((button) => button.text === "Lanjutkan");
-    await act(async () => {
-      proceed?.onPress?.();
-    });
+    expect(screen.getByText("Ganti QRIS statis?")).toBeTruthy();
+    fireEvent.press(screen.getByRole("button", { name: "Lanjutkan" }));
+    await waitFor(() =>
+      expect(screen.queryByText("Ganti QRIS statis?")).toBeNull(),
+    );
     fireEvent.press(screen.getByRole("button", { name: "Pilih gambar QRIS" }));
 
     await waitFor(() => {
@@ -285,7 +308,6 @@ describe("QRIS settings image flow", () => {
 
     fireEvent.press(screen.getByRole("button", { name: "Batal mengganti" }));
     expect(screen.getByText("QRIS STATIS TERKUNCI")).toBeTruthy();
-    alert.mockRestore();
   });
 
   it("does not open the camera when permission is denied", async () => {
@@ -306,6 +328,79 @@ describe("QRIS settings image flow", () => {
       expect(screen.getByText(/Aktifkan izin Kamera/)).toBeTruthy();
     });
     expect(mockLaunchCamera).not.toHaveBeenCalled();
+  });
+
+  it("uses the labeled switch to store a historical-only version", async () => {
+    mockLaunchImageLibrary.mockResolvedValue(pickedImage());
+    mockScanFromURL.mockResolvedValue(qrResult());
+    const screen = render(<QrisSettingsScreen />);
+    fireEvent.press(
+      await screen.findByRole("button", { name: "Pilih gambar QRIS" }),
+    );
+    const activation = await screen.findByLabelText(
+      "Gunakan QRIS untuk transaksi baru",
+    );
+    expect(activation.props.value).toBe(true);
+    fireEvent(activation, "valueChange", false);
+    expect(
+      screen.getByText(
+        "Simpan sebagai versi historis saja; QRIS aktif tidak berubah.",
+      ),
+    ).toBeTruthy();
+    expect(mockWriteQrisConfig).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByRole("button", { name: "Simpan QRIS statis" }));
+    await waitFor(() =>
+      expect(mockApiRequest).toHaveBeenCalledWith("/tenant/qris", {
+        method: "PUT",
+        token: "tenant-token",
+        body: {
+          expectedRevision: 0,
+          staticPayload: STATIC_QRIS,
+          activate: false,
+        },
+      }),
+    );
+    expect(
+      await screen.findByText(
+        "Versi QRIS historis tersimpan. QRIS aktif tidak berubah.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("canceling a candidate never saves or clears the merchant source", async () => {
+    mockLaunchImageLibrary.mockResolvedValue(pickedImage());
+    mockScanFromURL.mockResolvedValue(qrResult());
+    const screen = render(<QrisSettingsScreen />);
+    fireEvent.press(
+      await screen.findByRole("button", { name: "Pilih gambar QRIS" }),
+    );
+    fireEvent.press(await screen.findByRole("button", { name: "Batalkan" }));
+    expect(screen.queryByText("QRIS STATIS TERBACA")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Pilih gambar QRIS" }),
+    ).toBeTruthy();
+    expect(
+      mockApiRequest.mock.calls.every(
+        ([, options]) => options.method !== "PUT",
+      ),
+    ).toBe(true);
+    expect(mockWriteQrisConfig).not.toHaveBeenCalled();
+    expect(mockClearQrisConfig).not.toHaveBeenCalled();
+  });
+
+  it("canceling the replacement confirmation leaves the saved source selected", async () => {
+    mockReadQrisConfig.mockResolvedValue({ staticPayload: STATIC_QRIS });
+    const screen = render(<QrisSettingsScreen />);
+    fireEvent.press(
+      await screen.findByRole("button", { name: "Ganti QRIS statis" }),
+    );
+    fireEvent.press(screen.getByRole("button", { name: "Batal" }));
+    expect(screen.getByText("QRIS STATIS TERKUNCI")).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Pilih gambar QRIS" }),
+    ).toBeNull();
+    expect(mockWriteQrisConfig).not.toHaveBeenCalled();
+    expect(mockClearQrisConfig).not.toHaveBeenCalled();
   });
 
   it("recovers an Android pending image as an unsaved candidate", async () => {

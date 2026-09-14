@@ -1,3 +1,7 @@
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -36,6 +40,8 @@ const emptyStats: DashboardStats = {
 };
 
 export default function HomeScreen() {
+  const responsive = useResponsiveStyles(styles);
+  const responsiveText = useResponsiveTextStyles();
   const router = useRouter();
   const { session } = useAuth();
   const { lastSyncedAt, pendingCount } = useSyncRuntime();
@@ -101,8 +107,8 @@ export default function HomeScreen() {
         subtitle="Ringkasan transaksi dari perangkat ini"
         title="Dasbor"
         right={
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
+          <View style={responsive.avatar}>
+            <Text style={responsive.avatarText}>
               {initials(session?.user.fullName ?? "POS")}
             </Text>
           </View>
@@ -124,12 +130,12 @@ export default function HomeScreen() {
       </Button>
 
       {loadError ? (
-        <Card style={styles.loadError}>
-          <View style={styles.loadErrorCopy}>
-            <Text accessibilityRole="alert" style={styles.loadErrorTitle}>
+        <Card style={responsive.loadError}>
+          <View style={responsive.loadErrorCopy}>
+            <Text accessibilityRole="alert" style={responsive.loadErrorTitle}>
               Ringkasan belum diperbarui
             </Text>
-            <Text style={styles.loadErrorMessage}>{loadError}</Text>
+            <Text style={responsive.loadErrorMessage}>{loadError}</Text>
           </View>
           <Button onPress={() => void load()} variant="secondary">
             Coba lagi
@@ -137,29 +143,29 @@ export default function HomeScreen() {
         </Card>
       ) : null}
 
-      <Card style={styles.revenue}>
-        <View style={styles.metricTop}>
+      <Card style={responsive.revenue}>
+        <View style={responsive.metricTop}>
           <View>
-            <Text style={textStyles.label}>PENDAPATAN KOTOR</Text>
-            <Text style={textStyles.price}>
+            <Text style={responsiveText.label}>PENDAPATAN KOTOR</Text>
+            <Text style={responsiveText.price}>
               {loaded ? formatRupiah(stats.gross) : "—"}
             </Text>
           </View>
-          <View style={styles.countPill}>
-            <Text style={styles.countText}>
+          <View style={responsive.countPill}>
+            <Text style={responsive.countText}>
               {loaded ? `${stats.transactionCount} transaksi lunas` : "Memuat…"}
             </Text>
           </View>
         </View>
-        <Text style={styles.revenueNote}>
+        <Text style={responsive.revenueNote}>
           Menghitung pembayaran berhasil pada revisi transaksi saat ini.
         </Text>
-        <View style={styles.chart}>
+        <View style={responsive.chart}>
           {stats.buckets.map((amount, index) => (
             <View
               key={`${index}-${amount}`}
               style={[
-                styles.bar,
+                responsive.bar,
                 {
                   height: Math.max(8, (amount / maximum) * 64),
                   backgroundColor:
@@ -174,29 +180,31 @@ export default function HomeScreen() {
       </Card>
 
       {session?.dataMode === "sandbox" ? (
-        <Card style={styles.sandboxReconciliation}>
-          <Text style={textStyles.label}>QRIS NYATA UNTUK REKONSILIASI</Text>
-          <Text style={styles.sandboxAmount}>
+        <Card style={responsive.sandboxReconciliation}>
+          <Text style={responsiveText.label}>
+            QRIS NYATA UNTUK REKONSILIASI
+          </Text>
+          <Text style={responsive.sandboxAmount}>
             {loaded ? formatRupiah(stats.actualQrisAmount) : "—"}
           </Text>
-          <Text style={styles.revenueNote}>
+          <Text style={responsive.revenueNote}>
             Pendapatan kotor di atas tetap memakai total simulasi paket.
           </Text>
         </Card>
       ) : null}
 
-      <View style={styles.metricGrid}>
+      <View style={responsive.metricGrid}>
         {!loaded ? (
-          <Card style={styles.smallMetric}>
-            <Text style={styles.metricLabel}>Paket terjual</Text>
-            <Text style={styles.metricValue}>Memuat…</Text>
+          <Card style={responsive.smallMetric}>
+            <Text style={responsive.metricLabel}>Paket terjual</Text>
+            <Text style={responsive.metricValue}>Memuat…</Text>
           </Card>
         ) : stats.quantities.length > 0 ? (
           stats.quantities.map((quantity) => (
-            <Card key={quantity.name} style={styles.smallMetric}>
+            <Card key={quantity.name} style={responsive.smallMetric}>
               <View
                 style={[
-                  styles.packageDot,
+                  responsive.packageDot,
                   {
                     backgroundColor:
                       quantity.accent === "sunrise"
@@ -207,21 +215,23 @@ export default function HomeScreen() {
                   },
                 ]}
               />
-              <Text style={styles.metricLabel}>{quantity.name}</Text>
-              <Text style={styles.metricValue}>{quantity.quantity} unit</Text>
+              <Text style={responsive.metricLabel}>{quantity.name}</Text>
+              <Text style={responsive.metricValue}>
+                {quantity.quantity} unit
+              </Text>
             </Card>
           ))
         ) : (
-          <Card style={styles.smallMetric}>
-            <Text style={styles.metricLabel}>Paket terjual</Text>
-            <Text style={styles.metricValue}>Belum ada</Text>
+          <Card style={responsive.smallMetric}>
+            <Text style={responsive.metricLabel}>Paket terjual</Text>
+            <Text style={responsive.metricValue}>Belum ada</Text>
           </Card>
         )}
-        <Card style={styles.smallMetric}>
-          <Text style={styles.metricLabel}>Belum sinkron</Text>
+        <Card style={responsive.smallMetric}>
+          <Text style={responsive.metricLabel}>Belum sinkron</Text>
           <Text
             style={[
-              styles.metricValue,
+              responsive.metricValue,
               pendingCount > 0 && { color: colors.warning },
             ]}
           >
@@ -230,15 +240,15 @@ export default function HomeScreen() {
         </Card>
       </View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={textStyles.heading}>Transaksi terkini</Text>
+      <View style={responsive.sectionHeader}>
+        <Text style={responsiveText.heading}>Transaksi terkini</Text>
         <Pressable onPress={() => router.push("/(app)/(tabs)/history")}>
-          <Text style={styles.link}>Lihat semua</Text>
+          <Text style={responsive.link}>Lihat semua</Text>
         </Pressable>
       </View>
       {recent.length === 0 ? (
         <Card>
-          <Text style={styles.empty}>
+          <Text style={responsive.empty}>
             Transaksi yang disimpan akan langsung muncul di sini, termasuk saat
             offline.
           </Text>

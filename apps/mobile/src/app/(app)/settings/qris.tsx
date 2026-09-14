@@ -1,6 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useRef, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Switch, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { apiRequest } from "@/api/client";
 import type { TenantQrisResponse } from "@/api/contracts";
@@ -13,6 +13,8 @@ import { AppScreen } from "@/components/layout/AppScreen";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ActionGroup } from "@/components/ui/ActionGroup";
+import { useConfirmation } from "@/components/ui/ConfirmationProvider";
 import { Icon } from "@/components/ui/Icon";
 import { StateView } from "@/components/ui/StateView";
 import { readStaticQrisFromImage } from "@/domain/qris-image";
@@ -25,6 +27,10 @@ import {
   textStyles,
   typography,
 } from "@/theme/tokens";
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 
 const MAX_QRIS_IMAGE_BYTES = 25 * 1024 * 1024;
 const QRIS_IMAGE_OPTIONS: ImagePicker.ImagePickerOptions = {
@@ -42,6 +48,8 @@ interface QrisSummaryCardProps {
 }
 
 function QrisSummaryCard({ qris, status }: QrisSummaryCardProps) {
+  const styles = useResponsiveStyles(baseStyles);
+  const textStyles = useResponsiveTextStyles();
   const saved = status === "saved";
   return (
     <Card style={saved ? styles.savedCard : styles.candidateCard}>
@@ -121,6 +129,8 @@ async function parseQrisImageAsset(
 }
 
 export default function QrisSettingsScreen() {
+  const styles = useResponsiveStyles(baseStyles);
+  const { confirm } = useConfirmation();
   const { session } = useAuth();
   const role = session?.user.role;
   const [saved, setSaved] = useState<ParsedQris | null>(null);
@@ -346,23 +356,19 @@ export default function QrisSettingsScreen() {
   };
 
   const beginReplace = () => {
-    Alert.alert(
-      "Ganti QRIS statis?",
-      "QRIS baru digunakan untuk transaksi berikutnya. Versi sebelumnya tetap tersedia hanya untuk pembayaran historis yang terikat padanya.",
-      [
-        { text: "Batal", style: "cancel" },
-        {
-          text: "Lanjutkan",
-          onPress: () => {
-            setReplacing(true);
-            setActivate(true);
-            setCandidate(null);
-            setMessage(null);
-            setError(null);
-          },
-        },
-      ],
-    );
+    confirm({
+      title: "Ganti QRIS statis?",
+      message:
+        "QRIS baru digunakan untuk transaksi berikutnya. Versi sebelumnya tetap tersedia hanya untuk pembayaran historis yang terikat padanya.",
+      confirmLabel: "Lanjutkan",
+      onConfirm: () => {
+        setReplacing(true);
+        setActivate(true);
+        setCandidate(null);
+        setMessage(null);
+        setError(null);
+      },
+    });
   };
 
   const processing = processingSource !== null;
@@ -412,31 +418,43 @@ export default function QrisSettingsScreen() {
               ? "QRIS lama tetap aktif sampai konfigurasi baru disimpan."
               : "Payload hasil pemindaian terkunci dan tidak dapat diedit."}
           </Text>
-          <Button
-            variant="secondary"
-            disabled={saving}
-            onPress={() => setActivate((value) => !value)}
-          >
-            {activate
-              ? "Jadikan QRIS aktif untuk transaksi baru"
-              : "Simpan sebagai versi historis saja"}
-          </Button>
-          <Button
-            disabled={processing}
-            icon="content-save-check-outline"
-            loading={saving}
-            onPress={() => void saveCandidate()}
-          >
-            Simpan QRIS statis
-          </Button>
-          <Button
-            disabled={saving || processing}
-            icon="close"
-            onPress={cancelConfiguration}
-            variant="secondary"
-          >
-            Batalkan
-          </Button>
+          <View style={styles.activationRow}>
+            <View style={styles.activationCopy}>
+              <Text style={styles.activationLabel}>
+                Gunakan untuk transaksi baru
+              </Text>
+              <Text style={styles.infoText}>
+                {activate
+                  ? "QRIS ini menjadi sumber aktif setelah disimpan."
+                  : "Simpan sebagai versi historis saja; QRIS aktif tidak berubah."}
+              </Text>
+            </View>
+            <Switch
+              accessibilityLabel="Gunakan QRIS untuk transaksi baru"
+              disabled={saving || processing}
+              onValueChange={setActivate}
+              trackColor={{ false: colors.outline, true: colors.primary }}
+              value={activate}
+            />
+          </View>
+          <ActionGroup>
+            <Button
+              disabled={processing}
+              icon="content-save-check-outline"
+              loading={saving}
+              onPress={() => void saveCandidate()}
+            >
+              Simpan QRIS statis
+            </Button>
+            <Button
+              disabled={saving || processing}
+              icon="close"
+              onPress={cancelConfiguration}
+              variant="danger"
+            >
+              Batalkan
+            </Button>
+          </ActionGroup>
         </>
       ) : saved && !replacing ? (
         <>
@@ -468,33 +486,35 @@ export default function QrisSettingsScreen() {
             Potong gambar menjadi persegi dan pastikan kode QR memenuhi sebagian
             besar gambar agar mudah terbaca.
           </Text>
-          <Button
-            disabled={processing || saving}
-            icon="camera-outline"
-            loading={processingSource === "camera"}
-            onPress={() => void stageImage("camera")}
-          >
-            Ambil foto QRIS
-          </Button>
-          <Button
-            disabled={processing || saving}
-            icon="image-outline"
-            loading={processingSource === "gallery"}
-            onPress={() => void stageImage("gallery")}
-            variant="secondary"
-          >
-            Pilih gambar QRIS
-          </Button>
-          {saved ? (
+          <ActionGroup>
             <Button
               disabled={processing || saving}
-              icon="close"
-              onPress={cancelConfiguration}
-              variant="ghost"
+              icon="camera-outline"
+              loading={processingSource === "camera"}
+              onPress={() => void stageImage("camera")}
             >
-              Batal mengganti
+              Ambil foto QRIS
             </Button>
-          ) : null}
+            <Button
+              disabled={processing || saving}
+              icon="image-outline"
+              loading={processingSource === "gallery"}
+              onPress={() => void stageImage("gallery")}
+              variant="secondary"
+            >
+              Pilih gambar QRIS
+            </Button>
+            {saved ? (
+              <Button
+                disabled={processing || saving}
+                icon="close"
+                onPress={cancelConfiguration}
+                variant="danger"
+              >
+                Batal mengganti
+              </Button>
+            ) : null}
+          </ActionGroup>
         </Card>
       ) : null}
 
@@ -517,7 +537,15 @@ export default function QrisSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
+  activationRow: {
+    minHeight: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  activationCopy: { flex: 1, gap: spacing.xs },
+  activationLabel: { ...textStyles.body, fontFamily: typography.bodySemibold },
   info: { gap: spacing.xs, backgroundColor: colors.primarySoft },
   infoTitle: { ...textStyles.heading, color: colors.primary },
   infoText: { ...textStyles.body, color: colors.textMuted },

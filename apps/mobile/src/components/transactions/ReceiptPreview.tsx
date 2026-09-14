@@ -4,6 +4,10 @@ import { Card } from "@/components/ui/Card";
 import { formatReceipt } from "@/printer/receipt";
 import type { ReceiptDocument } from "@/printer/types";
 import { colors, spacing, textStyles, typography } from "@/theme/tokens";
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 
 interface ReceiptPreviewProps {
   document: ReceiptDocument;
@@ -12,10 +16,12 @@ interface ReceiptPreviewProps {
 
 /** Read-only: this component never connects a printer or records an attempt. */
 export function ReceiptPreview({ document, columns }: ReceiptPreviewProps) {
+  const responsive = useResponsiveStyles(styles);
+  const headings = useResponsiveTextStyles();
   return (
-    <Card style={styles.card} testID="receipt-preview">
-      <Text style={textStyles.heading}>Pratinjau struk</Text>
-      <Text style={styles.caption}>
+    <Card style={responsive.card} testID="receipt-preview">
+      <Text style={headings.heading}>Pratinjau struk</Text>
+      <Text style={responsive.caption}>
         {columns} kolom · Pratinjau tidak mencetak atau mengubah status cetak.
       </Text>
       <ScrollView

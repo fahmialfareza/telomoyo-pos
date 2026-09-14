@@ -1,3 +1,5 @@
+import { useResponsiveStyles } from "@/theme/responsive";
+import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 
@@ -35,19 +37,21 @@ export function DynamicQrisCard({
   error,
   onConfigure,
 }: DynamicQrisCardProps) {
+  const responsive = useResponsiveStyles(styles);
+  const [qrWidth, setQrWidth] = useState(304);
   if (!payload || !merchantName || !merchantCity) {
     return (
-      <Card style={styles.unavailable}>
-        <View style={styles.header}>
-          <View style={styles.warningIcon}>
+      <Card style={responsive.unavailable}>
+        <View style={responsive.header}>
+          <View style={responsive.warningIcon}>
             <Icon color={colors.warning} name="qrcode-remove" size={24} />
           </View>
-          <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>QRIS NOMINAL OTOMATIS</Text>
-            <Text style={styles.title}>Kode pembayaran belum tersedia</Text>
+          <View style={responsive.headerCopy}>
+            <Text style={responsive.eyebrow}>QRIS NOMINAL OTOMATIS</Text>
+            <Text style={responsive.title}>Kode pembayaran belum tersedia</Text>
           </View>
         </View>
-        <Text accessibilityRole="alert" style={styles.guidance}>
+        <Text accessibilityRole="alert" style={responsive.guidance}>
           {error ?? "QRIS merchant belum dikonfigurasi pada perangkat ini."}
         </Text>
         {onConfigure ? (
@@ -62,54 +66,55 @@ export function DynamicQrisCard({
   const formattedAmount = formatRupiah(amount);
 
   return (
-    <Card style={styles.ready}>
+    <Card style={responsive.ready}>
       {sandbox ? (
-        <View accessibilityRole="alert" style={styles.sandboxNotice}>
-          <Text style={styles.sandboxNoticeTitle}>QRIS UJI NYATA</Text>
-          <Text style={styles.sandboxNoticeText}>
+        <View accessibilityRole="alert" style={responsive.sandboxNotice}>
+          <Text style={responsive.sandboxNoticeTitle}>QRIS UJI NYATA</Text>
+          <Text style={responsive.sandboxNoticeText}>
             {formattedAmount} akan masuk ke rekening merchant.
           </Text>
         </View>
       ) : null}
-      <View style={styles.header}>
-        <View style={styles.readyIcon}>
+      <View style={responsive.header}>
+        <View style={responsive.readyIcon}>
           <Icon color={colors.primary} name="qrcode-scan" size={24} />
         </View>
-        <View style={styles.headerCopy}>
-          <Text style={styles.eyebrow}>QRIS NOMINAL OTOMATIS</Text>
-          <Text style={styles.title}>Pindai untuk membayar</Text>
+        <View style={responsive.headerCopy}>
+          <Text style={responsive.eyebrow}>QRIS NOMINAL OTOMATIS</Text>
+          <Text style={responsive.title}>Pindai untuk membayar</Text>
         </View>
       </View>
       <View
         accessibilityLabel={`QRIS pembayaran ${formattedAmount} untuk ${merchantName}`}
         accessibilityRole="image"
-        style={styles.qrFrame}
+        style={responsive.qrFrame}
+        onLayout={(event) => setQrWidth(event.nativeEvent.layout.width)}
       >
         <QRCode
           backgroundColor="#FFFFFF"
           color="#000000"
           ecl="M"
           quietZone={32}
-          size={240}
+          size={Math.max(128, Math.min(240, qrWidth - 64))}
           value={payload}
         />
       </View>
-      <View style={styles.amountBlock}>
-        <Text style={styles.amountLabel}>
+      <View style={responsive.amountBlock}>
+        <Text style={responsive.amountLabel}>
           {sandbox ? "NOMINAL QRIS NYATA" : "TOTAL PEMBAYARAN"}
         </Text>
-        <Text style={styles.amount}>{formattedAmount}</Text>
+        <Text style={responsive.amount}>{formattedAmount}</Text>
         {sandbox && orderTotal !== undefined ? (
-          <Text style={styles.orderTotal}>
+          <Text style={responsive.orderTotal}>
             Total simulasi paket: {formatRupiah(orderTotal)}
           </Text>
         ) : null}
       </View>
-      <View style={styles.merchant}>
-        <Text style={styles.merchantName}>{merchantName}</Text>
-        <Text style={styles.merchantCity}>{merchantCity}</Text>
+      <View style={responsive.merchant}>
+        <Text style={responsive.merchantName}>{merchantName}</Text>
+        <Text style={responsive.merchantCity}>{merchantCity}</Text>
       </View>
-      <Text style={styles.guidance}>
+      <Text style={responsive.guidance}>
         Cocokkan nama merchant dan nominal di aplikasi pembayaran. Konfirmasi
         berhasil hanya setelah notifikasi diterima merchant.
       </Text>
@@ -154,6 +159,8 @@ const styles = StyleSheet.create({
   title: { ...textStyles.heading, marginTop: 2 },
   qrFrame: {
     alignSelf: "center",
+    alignItems: "center",
+    width: "100%",
     borderRadius: radius.lg,
     backgroundColor: colors.card,
   },

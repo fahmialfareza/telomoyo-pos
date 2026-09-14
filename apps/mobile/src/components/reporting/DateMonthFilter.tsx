@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
@@ -87,6 +88,7 @@ export function DateMonthFilter({
   onMonthChange,
   maximumDate = currentJakartaDate(),
 }: DateMonthFilterProps) {
+  const responsive = useResponsiveStyles(styles);
   const maximumMonth = monthFromCalendarDate(maximumDate);
   const selection = mode === "date" ? date : month;
   const maximumSelection = mode === "date" ? maximumDate : maximumMonth;
@@ -130,8 +132,11 @@ export function DateMonthFilter({
   const mayMoveForward = selection < maximumSelection;
 
   return (
-    <View accessibilityLabel="Filter periode laporan" style={styles.container}>
-      <View style={styles.modeSelector}>
+    <View
+      accessibilityLabel="Filter periode laporan"
+      style={responsive.container}
+    >
+      <View style={responsive.modeSelector}>
         <ModeButton
           label="Tanggal"
           onPress={() => onModeChange("date")}
@@ -144,7 +149,7 @@ export function DateMonthFilter({
         />
       </View>
 
-      <View style={styles.selectionRow}>
+      <View style={responsive.selectionRow}>
         <PeriodArrow
           accessibilityLabel={
             mode === "date" ? "Tanggal sebelumnya" : "Bulan sebelumnya"
@@ -157,15 +162,15 @@ export function DateMonthFilter({
           accessibilityRole="button"
           onPress={openPicker}
           style={({ pressed }) => [
-            styles.selectionButton,
-            pressed && styles.pressed,
+            responsive.selectionButton,
+            pressed && responsive.pressed,
           ]}
         >
-          <View style={styles.selectionCopy}>
-            <Text style={styles.selectionCaption}>
+          <View style={responsive.selectionCopy}>
+            <Text style={responsive.selectionCaption}>
               {mode === "date" ? "TANGGAL DIPILIH" : "BULAN DIPILIH"}
             </Text>
-            <Text numberOfLines={1} style={styles.selectionValue}>
+            <Text numberOfLines={1} style={responsive.selectionValue}>
               {selectedLabel}
             </Text>
           </View>
@@ -204,12 +209,12 @@ export function DateMonthFilter({
           transparent
           visible
         >
-          <View style={styles.modalBackdrop}>
-            <View accessibilityViewIsModal style={styles.modalCard}>
-              <View style={styles.modalHeading}>
-                <View style={styles.modalTitleCopy}>
-                  <Text style={styles.modalEyebrow}>PILIH TANGGAL</Text>
-                  <Text style={styles.modalTitle}>
+          <View style={responsive.modalBackdrop}>
+            <View accessibilityViewIsModal style={responsive.modalCard}>
+              <View style={responsive.modalHeading}>
+                <View style={responsive.modalTitleCopy}>
+                  <Text style={responsive.modalEyebrow}>PILIH TANGGAL</Text>
+                  <Text style={responsive.modalTitle}>
                     {formatDate(calendarDateFromPicker(dateDraft))}
                   </Text>
                 </View>
@@ -217,7 +222,7 @@ export function DateMonthFilter({
                   accessibilityLabel="Tutup pemilih tanggal"
                   accessibilityRole="button"
                   onPress={() => setDatePickerVisible(false)}
-                  style={styles.closeButton}
+                  style={responsive.closeButton}
                 >
                   <Icon color={colors.textMuted} name="close" size={22} />
                 </Pressable>
@@ -269,21 +274,22 @@ function ModeButton({
   onPress: () => void;
   selected: boolean;
 }) {
+  const responsive = useResponsiveStyles(styles);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.modeButton,
-        selected && styles.modeButtonSelected,
-        pressed && styles.pressed,
+        responsive.modeButton,
+        selected && responsive.modeButtonSelected,
+        pressed && responsive.pressed,
       ]}
     >
       <Text
         style={[
-          styles.modeButtonText,
-          selected && styles.modeButtonTextSelected,
+          responsive.modeButtonText,
+          selected && responsive.modeButtonTextSelected,
         ]}
       >
         {label}
@@ -303,6 +309,7 @@ function PeriodArrow({
   icon: "chevron-left" | "chevron-right";
   onPress: () => void;
 }) {
+  const responsive = useResponsiveStyles(styles);
   return (
     <Pressable
       accessibilityLabel={accessibilityLabel}
@@ -311,9 +318,9 @@ function PeriodArrow({
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.arrowButton,
-        disabled && styles.disabled,
-        pressed && styles.pressed,
+        responsive.arrowButton,
+        disabled && responsive.disabled,
+        pressed && responsive.pressed,
       ]}
     >
       <Icon color={colors.primary} name={icon} size={26} />
@@ -336,6 +343,7 @@ function MonthPickerModal({
   selectedMonth: CalendarMonthKey;
   year: number;
 }) {
+  const responsive = useResponsiveStyles(styles);
   const maximumYear = parseCalendarMonthKey(maximumMonth).year;
 
   return (
@@ -346,31 +354,31 @@ function MonthPickerModal({
       transparent
       visible
     >
-      <View style={styles.modalBackdrop}>
-        <View accessibilityViewIsModal style={styles.modalCard}>
-          <View style={styles.modalHeading}>
-            <View style={styles.modalTitleCopy}>
-              <Text style={styles.modalEyebrow}>PILIH BULAN</Text>
-              <Text style={styles.modalTitle}>Periode laporan</Text>
+      <View style={responsive.modalBackdrop}>
+        <View accessibilityViewIsModal style={responsive.modalCard}>
+          <View style={responsive.modalHeading}>
+            <View style={responsive.modalTitleCopy}>
+              <Text style={responsive.modalEyebrow}>PILIH BULAN</Text>
+              <Text style={responsive.modalTitle}>Periode laporan</Text>
             </View>
             <Pressable
               accessibilityLabel="Tutup pemilih bulan"
               accessibilityRole="button"
               onPress={onClose}
-              style={styles.closeButton}
+              style={responsive.closeButton}
             >
               <Icon color={colors.textMuted} name="close" size={22} />
             </Pressable>
           </View>
 
-          <View style={styles.yearSelector}>
+          <View style={responsive.yearSelector}>
             <PeriodArrow
               accessibilityLabel="Tahun sebelumnya"
               disabled={year <= 1900}
               icon="chevron-left"
               onPress={() => onYearChange(year - 1)}
             />
-            <Text style={styles.yearValue}>{year}</Text>
+            <Text style={responsive.yearValue}>{year}</Text>
             <PeriodArrow
               accessibilityLabel="Tahun berikutnya"
               disabled={year >= maximumYear}
@@ -379,7 +387,7 @@ function MonthPickerModal({
             />
           </View>
 
-          <View style={styles.monthGrid}>
+          <View style={responsive.monthGrid}>
             {MONTH_NUMBERS.map((monthNumber) => {
               const value = calendarMonthKey(year, monthNumber);
               const selected = value === selectedMonth;
@@ -393,16 +401,16 @@ function MonthPickerModal({
                   disabled={disabled}
                   onPress={() => onSelect(value)}
                   style={({ pressed }) => [
-                    styles.monthButton,
-                    selected && styles.monthButtonSelected,
-                    disabled && styles.disabled,
-                    pressed && styles.pressed,
+                    responsive.monthButton,
+                    selected && responsive.monthButtonSelected,
+                    disabled && responsive.disabled,
+                    pressed && responsive.pressed,
                   ]}
                 >
                   <Text
                     style={[
-                      styles.monthButtonText,
-                      selected && styles.monthButtonTextSelected,
+                      responsive.monthButtonText,
+                      selected && responsive.monthButtonTextSelected,
                     ]}
                   >
                     {monthNameFormatter.format(monthInstant(year, monthNumber))}
@@ -412,7 +420,7 @@ function MonthPickerModal({
             })}
           </View>
 
-          <Button onPress={onClose} variant="secondary">
+          <Button onPress={onClose} variant="danger">
             Batal
           </Button>
         </View>

@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import {
   ActivityIndicator,
   Pressable,
@@ -5,6 +6,7 @@ import {
   Text,
   type PressableProps,
   type ViewStyle,
+  type StyleProp,
 } from "react-native";
 
 import {
@@ -17,7 +19,8 @@ import {
 
 import { Icon, type IconName } from "./Icon";
 
-type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
+type ButtonVariant =
+  "primary" | "secondary" | "danger" | "dangerSolid" | "ghost";
 
 interface ButtonProps extends Omit<PressableProps, "style"> {
   children: string;
@@ -25,7 +28,7 @@ interface ButtonProps extends Omit<PressableProps, "style"> {
   icon?: IconName;
   loading?: boolean;
   compact?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function Button({
@@ -38,8 +41,9 @@ export function Button({
   style,
   ...props
 }: ButtonProps) {
+  const responsive = useResponsiveStyles(styles);
   const foreground =
-    variant === "primary"
+    variant === "primary" || variant === "dangerSolid"
       ? colors.onPrimary
       : variant === "danger"
         ? colors.error
@@ -48,13 +52,17 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{
+        disabled: Boolean(disabled || loading),
+        busy: loading,
+      }}
       disabled={disabled || loading}
       style={({ pressed }) => [
-        styles.base,
-        compact && styles.compact,
+        responsive.base,
+        compact && responsive.compact,
         styles[variant],
-        pressed && styles.pressed,
-        (disabled || loading) && styles.disabled,
+        pressed && responsive.pressed,
+        (disabled || loading) && responsive.disabled,
         style,
       ]}
       {...props}
@@ -64,7 +72,7 @@ export function Button({
       ) : icon ? (
         <Icon color={foreground} name={icon} size={20} />
       ) : null}
-      <Text style={[styles.text, { color: foreground }]}>{children}</Text>
+      <Text style={[responsive.text, { color: foreground }]}>{children}</Text>
     </Pressable>
   );
 }
@@ -78,6 +86,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderWidth: 1,
   },
   compact: {
@@ -96,6 +105,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderColor: colors.error,
   },
+  dangerSolid: {
+    backgroundColor: colors.error,
+    borderColor: colors.error,
+  },
   ghost: {
     backgroundColor: "transparent",
     borderColor: "transparent",
@@ -103,6 +116,8 @@ const styles = StyleSheet.create({
   text: {
     fontFamily: typography.bodySemibold,
     fontSize: 15,
+    textAlign: "center",
+    flexShrink: 1,
   },
   pressed: {
     opacity: 0.8,

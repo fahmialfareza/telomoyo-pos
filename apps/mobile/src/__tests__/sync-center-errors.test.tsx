@@ -1,5 +1,10 @@
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import {
+  fireEvent,
+  render as renderScreen,
+  waitFor,
+} from "@testing-library/react-native";
 import type { ReactNode } from "react";
+import { ConfirmationProvider } from "@/components/ui/ConfirmationProvider";
 
 import SyncCenterScreen from "@/app/(app)/sync";
 import { SERVER_UNREACHABLE_MESSAGE } from "@/utils/errors";
@@ -10,6 +15,23 @@ const mockSession = {
   tenantId: "00000000-0000-4000-8000-000000000200",
   user: { fullName: "Andi" },
 };
+jest.mock("@/auth/auth-store", () => ({
+  useAuthStore: Object.assign(
+    (select: (state: { session: typeof mockSession }) => unknown) =>
+      select({ session: mockSession }),
+    {
+      getState: () => ({ session: mockSession }),
+      subscribe: () => () => undefined,
+    },
+  ),
+}));
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 24, bottom: 24, left: 0, right: 0 }),
+}));
+
+function render(element: React.ReactElement) {
+  return renderScreen(element, { wrapper: ConfirmationProvider });
+}
 jest.mock("@/auth/AuthProvider", () => ({
   useAuth: () => ({ session: mockSession }),
 }));

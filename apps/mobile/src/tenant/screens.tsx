@@ -1,14 +1,27 @@
 import { Redirect, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from "react-native";
 import { apiRequest } from "@/api/client";
 import type { AuthContextsResponse } from "@/api/contracts";
 import { useAuth } from "@/auth/AuthProvider";
 import { AppScreen } from "@/components/layout/AppScreen";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
+import { ActionGroup } from "@/components/ui/ActionGroup";
 import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Field";
+import { useConfirmation } from "@/components/ui/ConfirmationProvider";
+import { useContextNavigation } from "@/navigation/context-navigation";
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import type {
   BusinessProfile,
   Role,
@@ -46,6 +59,7 @@ function useTask() {
 }
 
 function ErrorMessage({ message }: { message: string | null }) {
+  const styles = useResponsiveStyles(baseStyles);
   return message ? (
     <Text accessibilityRole="alert" style={styles.error}>
       {message}
@@ -62,19 +76,29 @@ function RolePicker({
   onChange: (role: Role) => void;
   disabled?: boolean;
 }) {
+  const styles = useResponsiveStyles(baseStyles);
+  const textStyles = useResponsiveTextStyles();
   return (
-    <View style={styles.row}>
-      {(["admin", "superadmin"] as const).map((value) => (
-        <Button
-          key={value}
-          disabled={disabled}
-          style={styles.flex}
-          variant={role === value ? "primary" : "secondary"}
-          onPress={() => onChange(value)}
-        >
-          {value === "admin" ? "Admin" : "Superadmin"}
-        </Button>
-      ))}
+    <View style={styles.card}>
+      <Text style={textStyles.label}>PERAN PENGGUNA</Text>
+      <ActionGroup horizontal>
+        {(["admin", "superadmin"] as const).map((value) => (
+          <Button
+            key={value}
+            disabled={disabled}
+            accessibilityState={{ selected: role === value, disabled }}
+            variant={role === value ? "primary" : "secondary"}
+            onPress={() => onChange(value)}
+          >
+            {value === "admin" ? "Admin" : "Superadmin"}
+          </Button>
+        ))}
+      </ActionGroup>
+      <Text style={styles.body}>
+        {role === "admin"
+          ? "Admin: transaksi, pembayaran, laporan, dan koreksi transaksi sendiri."
+          : "Superadmin: seluruh transaksi, paket, pengguna, dan pengaturan bisnis."}
+      </Text>
     </View>
   );
 }
@@ -83,10 +107,13 @@ function RolePicker({
 function useRemote<T>(path: string, token?: string) {
   const [value, setValue] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(Boolean(token));
   const sequence = useRef(0);
   const reload = useCallback(async () => {
     const request = ++sequence.current;
     if (!token) return;
+    setLoading(true);
+    setError(null);
     try {
       const next = await apiRequest<T>(path, { token });
       if (request === sequence.current) {
@@ -101,6 +128,8 @@ function useRemote<T>(path: string, token?: string) {
             "Data belum dapat dimuat. Coba lagi.",
           ),
         );
+    } finally {
+      if (request === sequence.current) setLoading(false);
     }
   }, [path, token]);
   useFocusEffect(
@@ -112,12 +141,48 @@ function useRemote<T>(path: string, token?: string) {
       };
     }, [reload]),
   );
-  return { value, error, reload, setValue };
+  return { value, error, loading, reload, setValue };
+}
+
+function LoadingMessage({ children }: { children: string }) {
+  const styles = useResponsiveStyles(baseStyles);
+  return (
+    <View
+      style={styles.loading}
+      accessibilityRole="progressbar"
+      accessibilityLabel={children}
+    >
+      <ActivityIndicator color={colors.primary} />
+      <Text style={styles.body}>{children}</Text>
+    </View>
+  );
+}
+
+/** Match Go's byte-length validation, including non-ASCII names/passwords. */
+function byteLength(value: string) {
+  return new TextEncoder().encode(value).length;
+}
+
+export function managedPasswordError(value: string): string | undefined {
+  const size = byteLength(value);
+  return size < 12 || size > 256
+    ? "Kata sandi harus terdiri dari 12–256 karakter (huruf non-Latin dapat dihitung lebih panjang)."
+    : undefined;
+}
+
+export function managedUsernameError(value: string): string | undefined {
+  return /^[a-z0-9][a-z0-9._-]{2,63}$/.test(value.trim().toLowerCase())
+    ? undefined
+    : "Gunakan 3–64 huruf kecil, angka, titik, garis bawah, atau tanda hubung. Awali dengan huruf atau angka.";
 }
 
 export function ContextsScreen() {
+  const styles = useResponsiveStyles(baseStyles);
+  const textStyles = useResponsiveTextStyles();
   const router = useRouter();
-  const { session, scopeLocked, notice, switchContext, logout } = useAuth();
+  const { session, scopeLocked, notice, logout } = useAuth();
+  const navigation = useContextNavigation();
+  const { confirm } = useConfirmation();
   const contexts = useRemote<AuthContextsResponse>(
     "/auth/contexts",
     session?.token,
@@ -132,10 +197,6 @@ export function ContextsScreen() {
         title="Pilih bisnis"
         subtitle={`Masuk sebagai ${session.user.fullName}`}
       />
-      <Text style={styles.body}>
-        Setiap akun aktif dapat mengakses semua bisnis aktif. Peran Anda berlaku
-        di seluruh bisnis.
-      </Text>
       {scopeLocked ? (
         <Card style={styles.card}>
           <Text style={textStyles.heading}>
@@ -148,33 +209,32 @@ export function ContextsScreen() {
         </Card>
       ) : null}
       <ErrorMessage message={contexts.error ?? task.error} />
-      <Button
-        variant="secondary"
-        disabled={task.busy}
-        onPress={() => void contexts.reload()}
-      >
-        Muat ulang daftar bisnis
-      </Button>
-      {contexts.value?.tenants.map(({ tenant, role }) => (
+      {contexts.loading ? (
+        <LoadingMessage>Memuat daftar bisnis…</LoadingMessage>
+      ) : null}
+      {contexts.value?.tenants.map(({ tenant }) => (
         <Card key={tenant.id} style={styles.card}>
-          <Text style={textStyles.heading}>
-            {tenant.name}
-            {session.tenantId === tenant.id ? " • Dipilih" : ""}
-          </Text>
+          <Text style={textStyles.heading}>{tenant.name}</Text>
           <Text style={styles.body}>
-            {role === "superadmin" ? "Superadmin" : "Admin"} •{" "}
-            {tenantStatusLabel(tenant.status)}
+            {session.tenantId === tenant.id && !scopeLocked
+              ? `Sedang dipilih${session.dataMode === "sandbox" ? " • Mode uji" : ""}`
+              : tenantStatusLabel(tenant.status)}
           </Text>
           <Button
-            disabled={tenant.status !== "active" || task.busy}
-            onPress={() =>
-              void task.run(async () => {
-                await switchContext("tenant", tenant.id);
-                router.replace("/");
-              })
+            variant={
+              session.tenantId === tenant.id && !scopeLocked
+                ? "primary"
+                : "secondary"
             }
+            disabled={
+              tenant.status !== "active" || task.busy || navigation.busy
+            }
+            accessibilityLabel={`${session.tenantId === tenant.id && !scopeLocked ? "Lanjutkan" : "Buka"} bisnis ${tenant.name}`}
+            onPress={() => void navigation.openBusiness(tenant.id)}
           >
-            Buka bisnis
+            {session.tenantId === tenant.id && !scopeLocked
+              ? "Lanjutkan bisnis"
+              : "Buka bisnis"}
           </Button>
         </Card>
       ))}
@@ -184,59 +244,74 @@ export function ContextsScreen() {
           mengaktifkan bisnis.
         </Text>
       ) : null}
+      <Button
+        variant="secondary"
+        disabled={contexts.loading || task.busy || navigation.busy}
+        onPress={() => void contexts.reload()}
+      >
+        Muat ulang daftar bisnis
+      </Button>
       {contexts.value?.canManageOrganization ? (
-        <>
+        <Card style={styles.card}>
+          <Text style={textStyles.heading}>Pengelolaan</Text>
           <Button
-            disabled={task.busy}
+            variant="secondary"
+            disabled={task.busy || navigation.busy}
             onPress={() =>
-              void task.run(async () => {
-                if (session.contextKind !== "account")
-                  await switchContext("account");
-                router.replace("/management/tenants");
-              })
+              void navigation.openManagement("/management/tenants")
             }
           >
             Kelola tenant
           </Button>
           <Button
             variant="secondary"
-            disabled={task.busy}
-            onPress={() =>
-              void task.run(async () => {
-                if (session.contextKind !== "account")
-                  await switchContext("account");
-                router.replace("/management/users");
-              })
-            }
+            disabled={task.busy || navigation.busy}
+            onPress={() => void navigation.openManagement("/management/users")}
           >
             Kelola pengguna
           </Button>
-        </>
+        </Card>
       ) : null}
-      <Button
-        variant="secondary"
-        onPress={() => router.push("/account-profile")}
-      >
-        Profil dan kata sandi saya
-      </Button>
-      {!scopeLocked &&
-      (!session.contextKind || session.contextKind === "tenant") ? (
-        <Button variant="ghost" onPress={() => router.replace("/")}>
-          Kembali ke bisnis aktif
+      <Card style={styles.card}>
+        <Text style={textStyles.heading}>Akun saya</Text>
+        <Button
+          variant="secondary"
+          disabled={navigation.busy || task.busy}
+          onPress={() => router.push("/account-profile")}
+        >
+          Profil saya
         </Button>
-      ) : null}
-      <Button
-        variant="ghost"
-        loading={task.busy}
-        onPress={() =>
-          void task.run(async () => {
-            await logout();
-            router.replace("/");
-          })
-        }
-      >
-        Keluar
-      </Button>
+        {session.dataMode !== "sandbox" ? (
+          <Button
+            variant="secondary"
+            disabled={navigation.busy || task.busy}
+            onPress={() => router.push("/account-password")}
+          >
+            Ganti kata sandi
+          </Button>
+        ) : null}
+        <Button
+          variant="danger"
+          loading={task.busy}
+          disabled={navigation.busy}
+          onPress={() =>
+            confirm({
+              title: "Keluar dari akun?",
+              message:
+                "Anda perlu masuk kembali untuk menggunakan aplikasi. Data yang belum tersinkron tetap disimpan pada perangkat.",
+              confirmLabel: "Keluar",
+              destructive: true,
+              onConfirm: () =>
+                task.run(async () => {
+                  await logout();
+                  router.replace("/");
+                }),
+            })
+          }
+        >
+          Keluar
+        </Button>
+      </Card>
     </AppScreen>
   );
 }
@@ -251,9 +326,9 @@ function tenantStatusLabel(status: TenantSummary["status"]) {
 
 /** Visible entry point, not an automatic context exchange when a tab is focused. */
 export function ManagementEntryScreen() {
-  const router = useRouter();
-  const { session, switchContext } = useAuth();
-  const task = useTask();
+  const styles = useResponsiveStyles(baseStyles);
+  const { session } = useAuth();
+  const navigation = useContextNavigation();
   if (!session) return <Redirect href="/(auth)/login" />;
   if (session.user.role !== "superadmin") return <Redirect href="/" />;
   return (
@@ -269,25 +344,22 @@ export function ManagementEntryScreen() {
           sebelum membuka pengelolaan.
         </Text>
         <Button
-          loading={task.busy}
-          onPress={() =>
-            void task.run(async () => {
-              if (session.contextKind !== "account")
-                await switchContext("account");
-              router.replace("/management/users");
-            })
-          }
+          loading={navigation.busy}
+          onPress={() => void navigation.openManagement("/management/users")}
         >
           Buka pengelolaan pengguna
         </Button>
-        <ErrorMessage message={task.error} />
       </Card>
     </AppScreen>
   );
 }
 
 export function ManagedTenantsScreen() {
+  const styles = useResponsiveStyles(baseStyles);
+  const textStyles = useResponsiveTextStyles();
   const router = useRouter();
+  const navigation = useContextNavigation();
+  const { confirm } = useConfirmation();
   const { session } = useAuth();
   const allowed =
     session?.contextKind === "account" && session.user.role === "superadmin";
@@ -295,6 +367,7 @@ export function ManagedTenantsScreen() {
   const tenants = useRemote<TenantSummary[]>("/management/tenants", token);
   const contexts = useRemote<AuthContextsResponse>("/auth/contexts", token);
   const [name, setName] = useState("");
+  const [creating, setCreating] = useState(false);
   const [slug, setSlug] = useState("");
   const [editing, setEditing] = useState<TenantSummary | null>(null);
   const [editName, setEditName] = useState("");
@@ -307,63 +380,27 @@ export function ManagedTenantsScreen() {
         subtitle="Bisnis dalam Pengelola Wisata Telomoyo"
       />
       <Button variant="secondary" onPress={() => router.replace("/contexts")}>
-        Ganti bisnis
+        Pilih bisnis lain
       </Button>
-      <Button variant="ghost" onPress={() => router.push("/management/users")}>
-        Kelola pengguna
-      </Button>
-      <Card style={styles.card}>
-        <Text style={textStyles.heading}>Buat bisnis</Text>
-        {contexts.value?.tenantProvisioningEnabled ? (
-          <>
-            <Field
-              label="Nama bisnis"
-              value={name}
-              onChangeText={setName}
-              editable={!task.busy}
-            />
-            <Field
-              label="Kode bisnis"
-              value={slug}
-              onChangeText={setSlug}
-              editable={!task.busy}
-              autoCapitalize="none"
-              autoCorrect={false}
-              hint="Huruf kecil, angka, dan tanda hubung. Tidak dapat diubah."
-            />
-            <Button
-              loading={task.busy}
-              disabled={!name.trim() || !slug.trim()}
-              onPress={() =>
-                void task.run(async () => {
-                  await apiRequest<TenantSummary>("/management/tenants", {
-                    method: "POST",
-                    token: session.token,
-                    body: { name: name.trim(), slug: slug.trim() },
-                  });
-                  setName("");
-                  setSlug("");
-                  await tenants.reload();
-                })
-              }
-            >
-              Buat bisnis aktif
-            </Button>
-            <Text style={styles.body}>
-              Bisnis langsung dapat diakses semua staf dengan katalog kosong.
-            </Text>
-          </>
-        ) : (
-          <Text style={styles.body}>
-            {contexts.value
-              ? "Pembuatan bisnis belum diaktifkan pada server. Bisnis yang sudah ada tetap dapat dikelola."
-              : "Memuat ketersediaan pembuatan bisnis…"}
-          </Text>
-        )}
-      </Card>
-      <ErrorMessage message={task.error ?? tenants.error ?? contexts.error} />
       <Button
         variant="secondary"
+        loading={navigation.busy}
+        onPress={() => void navigation.returnToBusiness()}
+      >
+        Kembali ke bisnis
+      </Button>
+      <ErrorMessage message={task.error ?? tenants.error ?? contexts.error} />
+      {tenants.loading ? (
+        <LoadingMessage>Memuat daftar bisnis…</LoadingMessage>
+      ) : null}
+      {tenants.value?.length === 0 ? (
+        <Text style={styles.body}>
+          Belum ada bisnis. Tambahkan bisnis pertama untuk mulai beroperasi.
+        </Text>
+      ) : null}
+      <Button
+        variant="secondary"
+        disabled={tenants.loading || contexts.loading || task.busy}
         onPress={() => void Promise.all([tenants.reload(), contexts.reload()])}
       >
         Muat ulang
@@ -381,13 +418,16 @@ export function ManagedTenantsScreen() {
                 value={editName}
                 onChangeText={setEditName}
                 editable={!task.busy}
+                maxLength={160}
+                hint="Kode bisnis tetap. Identitas struk, QRIS, dan struk lama tidak berubah."
               />
-              <Text style={styles.body}>
-                Tidak mengubah identitas struk, QRIS, atau struk transaksi lama.
-              </Text>
               <Button
                 loading={task.busy}
-                disabled={!editName.trim()}
+                disabled={
+                  !editName.trim() ||
+                  byteLength(editName.trim()) > 160 ||
+                  editName.trim() === tenant.name
+                }
                 onPress={() =>
                   void task.run(async () => {
                     await apiRequest(`/management/tenants/${tenant.id}`, {
@@ -406,42 +446,30 @@ export function ManagedTenantsScreen() {
                 Simpan nama
               </Button>
               <Button
-                variant="ghost"
+                variant="danger"
                 disabled={task.busy}
                 onPress={() => setEditing(null)}
               >
                 Batal
               </Button>
-            </>
-          ) : (
-            <Button
-              variant="secondary"
-              disabled={task.busy}
-              onPress={() => {
-                setEditing(tenant);
-                setEditName(tenant.name);
-              }}
-            >
-              Ubah nama
-            </Button>
-          )}
-          <Button
-            disabled={task.busy}
-            variant={tenant.status === "active" ? "danger" : "secondary"}
-            onPress={() =>
-              Alert.alert(
-                tenant.status === "active"
-                  ? "Tangguhkan bisnis?"
-                  : "Aktifkan bisnis?",
-                tenant.status === "active"
-                  ? "Akses operasional akan dihentikan. Antrean perangkat offline tetap disimpan dan diamankan saat terhubung kembali."
-                  : "Semua akun aktif dapat memilih bisnis ini. Sesi yang telah dicabut tidak diaktifkan kembali.",
-                [
-                  { text: "Batal", style: "cancel" },
-                  {
-                    text: "Konfirmasi",
-                    onPress: () =>
-                      void task.run(async () => {
+              <Button
+                disabled={task.busy}
+                variant={tenant.status === "active" ? "danger" : "secondary"}
+                onPress={() =>
+                  confirm({
+                    title:
+                      tenant.status === "active"
+                        ? "Tangguhkan bisnis?"
+                        : "Aktifkan bisnis?",
+                    message:
+                      tenant.status === "active"
+                        ? "Akses operasional akan dihentikan. Antrean perangkat offline tetap disimpan dan diamankan saat terhubung kembali."
+                        : "Semua akun aktif dapat memilih bisnis ini. Sesi yang telah dicabut tidak diaktifkan kembali.",
+                    confirmLabel:
+                      tenant.status === "active" ? "Tangguhkan" : "Aktifkan",
+                    destructive: tenant.status === "active",
+                    onConfirm: () =>
+                      task.run(async () => {
                         await apiRequest(
                           `/management/tenants/${tenant.id}/status`,
                           {
@@ -455,17 +483,121 @@ export function ManagedTenantsScreen() {
                             },
                           },
                         );
+                        setEditing(null);
                         await tenants.reload();
                       }),
-                  },
-                ],
-              )
-            }
-          >
-            {tenant.status === "active" ? "Tangguhkan" : "Aktifkan"}
-          </Button>
+                  })
+                }
+              >
+                {tenant.status === "active"
+                  ? "Tangguhkan bisnis"
+                  : "Aktifkan bisnis"}
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="secondary"
+              disabled={task.busy}
+              accessibilityLabel={`Kelola bisnis ${tenant.name}`}
+              onPress={() => {
+                setCreating(false);
+                setEditing(tenant);
+                setEditName(tenant.name);
+              }}
+            >
+              Kelola bisnis
+            </Button>
+          )}
         </Card>
       ))}
+      {creating ? (
+        <Card style={styles.card}>
+          <Text style={textStyles.heading}>Tambah bisnis</Text>
+          {contexts.value?.tenantProvisioningEnabled ? (
+            <>
+              <Field
+                label="Nama bisnis"
+                value={name}
+                onChangeText={setName}
+                editable={!task.busy}
+                maxLength={160}
+              />
+              <Field
+                label="Kode bisnis"
+                value={slug}
+                onChangeText={setSlug}
+                editable={!task.busy}
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={63}
+                hint="2–63 huruf kecil, angka, dan tanda hubung. Awali dengan huruf/angka. Kode tidak dapat diubah."
+              />
+              <Button
+                loading={task.busy}
+                disabled={
+                  !name.trim() ||
+                  byteLength(name.trim()) > 160 ||
+                  !/^[a-z0-9][a-z0-9-]{1,62}$/.test(slug.trim().toLowerCase())
+                }
+                onPress={() =>
+                  void task.run(async () => {
+                    await apiRequest<TenantSummary>("/management/tenants", {
+                      method: "POST",
+                      token: session.token,
+                      body: {
+                        name: name.trim(),
+                        slug: slug.trim().toLowerCase(),
+                      },
+                    });
+                    setName("");
+                    setSlug("");
+                    setCreating(false);
+                    await tenants.reload();
+                  })
+                }
+              >
+                Buat bisnis aktif
+              </Button>
+              <Button
+                variant="danger"
+                disabled={task.busy}
+                onPress={() => {
+                  setCreating(false);
+                  setName("");
+                  setSlug("");
+                }}
+              >
+                Batal
+              </Button>
+              <Text style={styles.body}>
+                Bisnis langsung dapat diakses semua staf dengan katalog kosong.
+              </Text>
+            </>
+          ) : (
+            <Text style={styles.body}>
+              {contexts.value
+                ? "Pembuatan bisnis belum diaktifkan pada server. Bisnis yang sudah ada tetap dapat dikelola."
+                : "Memuat ketersediaan pembuatan bisnis…"}
+            </Text>
+          )}
+        </Card>
+      ) : contexts.value?.tenantProvisioningEnabled ? (
+        <Button
+          disabled={task.busy || navigation.busy}
+          onPress={() => {
+            setEditing(null);
+            setCreating(true);
+          }}
+        >
+          Tambah bisnis
+        </Button>
+      ) : (
+        <Text style={styles.body}>
+          {contexts.value
+            ? "Pembuatan bisnis belum diaktifkan pada server. Bisnis yang sudah ada tetap dapat dikelola."
+            : "Memuat ketersediaan pembuatan bisnis…"}
+        </Text>
+      )}
       <Text style={styles.body}>
         Tenant tidak dapat dihapus. Gunakan penangguhan untuk menghentikan
         operasional tanpa menghilangkan riwayat.
@@ -481,7 +613,10 @@ export function ManagedTenantsScreen() {
 }
 
 export function ManagedUsersScreen() {
+  const styles = useResponsiveStyles(baseStyles);
+  const textStyles = useResponsiveTextStyles();
   const router = useRouter();
+  const navigation = useContextNavigation();
   const { session } = useAuth();
   const allowed =
     session?.contextKind === "account" && session.user.role === "superadmin";
@@ -492,66 +627,91 @@ export function ManagedUsersScreen() {
   const [search, setSearch] = useState("");
   if (!allowed) return <Redirect href="/contexts" />;
   const query = search.trim().toLocaleLowerCase();
+  const filteredUsers = users.value?.filter((user) =>
+    `${user.fullName} ${user.username}`.toLocaleLowerCase().includes(query),
+  );
   return (
     <AppScreen>
       <PageHeader
         title="Pengguna"
         subtitle="Peran dan status berlaku di seluruh bisnis"
       />
-      <Button variant="secondary" onPress={() => router.replace("/contexts")}>
-        Ganti bisnis
-      </Button>
       <Button
-        variant="ghost"
-        onPress={() => router.push("/management/tenants")}
+        variant="secondary"
+        loading={navigation.busy}
+        onPress={() => void navigation.returnToBusiness()}
       >
-        Kelola tenant
+        Kembali ke bisnis
       </Button>
       <Field
         label="Cari pengguna"
         value={search}
         onChangeText={setSearch}
         placeholder="Nama atau username"
+        autoCapitalize="none"
+        autoCorrect={false}
+        returnKeyType="search"
       />
       <Button onPress={() => router.push("/management/users/new")}>
         Tambah pengguna
       </Button>
       <ErrorMessage message={users.error} />
-      <Button variant="secondary" onPress={() => void users.reload()}>
+      {users.loading ? (
+        <LoadingMessage>Memuat daftar pengguna…</LoadingMessage>
+      ) : null}
+      <Button
+        variant="secondary"
+        disabled={users.loading || navigation.busy}
+        onPress={() => void users.reload()}
+      >
         Muat ulang pengguna
       </Button>
-      {users.value
-        ?.filter((user) =>
-          `${user.fullName} ${user.username}`
-            .toLocaleLowerCase()
-            .includes(query),
-        )
-        .map((user) => (
-          <Card key={user.id} style={styles.card}>
-            <Text style={textStyles.heading}>{user.fullName}</Text>
-            <Text style={styles.body}>
-              @{user.username} •{" "}
-              {user.role === "superadmin" ? "Superadmin" : "Admin"} •{" "}
-              {user.active ? "Aktif" : "Nonaktif"}
-            </Text>
-            <Button
-              variant="secondary"
-              onPress={() =>
-                router.push({
-                  pathname: "/management/users/[id]",
-                  params: { id: user.id },
-                })
-              }
-            >
-              Kelola akun
-            </Button>
-          </Card>
-        ))}
+      {!users.loading && users.value?.length === 0 ? (
+        <Text style={styles.body}>
+          Belum ada pengguna. Tambahkan akun untuk staf.
+        </Text>
+      ) : null}
+      {!users.loading &&
+      Boolean(users.value?.length) &&
+      filteredUsers?.length === 0 ? (
+        <Card style={styles.card}>
+          <Text style={styles.body}>
+            Tidak ada pengguna yang cocok dengan pencarian.
+          </Text>
+          <Button variant="secondary" onPress={() => setSearch("")}>
+            Hapus pencarian
+          </Button>
+        </Card>
+      ) : null}
+      {filteredUsers?.map((user) => (
+        <Card key={user.id} style={styles.card}>
+          <Text style={textStyles.heading}>{user.fullName}</Text>
+          <Text style={styles.body}>
+            @{user.username} •{" "}
+            {user.role === "superadmin" ? "Superadmin" : "Admin"} •{" "}
+            {user.active ? "Aktif" : "Nonaktif"}
+          </Text>
+          <Button
+            variant="secondary"
+            disabled={navigation.busy}
+            accessibilityLabel={`Kelola akun ${user.fullName}`}
+            onPress={() =>
+              router.push({
+                pathname: "/management/users/[id]",
+                params: { id: user.id },
+              })
+            }
+          >
+            Kelola akun
+          </Button>
+        </Card>
+      ))}
     </AppScreen>
   );
 }
 
 export function ManagedUserCreateScreen() {
+  const styles = useResponsiveStyles(baseStyles);
   const { session } = useAuth();
   const router = useRouter();
   const [fullName, setFullName] = useState("");
@@ -559,6 +719,12 @@ export function ManagedUserCreateScreen() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("admin");
   const task = useTask();
+  const fullNameError =
+    !fullName.trim() || byteLength(fullName.trim()) > 160
+      ? "Isi nama lengkap, maksimal 160 karakter (huruf non-Latin dapat dihitung lebih panjang)."
+      : undefined;
+  const usernameError = managedUsernameError(username);
+  const passwordError = managedPasswordError(password);
   if (
     !session ||
     session.contextKind !== "account" ||
@@ -578,6 +744,8 @@ export function ManagedUserCreateScreen() {
           value={fullName}
           onChangeText={setFullName}
           editable={!task.busy}
+          maxLength={160}
+          error={fullName ? fullNameError : undefined}
         />
         <Field
           label="Nama pengguna"
@@ -586,6 +754,9 @@ export function ManagedUserCreateScreen() {
           editable={!task.busy}
           autoCapitalize="none"
           autoCorrect={false}
+          maxLength={64}
+          error={username ? usernameError : undefined}
+          hint="3–64 huruf kecil, angka, titik, garis bawah, atau tanda hubung."
         />
         <Field
           label="Kata sandi sementara"
@@ -594,6 +765,8 @@ export function ManagedUserCreateScreen() {
           editable={!task.busy}
           secureTextEntry
           autoComplete="new-password"
+          error={password ? passwordError : undefined}
+          hint="Minimal 12 karakter. Bagikan secara pribadi kepada pengguna."
         />
         <RolePicker role={role} onChange={setRole} disabled={task.busy} />
         <Text style={styles.body}>
@@ -603,7 +776,7 @@ export function ManagedUserCreateScreen() {
         <ErrorMessage message={task.error} />
         <Button
           loading={task.busy}
-          disabled={!fullName.trim() || !username.trim() || !password}
+          disabled={Boolean(fullNameError || usernameError || passwordError)}
           onPress={() =>
             void task.run(async () => {
               await apiRequest("/management/users", {
@@ -611,7 +784,7 @@ export function ManagedUserCreateScreen() {
                 token: session.token,
                 body: {
                   fullName: fullName.trim(),
-                  username: username.trim(),
+                  username: username.trim().toLowerCase(),
                   role,
                   temporaryPassword: password,
                 },
@@ -623,12 +796,25 @@ export function ManagedUserCreateScreen() {
         >
           Buat akun
         </Button>
+        <Button
+          variant="danger"
+          disabled={task.busy}
+          onPress={() => {
+            setPassword("");
+            router.back();
+          }}
+        >
+          Batal
+        </Button>
       </Card>
     </AppScreen>
   );
 }
 
 export function ManagedUserEditor({ id }: { id: string }) {
+  const styles = useResponsiveStyles(baseStyles);
+  const textStyles = useResponsiveTextStyles();
+  const { confirm } = useConfirmation();
   const { session } = useAuth();
   const allowed =
     session?.contextKind === "account" && session.user.role === "superadmin";
@@ -654,115 +840,141 @@ export function ManagedUserEditor({ id }: { id: string }) {
         subtitle="Perubahan berlaku untuk seluruh bisnis"
       />
       <ErrorMessage message={task.error ?? user.error} />
+      {user.loading ? <LoadingMessage>Memuat akun…</LoadingMessage> : null}
       {message ? (
         <Text accessibilityRole="alert" style={styles.body}>
           {message}
         </Text>
       ) : null}
       {!member ? (
-        <Button variant="secondary" onPress={() => void user.reload()}>
+        <Button
+          variant="secondary"
+          disabled={user.loading}
+          onPress={() => void user.reload()}
+        >
           Muat ulang akun
         </Button>
       ) : (
-        <Card style={styles.card}>
-          <Text style={textStyles.heading}>{member.fullName}</Text>
-          <Text style={styles.body}>@{member.username}</Text>
-          <RolePicker
-            role={role}
-            onChange={setDraftRole}
-            disabled={self || task.busy}
-          />
-          <Button
-            variant="secondary"
-            disabled={self || task.busy}
-            onPress={() => setDraftActive(!active)}
-          >
-            {active
-              ? "Aktif — ketuk untuk nonaktifkan"
-              : "Nonaktif — ketuk untuk aktifkan"}
-          </Button>
-          <Text style={styles.body}>
-            {self
-              ? "Anda tidak dapat menurunkan peran atau menonaktifkan akun sendiri. Gunakan Profil untuk mengganti kata sandi."
-              : "Perubahan peran/status mencabut sesi akun di semua bisnis. Antrean offline tetap disimpan."}
-          </Text>
-          {!self ? (
-            <>
+        <>
+          <Card style={styles.card}>
+            <Text style={textStyles.label}>IDENTITAS AKUN</Text>
+            <Text style={textStyles.heading}>{member.fullName}</Text>
+            <Text style={styles.body}>@{member.username}</Text>
+            <Text style={styles.body}>
+              Nama dan profil pribadi hanya dapat diubah oleh pemilik akun.
+            </Text>
+          </Card>
+          <Card style={styles.card}>
+            <Text style={textStyles.heading}>Akses pengguna</Text>
+            <RolePicker
+              role={role}
+              onChange={setDraftRole}
+              disabled={self || task.busy}
+            />
+            <View style={styles.toggle}>
+              <View style={styles.flex}>
+                <Text style={textStyles.label}>STATUS AKUN</Text>
+                <Text style={styles.body}>
+                  {active
+                    ? "Aktif — dapat masuk dan memilih bisnis"
+                    : "Nonaktif — akses seluruh bisnis dihentikan"}
+                </Text>
+              </View>
+              <Switch
+                accessibilityLabel="Akun aktif"
+                value={active}
+                disabled={self || task.busy}
+                onValueChange={setDraftActive}
+                trackColor={{ true: colors.primary }}
+              />
+            </View>
+            <Text style={styles.body}>
+              {self
+                ? "Anda tidak dapat menurunkan peran atau menonaktifkan akun sendiri. Gunakan menu Ganti kata sandi untuk akun sendiri."
+                : "Perubahan peran/status mencabut sesi akun di semua bisnis. Antrean offline tetap disimpan."}
+            </Text>
+            {!self ? (
               <Button
                 loading={task.busy}
                 disabled={role === member.role && active === member.active}
                 onPress={() =>
-                  Alert.alert(
-                    "Simpan akses global?",
-                    "Akun perlu masuk kembali di semua perangkat.",
-                    [
-                      { text: "Batal", style: "cancel" },
-                      {
-                        text: "Simpan",
-                        onPress: () =>
-                          void task.run(async () => {
-                            await apiRequest(`/management/users/${id}`, {
-                              method: "PATCH",
-                              token: session.token,
-                              body: { role, active },
-                            });
-                            setDraftRole(null);
-                            setDraftActive(null);
-                            setMessage("Akses akun diperbarui.");
-                            await user.reload();
-                          }),
-                      },
-                    ],
-                  )
+                  confirm({
+                    title: "Simpan akses akun?",
+                    message:
+                      "Akun perlu masuk kembali di semua perangkat. Perubahan berlaku di seluruh bisnis; antrean offline tetap disimpan.",
+                    confirmLabel: "Simpan",
+                    destructive: !active || role !== member.role,
+                    onConfirm: () =>
+                      task.run(async () => {
+                        await apiRequest(`/management/users/${id}`, {
+                          method: "PATCH",
+                          token: session.token,
+                          body: { role, active },
+                        });
+                        setDraftRole(null);
+                        setDraftActive(null);
+                        setMessage("Akses akun diperbarui.");
+                        await user.reload();
+                      }),
+                  })
                 }
               >
                 Simpan akses akun
               </Button>
+            ) : null}
+          </Card>
+          {!self ? (
+            <Card style={styles.card}>
+              <Text style={textStyles.heading}>Pemulihan kata sandi</Text>
+              <Text style={styles.body}>
+                Semua sesi akan dicabut. Pengguna wajib mengganti kata sandi
+                sementara setelah masuk.
+              </Text>
               <Field
                 label="Kata sandi sementara baru"
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
                 editable={!task.busy}
+                autoComplete="new-password"
+                error={password ? managedPasswordError(password) : undefined}
+                hint="Minimal 12 karakter. Bagikan kata sandi secara pribadi."
               />
               <Button
                 variant="danger"
                 loading={task.busy}
-                disabled={!password}
+                disabled={Boolean(managedPasswordError(password))}
                 onPress={() =>
-                  Alert.alert(
-                    "Reset kata sandi?",
-                    "Semua sesi akun dicabut. Pengguna wajib mengganti kata sandi sementara setelah masuk.",
-                    [
-                      { text: "Batal", style: "cancel" },
-                      {
-                        text: "Reset",
-                        onPress: () =>
-                          void task.run(async () => {
-                            await apiRequest(
-                              `/management/users/${id}/reset-password`,
-                              {
-                                method: "POST",
-                                token: session.token,
-                                body: { temporaryPassword: password },
-                              },
-                            );
-                            setPassword("");
-                            setMessage(
-                              "Kata sandi direset. Bagikan kata sandi sementara secara pribadi.",
-                            );
-                            await user.reload();
-                          }),
-                      },
-                    ],
-                  )
+                  confirm({
+                    title: "Reset kata sandi?",
+                    message:
+                      "Semua sesi akun dicabut. Pengguna wajib mengganti kata sandi sementara setelah masuk.",
+                    confirmLabel: "Reset",
+                    destructive: true,
+                    onConfirm: () =>
+                      task.run(async () => {
+                        await apiRequest(
+                          `/management/users/${id}/reset-password`,
+                          {
+                            method: "POST",
+                            token: session.token,
+                            body: { temporaryPassword: password },
+                          },
+                        );
+                        setPassword("");
+                        setMessage(
+                          "Kata sandi direset. Bagikan kata sandi sementara secara pribadi.",
+                        );
+                        await user.reload();
+                      }),
+                  })
                 }
               >
                 Reset kata sandi
               </Button>
-            </>
+            </Card>
           ) : null}
-        </Card>
+        </>
       )}
     </AppScreen>
   );
@@ -774,6 +986,7 @@ interface ManagementAudit {
   createdAt: string;
 }
 export function ManagementAuditScreen() {
+  const styles = useResponsiveStyles(baseStyles);
   const { session } = useAuth();
   const allowed =
     session?.contextKind === "account" && session.user.role === "superadmin";
@@ -790,7 +1003,12 @@ export function ManagementAuditScreen() {
         subtitle="Aktivitas administratif seluruh organisasi"
       />
       <ErrorMessage message={audit.error} />
-      <Button variant="secondary" onPress={() => void audit.reload()}>
+      {audit.loading ? <LoadingMessage>Memuat riwayat…</LoadingMessage> : null}
+      <Button
+        variant="secondary"
+        disabled={audit.loading}
+        onPress={() => void audit.reload()}
+      >
         Muat ulang riwayat
       </Button>
       {audit.value?.map((event) => (
@@ -806,6 +1024,7 @@ export function ManagementAuditScreen() {
 }
 
 export function BusinessProfileScreen() {
+  const styles = useResponsiveStyles(baseStyles);
   const { session } = useAuth();
   const allowed =
     session?.user.role === "superadmin" && session.dataMode === "production";
@@ -895,10 +1114,17 @@ export function BusinessProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   card: { gap: spacing.md },
   body: { ...textStyles.body, color: colors.textMuted },
   error: { ...textStyles.body, color: colors.error },
   row: { flexDirection: "row", gap: spacing.sm },
   flex: { flex: 1 },
+  loading: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  toggle: {
+    minHeight: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
 });

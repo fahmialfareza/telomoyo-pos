@@ -1,3 +1,7 @@
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
@@ -16,22 +20,23 @@ import {
 import { initials } from "@/utils/format";
 
 export default function ProfileScreen() {
+  const responsive = useResponsiveStyles(styles);
   const { session } = useAuth();
   const router = useRouter();
   if (!session) return <AppScreen />;
   return (
     <AppScreen>
       <PageHeader back title="Profil" />
-      <Card style={styles.profile}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
+      <Card style={responsive.profile}>
+        <View style={responsive.avatar}>
+          <Text style={responsive.avatarText}>
             {initials(session.user.fullName)}
           </Text>
         </View>
-        <Text style={styles.name}>{session.user.fullName}</Text>
-        <Text style={styles.username}>@{session.user.username}</Text>
+        <Text style={responsive.name}>{session.user.fullName}</Text>
+        <Text style={responsive.username}>@{session.user.username}</Text>
       </Card>
-      <Card style={styles.details}>
+      <Card style={responsive.details}>
         <Row label="ID pengguna" value={session.user.id} />
         <Row label="Peran" value={session.user.role.toUpperCase()} />
         <Row
@@ -40,7 +45,7 @@ export default function ProfileScreen() {
         />
         <Row label="ID sesi" value={session.sessionId} />
       </Card>
-      <Text style={styles.note}>
+      <Text style={responsive.note}>
         {session.dataMode === "sandbox"
           ? "Profil ini digunakan bersama dengan Produksi dan hanya dapat diubah dari Mode Produksi."
           : "Nama dan kata sandi hanya dapat diubah oleh pemilik akun. Peran dikelola terpisah oleh superadmin setiap bisnis."}
@@ -56,10 +61,12 @@ export default function ProfileScreen() {
 }
 
 function Row({ label, value }: { label: string; value: string }) {
+  const responsive = useResponsiveStyles(styles);
+  const responsiveText = useResponsiveTextStyles();
   return (
-    <View style={styles.row}>
-      <Text style={textStyles.label}>{label.toUpperCase()}</Text>
-      <Text selectable style={styles.value}>
+    <View style={responsive.row}>
+      <Text style={responsiveText.label}>{label.toUpperCase()}</Text>
+      <Text selectable style={responsive.value}>
         {value}
       </Text>
     </View>

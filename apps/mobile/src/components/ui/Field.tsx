@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { forwardRef, useState } from "react";
 import {
   Pressable,
@@ -29,22 +30,24 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
   { label, error, hint, secureTextEntry, style, ...props },
   ref,
 ) {
+  const responsive = useResponsiveStyles(styles);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPasswordField = secureTextEntry === true;
 
   return (
-    <View style={styles.wrapper}>
-      <Text style={styles.label}>{label.toUpperCase()}</Text>
+    <View style={responsive.wrapper}>
+      <Text style={responsive.label}>{label.toUpperCase()}</Text>
       <View>
         <TextInput
           ref={ref}
+          accessibilityLabel={label}
           placeholderTextColor={colors.textMuted}
           selectionColor={colors.primary}
           style={[
-            styles.input,
-            error && styles.inputError,
+            responsive.input,
+            error && responsive.inputError,
             style,
-            isPasswordField && styles.passwordInput,
+            isPasswordField && responsive.passwordInput,
           ]}
           {...props}
           secureTextEntry={isPasswordField ? !passwordVisible : secureTextEntry}
@@ -59,8 +62,8 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
             accessibilityRole="button"
             onPress={() => setPasswordVisible((visible) => !visible)}
             style={({ pressed }) => [
-              styles.passwordToggle,
-              pressed && styles.passwordTogglePressed,
+              responsive.passwordToggle,
+              pressed && responsive.passwordTogglePressed,
             ]}
           >
             <Icon
@@ -71,8 +74,8 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
           </Pressable>
         ) : null}
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {!error && hint ? <Text style={styles.hint}>{hint}</Text> : null}
+      {error ? <Text style={responsive.error}>{error}</Text> : null}
+      {!error && hint ? <Text style={responsive.hint}>{hint}</Text> : null}
     </View>
   );
 });
@@ -83,11 +86,12 @@ const styles = StyleSheet.create({
   },
   label: textStyles.label,
   input: {
-    minHeight: minimumTouchTarget,
+    minHeight: 56,
     borderWidth: 1,
     borderColor: colors.outline,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.card,
     color: colors.text,
     fontFamily: typography.body,

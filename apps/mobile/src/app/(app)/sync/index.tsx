@@ -1,12 +1,13 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { AppScreen } from "@/components/layout/AppScreen";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { useConfirmation } from "@/components/ui/ConfirmationProvider";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
   discardRejectedOutboxOperation,
@@ -18,6 +19,10 @@ import {
 import type { SyncConflict } from "@/domain/types";
 import { useSyncRuntime } from "@/sync/SyncProvider";
 import { colors, spacing, textStyles, typography } from "@/theme/tokens";
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { toUserFacingErrorMessage } from "@/utils/errors";
 import { displayTransactionId, formatJakartaDateTime } from "@/utils/format";
 import {
@@ -27,6 +32,9 @@ import {
 import { beginLocalMutation } from "@/mode/mutation-barrier";
 
 export default function SyncCenterScreen() {
+  const styles = useResponsiveStyles(baseStyles);
+  const textStyles = useResponsiveTextStyles();
+  const { confirm } = useConfirmation();
   const router = useRouter();
   const { session } = useAuth();
   const runtime = useSyncRuntime();
@@ -102,26 +110,26 @@ export default function SyncCenterScreen() {
       ? "Transaksi ini tidak pernah diterima server. Salinan lokal hanya dapat diarsipkan jika belum dibayar dan belum pernah dicetak. Catatan yang sudah dibayar atau dicetak tidak akan diarsipkan dan memerlukan rekonsiliasi dengan server."
       : "Perubahan optimistis akan dibatalkan ke kondisi aman terakhir, lalu operasi dikeluarkan dari antrean.";
 
-    Alert.alert(title, message, [
-      { text: "Batal", style: "cancel" },
-      {
-        text: isRejectedCreate ? "Arsipkan" : "Pulihkan",
-        style: isRejectedCreate ? "destructive" : "default",
-        onPress: () => {
-          if (!session) return;
-          setRecoveryError(null);
-          void discardRejectedOutboxOperation(operation.operationId, session)
-            .then(load)
-            .catch((reason: unknown) => {
-              setRecoveryError(
-                reason instanceof Error
-                  ? reason.message
-                  : "Operasi lokal tidak dapat dipulihkan.",
-              );
-            });
-        },
+    confirm({
+      title,
+      message,
+      confirmLabel: isRejectedCreate ? "Arsipkan" : "Pulihkan",
+      destructive: isRejectedCreate,
+      onConfirm: async () => {
+        if (!session) return;
+        setRecoveryError(null);
+        try {
+          await discardRejectedOutboxOperation(operation.operationId, session);
+          await load();
+        } catch (reason) {
+          setRecoveryError(
+            reason instanceof Error
+              ? reason.message
+              : "Operasi lokal tidak dapat dipulihkan.",
+          );
+        }
       },
-    ]);
+    });
   };
 
   return (
@@ -294,7 +302,7 @@ export default function SyncCenterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   hero: { gap: spacing.md },
   heroTop: {
     flexDirection: "row",

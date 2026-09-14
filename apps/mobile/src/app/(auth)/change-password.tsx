@@ -1,3 +1,7 @@
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text } from "react-native";
@@ -11,13 +15,15 @@ import { StateView } from "@/components/ui/StateView";
 import { colors, spacing, textStyles } from "@/theme/tokens";
 
 export default function ForcedPasswordScreen() {
+  const responsive = useResponsiveStyles(styles);
+  const responsiveText = useResponsiveTextStyles();
   const router = useRouter();
   const { changePassword, session, switchMode, switchingMode } = useAuth();
   const [modeError, setModeError] = useState<string | null>(null);
 
   if (session?.dataMode === "sandbox") {
     return (
-      <AppScreen contentStyle={styles.screen}>
+      <AppScreen contentStyle={responsive.screen}>
         <StateView
           icon="shield-lock-outline"
           message="Kata sandi hanya dapat diganti dari Mode Produksi. Kembali ke Produksi untuk melanjutkan."
@@ -39,7 +45,7 @@ export default function ForcedPasswordScreen() {
           Kembali ke Mode Produksi
         </Button>
         {modeError ? (
-          <Text accessibilityRole="alert" style={styles.error}>
+          <Text accessibilityRole="alert" style={responsive.error}>
             {modeError}
           </Text>
         ) : null}
@@ -48,13 +54,13 @@ export default function ForcedPasswordScreen() {
   }
 
   return (
-    <AppScreen authenticated={false} contentStyle={styles.screen}>
-      <Text style={textStyles.title}>Buat kata sandi baru</Text>
-      <Text style={styles.subtitle}>
+    <AppScreen authenticated={false} contentStyle={responsive.screen}>
+      <Text style={responsiveText.title}>Buat kata sandi baru</Text>
+      <Text style={responsive.subtitle}>
         Kata sandi sementara harus diganti sebelum terminal dapat digunakan.
         Langkah ini memerlukan internet.
       </Text>
-      <Card style={styles.card}>
+      <Card style={responsive.card}>
         <PasswordForm
           onSubmit={async (current, next) => {
             await changePassword(current, next);

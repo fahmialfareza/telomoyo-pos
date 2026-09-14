@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "@/theme/responsive";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { DataMode, Transaction } from "@/domain/types";
@@ -26,6 +27,7 @@ export function TransactionRow({
   onPress: () => void;
   dataMode?: DataMode;
 }) {
+  const responsive = useResponsiveStyles(styles);
   const accentToken = transaction.items[0]?.accent ?? "primary";
   const accent =
     accentToken === "sunrise"
@@ -37,35 +39,37 @@ export function TransactionRow({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [responsive.card, pressed && responsive.pressed]}
     >
-      <View style={[styles.accent, { backgroundColor: accent }]} />
-      <View style={styles.content}>
-        <View style={styles.top}>
-          <View style={styles.flex}>
-            <Text style={styles.id}>
+      <View style={[responsive.accent, { backgroundColor: accent }]} />
+      <View style={responsive.content}>
+        <View style={responsive.top}>
+          <View style={responsive.flex}>
+            <Text style={responsive.id}>
               {compactTransactionId(transaction.id, dataMode)}
             </Text>
-            <Text numberOfLines={1} style={styles.name}>
+            <Text numberOfLines={1} style={responsive.name}>
               {transaction.items.map((item) => item.name).join(" + ")}
             </Text>
           </View>
-          <Text style={styles.amount}>{formatRupiah(transaction.total)}</Text>
+          <Text style={responsive.amount}>
+            {formatRupiah(transaction.total)}
+          </Text>
         </View>
-        <View style={styles.meta}>
-          <Text style={styles.muted}>
+        <View style={responsive.meta}>
+          <Text style={responsive.muted}>
             {formatJakartaDateTime(transaction.occurredAt)}
           </Text>
-          <Text style={styles.muted}>
+          <Text style={responsive.muted}>
             {transaction.items.reduce((sum, item) => sum + item.quantity, 0)}{" "}
             item
           </Text>
         </View>
-        <View style={styles.bottom}>
-          <Text numberOfLines={1} style={styles.actor}>
+        <View style={responsive.bottom}>
+          <Text numberOfLines={1} style={responsive.actor}>
             {transaction.updatedActorName}
           </Text>
-          <View style={styles.badges}>
+          <View style={responsive.badges}>
             <StatusBadge kind={transaction.syncState} />
             <PaymentMethodBadge method={transaction.paymentMethod} />
             <PaymentStatusBadge status={transaction.paymentStatus} />

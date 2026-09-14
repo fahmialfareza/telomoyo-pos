@@ -1,3 +1,7 @@
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
@@ -18,22 +22,30 @@ export function PageHeader({
   back = false,
   right,
 }: PageHeaderProps) {
+  const responsive = useResponsiveStyles(styles);
+  const responsiveText = useResponsiveTextStyles();
   const router = useRouter();
 
   return (
-    <View style={styles.row}>
+    <View style={responsive.row}>
       {back ? (
         <Pressable
           accessibilityLabel="Kembali"
+          accessibilityRole="button"
           onPress={() => router.back()}
-          style={styles.back}
+          style={responsive.back}
         >
           <Icon color={colors.primary} name="arrow-left" />
         </Pressable>
       ) : null}
-      <View style={styles.copy}>
-        <Text style={textStyles.title}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      <View style={responsive.copy}>
+        <Text
+          accessibilityRole="header"
+          style={back ? responsiveText.subpage : responsiveText.title}
+        >
+          {title}
+        </Text>
+        {subtitle ? <Text style={responsive.subtitle}>{subtitle}</Text> : null}
       </View>
       {right}
     </View>
@@ -48,8 +60,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   back: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     alignItems: "center",
     justifyContent: "center",
     marginLeft: -10,

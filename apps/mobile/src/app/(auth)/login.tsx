@@ -1,3 +1,7 @@
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
@@ -25,6 +29,8 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginScreen() {
+  const responsive = useResponsiveStyles(styles);
+  const responsiveText = useResponsiveTextStyles();
   const router = useRouter();
   const { bootError, demoEnabled, demoLogin, login, notice } = useAuth();
   const {
@@ -54,33 +60,33 @@ export default function LoginScreen() {
   };
 
   return (
-    <AppScreen authenticated={false} contentStyle={styles.screen}>
-      <View style={styles.brand}>
-        <View style={styles.logo}>
+    <AppScreen authenticated={false} contentStyle={responsive.screen}>
+      <View style={responsive.brand}>
+        <View style={responsive.logo}>
           <Image
             accessibilityIgnoresInvertColors
             accessibilityLabel="Logo Telomoyo POS"
             source={require("../../../assets/branding/logo-mark.png")}
-            style={styles.logoMark}
+            style={responsive.logoMark}
           />
         </View>
-        <Text style={styles.brandName}>Telomoyo POS</Text>
-        <Text style={styles.tagline}>Sistem Point of Sale</Text>
+        <Text style={responsive.brandName}>Telomoyo POS</Text>
+        <Text style={responsive.tagline}>Sistem Point of Sale</Text>
       </View>
 
-      <Card style={styles.form}>
-        <Text style={textStyles.heading}>Masuk ke terminal</Text>
-        <Text style={styles.help}>
+      <Card style={responsive.form}>
+        <Text style={responsiveText.heading}>Masuk ke terminal</Text>
+        <Text style={responsive.help}>
           Login pertama memerlukan internet. Sesi yang sudah tersimpan dapat
           dibuka kembali saat offline.
         </Text>
         {notice ? (
-          <Text accessibilityRole="alert" style={styles.notice}>
+          <Text accessibilityRole="alert" style={responsive.notice}>
             {notice}
           </Text>
         ) : null}
         {bootError ? (
-          <Text accessibilityRole="alert" style={styles.error}>
+          <Text accessibilityRole="alert" style={responsive.error}>
             Penyimpanan lokal belum dapat dibuka: {bootError}
           </Text>
         ) : null}
@@ -120,7 +126,7 @@ export default function LoginScreen() {
           )}
         />
         {errors.root?.message ? (
-          <Text accessibilityRole="alert" style={styles.error}>
+          <Text accessibilityRole="alert" style={responsive.error}>
             {errors.root.message}
           </Text>
         ) : null}
@@ -134,23 +140,23 @@ export default function LoginScreen() {
       </Card>
 
       {demoEnabled ? (
-        <Card style={styles.demo}>
-          <Text style={styles.demoLabel}>KHUSUS DEVELOPMENT BUILD</Text>
-          <Text style={styles.help}>
+        <Card style={responsive.demo}>
+          <Text style={responsive.demoLabel}>KHUSUS DEVELOPMENT BUILD</Text>
+          <Text style={responsive.help}>
             Sesi demo tidak menghubungi backend dan tidak tersedia pada preview
             atau production.
           </Text>
-          <View style={styles.demoActions}>
+          <View style={responsive.demoActions}>
             <Button
               onPress={() => void loginAsDemo("admin")}
-              style={styles.demoButton}
+              style={responsive.demoButton}
               variant="secondary"
             >
               Demo Admin
             </Button>
             <Button
               onPress={() => void loginAsDemo("superadmin")}
-              style={styles.demoButton}
+              style={responsive.demoButton}
               variant="secondary"
             >
               Demo Superadmin
@@ -159,8 +165,8 @@ export default function LoginScreen() {
         </Card>
       ) : null}
 
-      <Pressable accessibilityRole="text" style={styles.footer}>
-        <Text style={styles.footerText}>
+      <Pressable accessibilityRole="text" style={responsive.footer}>
+        <Text style={responsive.footerText}>
           ANDROID POS • DATABASE TERENKRIPSI
         </Text>
       </Pressable>

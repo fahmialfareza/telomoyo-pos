@@ -1,9 +1,13 @@
-import { useRouter } from "expo-router";
+import { useResponsiveStyles, useResponsiveSizing } from "@/theme/responsive";
+import { useRouter, useSegments } from "expo-router";
+import { useState } from "react";
 import {
   Pressable,
   StyleSheet,
   Text,
   View,
+  ScrollView,
+  useWindowDimensions,
   type ViewStyle,
 } from "react-native";
 import {
@@ -12,7 +16,10 @@ import {
   KeyboardStickyView,
   type KeyboardAwareScrollViewProps,
 } from "react-native-keyboard-controller";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { useAuthStore } from "@/auth/auth-store";
 import { useModeStore } from "@/mode/mode-store";
@@ -42,7 +49,16 @@ export function AppScreen({
   contentStyle,
   scrollProps,
 }: AppScreenProps) {
+  const responsive = useResponsiveStyles(styles);
   const router = useRouter();
+  const segments = useSegments();
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const sizing = useResponsiveSizing();
+  const [footerHeight, setFooterHeight] = useState(0);
+  const bottomInset = (segments as string[]).includes("(tabs)")
+    ? 0
+    : insets.bottom;
   const sandbox = useModeStore((state) => state.dataMode === "sandbox");
   const tenant = useAuthStore((state) => state.session?.tenant);
   const tenantContext = useAuthStore((state) =>
@@ -55,13 +71,16 @@ export function AppScreen({
   const dismissNotice = useAuthStore((state) => state.dismissNotice);
   const bottomOffset =
     scrollProps?.bottomOffset ??
-    (stickyFooter ? minimumTouchTarget + spacing.xl + spacing.sm : spacing.md);
+    (stickyFooter ? footerHeight + sizing.gutter : sizing.gutter);
   const content = scroll ? (
     <KeyboardAwareScrollView
       {...scrollProps}
+      testID="app-screen-scroll"
       bottomOffset={bottomOffset}
       contentContainerStyle={[
-        styles.content,
+        responsive.content,
+        { gap: sizing.sectionGap },
+        !stickyFooter && { paddingBottom: sizing.sectionGap + bottomInset },
         contentStyle,
         scrollProps?.contentContainerStyle,
       ]}
@@ -71,7 +90,7 @@ export function AppScreen({
       showsVerticalScrollIndicator={
         scrollProps?.showsVerticalScrollIndicator ?? false
       }
-      style={[styles.flex, scrollProps?.style]}
+      style={[responsive.flex, scrollProps?.style]}
     >
       {children}
     </KeyboardAwareScrollView>
@@ -79,51 +98,82 @@ export function AppScreen({
     <KeyboardAvoidingView
       automaticOffset
       behavior="padding"
-      style={styles.flex}
+      style={responsive.flex}
     >
-      <View style={[styles.content, styles.flex, contentStyle]}>
+      <View style={[responsive.content, responsive.flex, contentStyle]}>
         {children}
       </View>
     </KeyboardAvoidingView>
   );
 
   return (
-    <SafeAreaView edges={["top"]} style={styles.safe}>
+    <SafeAreaView edges={["top"]} style={responsive.safe}>
       {authenticated && tenantContext ? <SyncBar /> : null}
       {authenticated && tenantContext && tenant ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Ganti bisnis. Bisnis aktif: ${tenant.name}`}
           onPress={() => router.push("/contexts")}
-          style={styles.tenantBanner}
+          style={[responsive.tenantBanner, { minHeight: minimumTouchTarget }]}
         >
-          <Text style={styles.tenantName}>{tenant.name} · Ganti bisnis</Text>
+          <Text style={responsive.tenantName}>
+            {tenant.name} · Ganti bisnis
+          </Text>
         </Pressable>
       ) : null}
       {authenticated && sandbox ? (
-        <View accessibilityRole="alert" style={styles.sandboxBanner}>
-          <Text style={styles.sandboxBannerText}>
+        <View accessibilityRole="alert" style={responsive.sandboxBanner}>
+          <Text style={responsive.sandboxBannerText}>
             MODE UJI — DATA TIDAK MASUK LAPORAN PRODUKSI
           </Text>
         </View>
       ) : null}
       {authenticated && notice ? (
-        <View accessibilityRole="alert" style={styles.recoveryNotice}>
-          <Text style={styles.recoveryNoticeText}>{notice}</Text>
+        <View accessibilityRole="alert" style={responsive.recoveryNotice}>
+          <Text style={responsive.recoveryNoticeText}>{notice}</Text>
           <Pressable
             accessibilityLabel="Tutup pemberitahuan"
             accessibilityRole="button"
             hitSlop={spacing.sm}
+            style={responsive.dismissTarget}
             onPress={() => void dismissNotice().catch(() => undefined)}
           >
-            <Text style={styles.recoveryNoticeDismiss}>Tutup</Text>
+            <Text style={responsive.recoveryNoticeDismiss}>Tutup</Text>
           </Pressable>
         </View>
       ) : null}
       {content}
       {stickyFooter ? (
         <KeyboardStickyView>
-          <View style={styles.footer}>{stickyFooter}</View>
+          <View
+            testID="app-screen-sticky-footer"
+            onLayout={(event) =>
+              setFooterHeight(event.nativeEvent.layout.height)
+            }
+            style={responsive.footer}
+          >
+            <ScrollView
+              testID="app-screen-footer-scroll"
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+              style={{
+                flexGrow: 0,
+                maxHeight: Math.max(
+                  96,
+                  (height - insets.top - insets.bottom) * 0.45,
+                ),
+              }}
+              contentContainerStyle={[
+                responsive.footerContent,
+                {
+                  padding: sizing.gutter,
+                  paddingBottom: sizing.gutter + bottomInset,
+                },
+              ]}
+            >
+              {stickyFooter}
+            </ScrollView>
+          </View>
         </KeyboardStickyView>
       ) : null}
     </SafeAreaView>
@@ -147,16 +197,28 @@ const styles = StyleSheet.create({
   },
   flex: { flex: 1 },
   content: {
+    width: "100%",
+    maxWidth: 600,
+    alignSelf: "center",
     padding: spacing.md,
     paddingBottom: spacing.xl,
     gap: spacing.md,
   },
   footer: {
-    padding: spacing.md,
-    paddingBottom: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.outline,
     backgroundColor: colors.card,
+  },
+  footerContent: {
+    width: "100%",
+    maxWidth: 600,
+    alignSelf: "center",
+  },
+  dismissTarget: {
+    minHeight: minimumTouchTarget,
+    minWidth: minimumTouchTarget,
+    alignItems: "center",
+    justifyContent: "center",
   },
   sandboxBanner: {
     minHeight: 34,

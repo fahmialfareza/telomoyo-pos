@@ -1,3 +1,7 @@
+import {
+  useResponsiveStyles,
+  useResponsiveTextStyles,
+} from "@/theme/responsive";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StyleSheet, Text } from "react-native";
 
@@ -10,6 +14,8 @@ import { colors, spacing, textStyles } from "@/theme/tokens";
 import { displayTransactionId } from "@/utils/format";
 
 export default function PrintFailureScreen() {
+  const responsive = useResponsiveStyles(styles);
+  const responsiveText = useResponsiveTextStyles();
   const { id, status, message } = useLocalSearchParams<{
     id: string;
     status?: string;
@@ -22,25 +28,25 @@ export default function PrintFailureScreen() {
   return (
     <AppScreen>
       <PageHeader back title="Masalah pencetakan" />
-      <Text style={[styles.symbol, uncertain && { color: colors.warning }]}>
+      <Text style={[responsive.symbol, uncertain && { color: colors.warning }]}>
         {uncertain ? "?" : "!"}
       </Text>
-      <Text style={styles.title}>
+      <Text style={responsive.title}>
         {uncertain
           ? "Hasil cetak tidak dapat dipastikan"
           : "Struk gagal dicetak"}
       </Text>
-      <Text style={styles.subtitle}>
+      <Text style={responsive.subtitle}>
         Penjualan {displayTransactionId(id, session?.dataMode ?? "production")}{" "}
         tetap tersimpan. Kegagalan printer tidak pernah membatalkan transaksi.
       </Text>
-      <Card style={styles.card}>
-        <Text style={textStyles.label}>DETAIL PRINTER</Text>
-        <Text style={styles.message}>
+      <Card style={responsive.card}>
+        <Text style={responsiveText.label}>DETAIL PRINTER</Text>
+        <Text style={responsive.message}>
           {message ?? "Tidak ada detail tambahan."}
         </Text>
         {uncertain ? (
-          <Text style={styles.warning}>
+          <Text style={responsive.warning}>
             Periksa kertas terlebih dahulu. Sistem tidak mencoba ulang otomatis
             agar struk tidak tercetak ganda.
           </Text>

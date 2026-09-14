@@ -1,5 +1,6 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
+import { Keyboard } from "react-native";
 
 import HistoryScreen from "@/app/(app)/(tabs)/history";
 
@@ -120,11 +121,20 @@ jest.mock("@/components/ui/Button", () => {
     Button: ({
       children,
       onPress,
+      accessibilityLabel,
+      accessibilityState,
     }: {
       children: ReactNode;
       onPress: () => void;
+      accessibilityLabel?: string;
+      accessibilityState?: { expanded?: boolean };
     }) => (
-      <Pressable accessibilityRole="button" onPress={onPress}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityState={accessibilityState}
+        onPress={onPress}
+      >
         <Text>{children}</Text>
       </Pressable>
     ),
@@ -197,6 +207,123 @@ describe("History date and month filters", () => {
         to: "2026-07-25T17:00:00.000Z",
       });
     });
+  });
+
+  it("starts collapsed and retains both draft and applied search when hidden", async () => {
+    const dismiss = jest.spyOn(Keyboard, "dismiss");
+    const screen = render(<HistoryScreen />);
+    await waitFor(() => expect(mockListTransactions).toHaveBeenCalledTimes(1));
+    expect(
+      screen.queryByPlaceholderText("ID transaksi atau nama kasir"),
+    ).toBeNull();
+    fireEvent.press(
+      screen.getByRole("button", { name: "Tampilkan pencarian" }),
+    );
+    const field = screen.getByPlaceholderText("ID transaksi atau nama kasir");
+    fireEvent.changeText(field, "  Andi  ");
+    expect(mockListTransactions).toHaveBeenCalledTimes(1);
+    fireEvent(field, "submitEditing");
+    await waitFor(() =>
+      expect(mockListTransactions).toHaveBeenLastCalledWith(
+        expect.objectContaining({ search: "Andi" }),
+      ),
+    );
+
+    fireEvent.changeText(field, "draft belum diterapkan");
+    const callsBeforeCollapse = mockListTransactions.mock.calls.length;
+    fireEvent.press(
+      screen.getByRole("button", { name: "Sembunyikan pencarian" }),
+    );
+    expect(
+      screen.queryByPlaceholderText("ID transaksi atau nama kasir"),
+    ).toBeNull();
+    expect(screen.getByText("Pencarian: Andi")).toBeTruthy();
+    expect(mockListTransactions).toHaveBeenCalledTimes(callsBeforeCollapse);
+    expect(dismiss).toHaveBeenCalled();
+
+    fireEvent.press(
+      screen.getByRole("button", { name: "Tampilkan pencarian" }),
+    );
+    expect(
+      screen.getByPlaceholderText("ID transaksi atau nama kasir").props.value,
+    ).toBe("draft belum diterapkan");
+    fireEvent.press(
+      screen.getByRole("button", { name: "Sembunyikan pencarian" }),
+    );
+    fireEvent.press(
+      screen.getByRole("button", { name: "Hapus pencarian Andi" }),
+    );
+    await waitFor(() =>
+      expect(mockListTransactions).toHaveBeenLastCalledWith({
+        limit: 21,
+        from: "2026-08-01T17:00:00.000Z",
+        to: "2026-08-02T17:00:00.000Z",
+      }),
+    );
+    expect(screen.queryByText("Pencarian: Andi")).toBeNull();
+    fireEvent.press(
+      screen.getByRole("button", { name: "Tampilkan pencarian" }),
+    );
+    expect(
+      screen.getByPlaceholderText("ID transaksi atau nama kasir").props.value,
+    ).toBe("");
+    dismiss.mockRestore();
+  });
+
+  it("keeps a hidden search applied to pages and month changes, resetting the cursor", async () => {
+    const rows = transactionRows(21);
+    mockListTransactions.mockImplementation(
+      ({ beforeId }: { beforeId?: string }) =>
+        Promise.resolve(
+          beforeId
+            ? rows.slice(rows.findIndex((row) => row.id === beforeId) + 1)
+            : rows,
+        ),
+    );
+    const screen = render(<HistoryScreen />);
+    await waitFor(() => expect(mockListTransactions).toHaveBeenCalledTimes(1));
+    fireEvent.press(
+      screen.getByRole("button", { name: "Tampilkan pencarian" }),
+    );
+    const field = screen.getByPlaceholderText("ID transaksi atau nama kasir");
+    fireEvent.changeText(field, "TX-123");
+    fireEvent(field, "submitEditing");
+    await waitFor(() => expect(mockListTransactions).toHaveBeenCalledTimes(2));
+    fireEvent.press(
+      screen.getByRole("button", { name: "Sembunyikan pencarian" }),
+    );
+    fireEvent.press(
+      screen.getByRole("button", { name: "Muat transaksi berikutnya" }),
+    );
+    await waitFor(() =>
+      expect(mockListTransactions).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          search: "TX-123",
+          beforeId: rows[19]?.id,
+          beforeOccurredAt: rows[19]?.occurredAt,
+        }),
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.getByText("transaction-21")).toBeTruthy(),
+    );
+    expect(screen.getAllByText("transaction-01")).toHaveLength(1);
+    fireEvent.press(screen.getByRole("button", { name: "Pilih mode bulan" }));
+    fireEvent.press(
+      screen.getByRole("button", { name: "Gunakan bulan Juni 2026" }),
+    );
+    await waitFor(() =>
+      expect(mockListTransactions).toHaveBeenLastCalledWith({
+        limit: 21,
+        search: "TX-123",
+        from: "2026-05-31T17:00:00.000Z",
+        to: "2026-06-30T17:00:00.000Z",
+      }),
+    );
+    expect(
+      screen.queryByPlaceholderText("ID transaksi atau nama kasir"),
+    ).toBeNull();
+    expect(screen.getByText("Pencarian: TX-123")).toBeTruthy();
   });
 
   it("queries the exact selected Jakarta month", async () => {
