@@ -1,6 +1,5 @@
-import { useLocalSearchParams } from "expo-router";
-import { ManagedUserEditor } from "@/tenant/screens";
+import { Redirect, useLocalSearchParams } from "expo-router";
 export default function EditManagedUserScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return <ManagedUserEditor key={id} id={id} />;
+  return <Redirect href={{ pathname: "/(app)/(tabs)/users", params: { userId: id } }} />;
 }

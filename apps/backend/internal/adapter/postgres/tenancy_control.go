@@ -44,7 +44,7 @@ func lockControlAccount(ctx context.Context, tx pgx.Tx, actor domain.Principal, 
 	if err != nil {
 		return err
 	}
-	if !active || platform && (!admin || actor.ContextKind != domain.ContextAccount) {
+	if !active || platform && (!admin || (actor.ContextKind != domain.ContextAccount && actor.ContextKind != domain.ContextTenant)) {
 		return domain.NewError(domain.CodeForbidden, "Masuk ke pengelolaan organisasi sebagai Superadmin")
 	}
 	if mustChange {

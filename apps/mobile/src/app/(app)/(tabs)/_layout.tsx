@@ -1,7 +1,6 @@
 import { Tabs } from "expo-router";
 
 import { useAuth } from "@/auth/AuthProvider";
-import { useContextNavigation } from "@/navigation/context-navigation";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWindowDimensions } from "react-native";
 import { useResponsiveSizing } from "@/theme/responsive";
@@ -22,15 +21,17 @@ const tabs: {
 
 export default function TabsLayout() {
   const { session } = useAuth();
-  const navigation = useContextNavigation();
   const insets = useSafeAreaInsets();
   const { fontScale } = useWindowDimensions();
   const sizing = useResponsiveSizing();
 
   return (
     <Tabs
+      key={session?.sessionId}
+      initialRouteName={session?.contextKind === "account" ? "users" : "home"}
       screenOptions={{
         headerShown: false,
+        lazy: true,
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
@@ -55,17 +56,6 @@ export default function TabsLayout() {
         <Tabs.Screen
           key={tab.name}
           name={tab.name}
-          listeners={
-            tab.name === "users"
-              ? {
-                  tabPress: (event) => {
-                    event.preventDefault();
-                    if (!navigation.busy)
-                      void navigation.openManagement("/management/users");
-                  },
-                }
-              : {}
-          }
           options={{
             title: tab.title,
             ...(tab.name === "users" && session?.user.role !== "superadmin"

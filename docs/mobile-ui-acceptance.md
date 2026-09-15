@@ -2,7 +2,9 @@
 
 Scope: consistent sizing and clearer workflows for Telomoyo POS. Roboto,
 branding, permissions, payment rules, synchronization contracts, encrypted
-storage identifiers, and printed receipt formatting remain unchanged.
+storage identifiers, and receipt content/layout remain unchanged. Physical
+ESC/POS output now enables bold emphasis for readability without changing
+character width or requesting model-specific heat/density settings.
 
 ## Automated verification
 
@@ -43,21 +45,28 @@ authorized. Payment confirmation remains manual.
       reachable. Scroll oversized footer groups and confirm no covered content
       or duplicated tab-bar/bottom-safe-area spacing.
 - [ ] Open Pengguna by pressing its tab as Superadmin. Confirm the staff
-      directory opens in account context without business tabs. Verify loading,
-      empty, no-results, retry, account editor, and compact create form states.
-- [ ] Attempt management entry offline, with unresolved sync, and while
-      printing. Verify persistent Indonesian feedback, explicit retry/Pusat
-      Sinkron, no automatic retry after remount, and preserved pending evidence.
-- [ ] Use Kembali ke bisnis and Android Back from management roots: re-enter the
-      authorized previous business in Production, or open the chooser. Nested
-      editor Back stays inside management. Continuing the selected healthy
+      directory appears immediately inside the Pengguna bottom tab without a
+      context exchange or terminal-enrollment flash. Create, edit, cancel, and password recovery
+      must keep the tab bar visible. Verify loading, empty, no-results, icon
+      refresh/retry, and whole-row account opening.
+- [ ] Open Kelola tenant from Pengaturan. Confirm it remains under the
+      Pengaturan tab, Back returns to the settings menu, and neither direction
+      exchanges context or shows the mode-operation loader.
+- [ ] Nested user-editor Back first returns to the in-tab directory. Tapping
+      Beranda, Transaksi, Riwayat, or Pengaturan from Pengguna opens that tab
+      directly without showing terminal enrollment or changing the active mode.
+      failed returns must remain blocked with retry feedback. Continuing the selected healthy
       business in the chooser must retain its session and Sandbox mode.
+- [ ] Check Pilih bisnis and Pengelolaan use Settings-style rows and header
+      refresh icons, without an Akun saya section. Confirm active selection,
+      disabled/inactive businesses, and refresh loading states are clear.
 - [ ] Check tenant list-first editing, one expanded editor, explicit save/cancel,
       creation restrictions, activate/suspend confirmations, immutable codes,
       separate receipt identity, and absence of tenant deletion.
-- [ ] Open Ubah kata sandi from both account and business navigation, including
-      an account without a business. Check forced-password-change and Sandbox
-      restrictions and show/hide toggles on every password field.
+- [ ] Open the independent Ganti kata sandi screen from Pengaturan. Akun saya
+      must contain no duplicate password section or button. Check direct
+      authenticated password-screen access without a business, forced-password
+      changes, Sandbox restrictions, and show/hide toggles on password fields.
 - [ ] Reveal history search, submit, edit an unapplied draft, and hide it. Verify
       the applied chip remains, pagination/date/month retain the query, reopening
       retains the draft, and chip removal clears the query and resets paging.
@@ -73,9 +82,16 @@ authorized. Payment confirmation remains manual.
       payment for the current revision. Cetak nanti remains outlined and returns
       to history; successful printing offers Home and Copy.
 - [ ] Compare 32- and 48-column preview/simulator output with Bluetooth and
-      integrated MPOS prints. Confirm unchanged Production output, Sandbox
+      integrated MPOS prints. Confirm unchanged Production content/layout, Sandbox
       warnings/amounts, copy markers, frozen receipt identity, and simulator
       wording. Preview alone must not create a print attempt.
+- [ ] Print both widths with Production and Sandbox test records. Verify every
+      printed line is bolder and readable, including cashier, items, amounts,
+      and warnings; the following print must not inherit stale alignment or
+      emphasis. If still faint, inspect printer-specific density, paper, power,
+      and printhead condition separately. Do not assume a universal density
+      command works on every MPOS. The integrated adapter requires its actual
+      vendor SDK; automated byte tests do not establish hardware compatibility.
 - [ ] Attempt context switching/Back during a physical print, then test success,
       failure, and uncertain results. Confirm the print barrier covers the whole
       hardware attempt and no receipt is attributed to a different business.

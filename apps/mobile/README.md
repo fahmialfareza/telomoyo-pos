@@ -54,6 +54,23 @@ the [mobile UI acceptance checklist](../../docs/mobile-ui-acceptance.md). Native
 keyboard, footer placement, and Bluetooth/integrated MPOS printing still need
 device acceptance in addition to the automated suite.
 
+## Staff management navigation
+
+Pengguna stays in the bottom tab for the directory, account creation, role/status
+editing, and password recovery, and **Kelola tenant** stays under Pengaturan.
+Organization management is authorized for an active Superadmin account or a
+selected-business session, so opening those tabs neither exchanges context, shows
+a terminal-enrollment flash, nor switches the active business or its database.
+The retired platform permission remains rejected.
+
+Legacy `/management/users` routes redirect into the tab. The Pilih bisnis chooser
+still exchanges into account context through the online sync/outbox drain and
+physical-print barrier, remembers the previous business for Back, and keeps
+explicit retry feedback. Moving between bottom tabs keeps the current authorized
+tenant. Account-profile editing has no duplicate password action; the independent
+password screen remains in Settings and preserves forced-password-change and
+Sandbox restrictions.
+
 ## Printer boundary
 
 The local Expo module exposes integrated and Bluetooth adapter boundaries plus a
@@ -62,3 +79,9 @@ semantics, and device identifiers must be supplied for the selected MPOS model
 before physical acceptance. Every attempted print is stored with
 pending/success/failed/unknown state so an uncertain hardware result is never
 silently treated as success.
+
+The shared ESC/POS encoder uses emphasized (bold) text for the entire receipt,
+then restores normal emphasis and left alignment before cutting. Receipt text,
+paper columns, payment-success gating, Sandbox labels, and copy attribution are
+unchanged. Physical darkness still depends on the printer, paper, and device
+settings; no vendor-specific heating/density command is issued.

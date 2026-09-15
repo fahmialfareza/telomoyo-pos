@@ -9,7 +9,7 @@ import {
   managedPasswordError,
   managedUsernameError,
 } from "@/tenant/screens";
-import type { UserSummary } from "@/domain/types";
+import type { Session, UserSummary } from "@/domain/types";
 import { SERVER_UNREACHABLE_MESSAGE } from "@/utils/errors";
 
 const mockApiRequest = jest.fn();
@@ -24,6 +24,7 @@ function resetManagementMocks() {
   // loads its generated view lazily, after beforeEach; resetAllMocks clears the
   // preset's registry factories and turns that native boundary into undefined.
   jest.clearAllMocks();
+  mockSession = accountSession;
   [
     mockApiRequest,
     mockRouterPush,
@@ -67,30 +68,57 @@ const loadedUser: UserSummary = {
   mustChangePassword: false,
 };
 
+const accountSession: Session = {
+  token: "session-token",
+  sessionId: "account-session",
+  contextKind: "account",
+  tenantId: null,
+  dataMode: "production",
+  dataSpaceId: null,
+  sandboxGeneration: null,
+  establishedAt: "2026-09-16T00:00:00Z",
+  user: sessionUser,
+};
+
+const selectedBusinessSession: Session = {
+  ...accountSession,
+  token: "tenant-token",
+  sessionId: "tenant-session",
+  contextKind: "tenant",
+  tenantId: "tenant-a",
+  dataSpaceId: "production-a",
+};
+
+const retiredPlatformSession: Session = {
+  ...accountSession,
+  token: "platform-token",
+  sessionId: "platform-session",
+  contextKind: "platform",
+};
+
+let mockSession: Session | null = accountSession;
+
 jest.mock("@/api/client", () => ({
   apiRequest: (...args: unknown[]) => mockApiRequest(...args),
 }));
 
 jest.mock("@/auth/AuthProvider", () => ({
-  useAuth: () => ({
-    session: {
-      token: "session-token",
-      dataMode: "production",
-      contextKind: "account",
-      user: sessionUser,
-    },
-  }),
+  useAuth: () => ({ session: mockSession }),
 }));
 
 jest.mock("expo-router", () => {
   const React = jest.requireActual<typeof import("react")>("react");
+  const { Text } =
+    jest.requireActual<typeof import("react-native")>("react-native");
   return {
     useRouter: () => ({
       push: mockRouterPush,
       back: mockRouterBack,
       replace: mockRouterReplace,
     }),
-    Redirect: () => null,
+    Redirect: ({ href }: { href: string | { pathname: string } }) => (
+      <Text>{typeof href === "string" ? href : href.pathname}</Text>
+    ),
     useLocalSearchParams: () => ({ id: loadedUser.id }),
     useFocusEffect: (effect: () => void | (() => void)) =>
       React.useEffect(effect, [effect]),
@@ -108,12 +136,19 @@ jest.mock("@/components/layout/AppScreen", () => {
 });
 
 jest.mock("@/components/layout/PageHeader", () => {
-  const { Text } =
+  const { Text, View } =
     jest.requireActual<typeof import("react-native")>("react-native");
   return {
-    PageHeader: ({ title }: { title: string }) => <Text>{title}</Text>,
+    PageHeader: ({ title, right }: { title: string; right?: ReactNode }) => (
+      <View>
+        <Text>{title}</Text>
+        {right}
+      </View>
+    ),
   };
 });
+
+jest.mock("@/components/ui/Icon", () => ({ Icon: () => null }));
 
 jest.mock("@/components/ui/Card", () => {
   const { View } =
@@ -294,15 +329,16 @@ describe("management directory and account forms", () => {
     fireEvent.press(screen.getByRole("button", { name: "Hapus pencarian" }));
     fireEvent.press(
       screen.getByRole("button", {
-        name: `Kelola akun ${loadedUser.fullName}`,
+        name: `Kelola akun ${loadedUser.fullName}. Admin. Aktif`,
       }),
     );
     expect(mockRouterPush).toHaveBeenCalledWith({
-      pathname: "/management/users/[id]",
-      params: { id: loadedUser.id },
+      pathname: "/users",
+      params: { userId: loadedUser.id },
     });
-    fireEvent.press(screen.getByRole("button", { name: "Kembali ke bisnis" }));
-    expect(mockReturnToBusiness).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("button", { name: "Kembali ke bisnis" }),
+    ).toBeNull();
   });
 
   it("distinguishes an empty directory from no matching search results", async () => {
@@ -357,7 +393,7 @@ describe("management directory and account forms", () => {
     );
     fireEvent.press(create);
     await waitFor(() =>
-      expect(mockRouterReplace).toHaveBeenCalledWith("/management/users"),
+      expect(mockRouterReplace).toHaveBeenCalledWith("/users"),
     );
     expect(mockApiRequest).toHaveBeenCalledTimes(1);
     expect(mockApiRequest).toHaveBeenCalledWith("/management/users", {
@@ -491,13 +527,15 @@ describe("tenant management", () => {
     await waitFor(() => expect(screen.getByText("Bisnis A")).toBeTruthy());
     expect(screen.queryByLabelText("Nama bisnis")).toBeNull();
     fireEvent.press(
-      screen.getByRole("button", { name: "Kelola bisnis Bisnis A" }),
+      screen.getByRole("button", { name: "Kelola bisnis Bisnis A. Aktif" }),
     );
     expect(screen.getByLabelText("Nama pengelolaan bisnis").props.value).toBe(
       "Bisnis A",
     );
     fireEvent.press(
-      screen.getByRole("button", { name: "Kelola bisnis Bisnis B" }),
+      screen.getByRole("button", {
+        name: "Kelola bisnis Bisnis B. Menunggu aktivasi",
+      }),
     );
     expect(screen.getAllByLabelText("Nama pengelolaan bisnis")).toHaveLength(1);
     expect(screen.getByLabelText("Nama pengelolaan bisnis").props.value).toBe(
@@ -531,7 +569,7 @@ describe("tenant management", () => {
     await waitFor(() => expect(screen.getByText("Bisnis A")).toBeTruthy());
     expect(screen.queryByRole("button", { name: "Tambah bisnis" })).toBeNull();
     fireEvent.press(
-      screen.getByRole("button", { name: "Kelola bisnis Bisnis A" }),
+      screen.getByRole("button", { name: "Kelola bisnis Bisnis A. Aktif" }),
     );
     fireEvent.press(screen.getByRole("button", { name: "Tangguhkan bisnis" }));
     expect(mockConfirm).toHaveBeenCalledWith(
@@ -553,5 +591,92 @@ describe("tenant management", () => {
         body: { status: "suspended" },
       }),
     );
+  });
+});
+
+describe("selected-business organization management", () => {
+  beforeEach(() => {
+    resetManagementMocks();
+    mockSession = selectedBusinessSession;
+    mockApiRequest.mockResolvedValue([loadedUser]);
+  });
+
+  it("loads the Pengguna directory from the active business session", async () => {
+    const screen = render(<UsersScreen />);
+    await waitFor(() => expect(screen.getByText("Admin Toko")).toBeTruthy());
+    expect(screen.queryByText("/contexts")).toBeNull();
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      "/management/users",
+      expect.objectContaining({ token: "tenant-token" }),
+    );
+  });
+
+  it("creates and edits accounts from the active business session", async () => {
+    const create = render(<ManagedUserCreateScreen />);
+    fireEvent.changeText(create.getByLabelText("Nama lengkap"), "Kasir Baru");
+    fireEvent.changeText(create.getByLabelText("Nama pengguna"), "admin.baru");
+    fireEvent.changeText(
+      create.getByLabelText("Kata sandi sementara"),
+      "temporary-password",
+    );
+    fireEvent.press(create.getByRole("button", { name: "Buat akun" }));
+    await waitFor(() =>
+      expect(mockRouterReplace).toHaveBeenCalledWith("/users"),
+    );
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      "/management/users",
+      expect.objectContaining({ method: "POST", token: "tenant-token" }),
+    );
+    create.unmount();
+
+    mockApiRequest.mockClear();
+    mockApiRequest.mockResolvedValueOnce(loadedUser);
+    const editor = render(<ManagedUserEditor id={loadedUser.id} />);
+    await waitFor(() =>
+      expect(editor.getByText("Akses pengguna")).toBeTruthy(),
+    );
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      `/management/users/${loadedUser.id}`,
+      expect.objectContaining({ token: "tenant-token" }),
+    );
+  });
+
+  it("keeps Kelola tenant inside the active business session", async () => {
+    mockApiRequest.mockImplementation((path: string) =>
+      Promise.resolve(
+        path === "/auth/contexts"
+          ? { tenantProvisioningEnabled: true }
+          : [
+              {
+                id: "tenant-a",
+                name: "Bisnis A",
+                slug: "bisnis-a",
+                status: "active",
+                revision: 1,
+              },
+            ],
+      ),
+    );
+    const screen = render(<ManagedTenantsScreen />);
+    await waitFor(() => expect(screen.getByText("Bisnis A")).toBeTruthy());
+    expect(screen.queryByText("/contexts")).toBeNull();
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      "/management/tenants",
+      expect.objectContaining({ token: "tenant-token" }),
+    );
+  });
+
+  it("rejects the retired platform context without requesting organization data", () => {
+    mockSession = retiredPlatformSession;
+    const screen = render(<UsersScreen />);
+    expect(screen.getByText("/contexts")).toBeTruthy();
+    expect(mockApiRequest).not.toHaveBeenCalled();
+  });
+
+  it("rejects a signed-out session", () => {
+    mockSession = null;
+    const screen = render(<UsersScreen />);
+    expect(screen.getByText("/contexts")).toBeTruthy();
+    expect(mockApiRequest).not.toHaveBeenCalled();
   });
 });

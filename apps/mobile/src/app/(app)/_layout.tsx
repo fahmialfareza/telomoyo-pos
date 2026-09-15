@@ -1,8 +1,11 @@
-import { Redirect, Stack } from "expo-router";
+import { Redirect, Stack, useSegments } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 import { useAuth } from "@/auth/AuthProvider";
-import { useContextNavigationStore } from "@/navigation/context-navigation-store";
+import {
+  isUsersTabContextTransition,
+  useContextNavigationStore,
+} from "@/navigation/context-navigation-store";
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
@@ -10,14 +13,18 @@ import {
 import { colors, spacing, textStyles } from "@/theme/tokens";
 
 export default function ProtectedLayout() {
+  const segments = useSegments() as string[];
   const styles = useResponsiveStyles(baseStyles);
   const textStyles = useResponsiveTextStyles();
   const pendingNavigation = useContextNavigationStore(
     (state) => state.status === "running" || state.status === "ready",
   );
+  const usersTabTransition = useContextNavigationStore(
+    isUsersTabContextTransition,
+  );
   const { bootError, booting, session, terminalEnrolled, scopeLocked } =
     useAuth();
-  if (booting || pendingNavigation) return null;
+  if (booting || (pendingNavigation && !usersTabTransition)) return null;
   if (bootError) {
     return (
       <View style={styles.failure}>
@@ -34,13 +41,21 @@ export default function ProtectedLayout() {
   if (session.user.mustChangePassword) {
     return <Redirect href="/(auth)/change-password" />;
   }
+  // Account management may use the bottom-tab shell without opening a
+  // business database. Every other business route still requires a tenant
+  // session and its own valid terminal enrollment.
+  const accountUsersTab =
+    session.contextKind === "account" &&
+    session.user.role === "superadmin" &&
+    segments[segments.indexOf("(tabs)") + 1] === "users" &&
+    segments.includes("(tabs)");
   if (
     scopeLocked ||
-    (session.contextKind && session.contextKind !== "tenant")
+    (session.contextKind && session.contextKind !== "tenant" && !accountUsersTab)
   ) {
     return <Redirect href="/contexts" />;
   }
-  if (!terminalEnrolled) {
+  if (!accountUsersTab && !terminalEnrolled) {
     return <Redirect href="/(auth)/terminal-enrollment" />;
   }
   return (

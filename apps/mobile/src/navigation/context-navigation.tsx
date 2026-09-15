@@ -21,13 +21,23 @@ import {
   resetContextNavigation,
   useContextNavigationStore,
   type ManagementPath,
+  type BusinessTabPath,
+  type ContextNavigationIntent,
 } from "./context-navigation-store";
 
 const openManagement = (path: ManagementPath) =>
   navigateContext({ kind: "management", path });
 const openBusiness = (tenantId: string) =>
   navigateContext({ kind: "business", tenantId });
-const returnToBusiness = () => navigateContext({ kind: "return" });
+const returnToBusiness = (
+  path?: BusinessTabPath,
+  source?: Extract<ContextNavigationIntent, { kind: "return" }>["source"],
+) =>
+  navigateContext({
+    kind: "return",
+    ...(path ? { path } : {}),
+    ...(source ? { source } : {}),
+  });
 
 export function useContextNavigation() {
   const running = useContextNavigationStore(

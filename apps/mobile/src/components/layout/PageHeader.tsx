@@ -13,6 +13,7 @@ interface PageHeaderProps {
   title: string;
   subtitle?: string;
   back?: boolean;
+  onBack?: (() => void) | undefined;
   right?: React.ReactNode;
 }
 
@@ -20,6 +21,7 @@ export function PageHeader({
   title,
   subtitle,
   back = false,
+  onBack,
   right,
 }: PageHeaderProps) {
   const responsive = useResponsiveStyles(styles);
@@ -32,7 +34,7 @@ export function PageHeader({
         <Pressable
           accessibilityLabel="Kembali"
           accessibilityRole="button"
-          onPress={() => router.back()}
+          onPress={onBack ?? (() => router.back())}
           style={responsive.back}
         >
           <Icon color={colors.primary} name="arrow-left" />

@@ -113,7 +113,10 @@ export function encodeEscPos(
   const boldOn = Uint8Array.from([0x1b, 0x45, 0x01]);
   const boldOff = Uint8Array.from([0x1b, 0x45, 0x00]);
   const cut = Uint8Array.from([0x1d, 0x56, 0x41, 0x00]);
-  const chunks: Uint8Array[] = [initialize];
+  // Emphasize every line without increasing character width/height, so both
+  // paper widths retain the same text layout. Starting each job with ESC @
+  // also clears any emphasis/alignment left by an interrupted earlier print.
+  const chunks: Uint8Array[] = [initialize, leftAlign, boldOn];
   for (const line of formatReceipt(document, columns).split("\n")) {
     const warning =
       document.dataMode === "sandbox" &&
@@ -122,16 +125,16 @@ export function encodeEscPos(
     if (warning) {
       chunks.push(
         centerAlign,
-        boldOn,
         encodePrinterText(`${line.trim()}\n`),
-        boldOff,
         leftAlign,
       );
     } else {
       chunks.push(encodePrinterText(`${line}\n`));
     }
   }
-  chunks.push(cut);
+  // Leave the printer in its normal text state for the next job. Do not use
+  // model-specific heat/density commands: their ranges vary by hardware.
+  chunks.push(boldOff, leftAlign, cut);
 
   const result = new Uint8Array(
     chunks.reduce((length, chunk) => length + chunk.length, 0),

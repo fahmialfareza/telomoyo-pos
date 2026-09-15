@@ -96,8 +96,50 @@ describe("thermal receipt", () => {
     const bytes = Array.from(encodeEscPos(sandboxReceipt, 48));
     const doubleHeightCommand = [0x1d, 0x21, 0x10];
     expect(countByteSequence(bytes, doubleHeightCommand)).toBe(0);
-    expect(countByteSequence(bytes, [0x1b, 0x45, 0x01])).toBe(2);
+    expect(countByteSequence(bytes, [0x1b, 0x45, 0x01])).toBe(1);
   });
+
+  it.each([
+    ["production", 32],
+    ["production", 48],
+    ["sandbox", 32],
+    ["sandbox", 48],
+  ] as const)(
+    "emphasizes every %s receipt line at %s columns and resets before cutting",
+    (dataMode, columns) => {
+      const document = { ...receipt, dataMode, isCopy: true };
+      const bytes = Array.from(encodeEscPos(document, columns));
+      expect(bytes.slice(0, 8)).toEqual([
+        0x1b, 0x40, // initialize: reset a prior interrupted job
+        0x1b, 0x61, 0x00, // left alignment
+        0x1b, 0x45, 0x01, // emphasis on before the first printed character
+      ]);
+      expect(bytes.slice(-10)).toEqual([
+        0x1b, 0x45, 0x00, // emphasis off after all receipt content
+        0x1b, 0x61, 0x00, // left alignment
+        0x1d, 0x56, 0x41, 0x00, // cut
+      ]);
+      expect(countByteSequence(bytes, [0x1b, 0x45, 0x01])).toBe(1);
+      expect(countByteSequence(bytes, [0x1b, 0x45, 0x00])).toBe(1);
+
+      // Apart from the existing Sandbox warning centering commands, the
+      // emitted text is unchanged. No font size, width, or density changes.
+      const text = String.fromCharCode(...bytes)
+        .replace(/\x1b[@]/g, "")
+        .replace(/\x1b[\x61\x45][\x00\x01]/g, "")
+        .replace(/\x1d\x56\x41\x00/g, "");
+      const expected = formatReceipt(document, columns)
+        .split("\n")
+        .map((line) =>
+          dataMode === "sandbox" &&
+          ["TEST - MODE UJI", "BUKAN STRUK RESMI"].includes(line.trim())
+            ? line.trim()
+            : line,
+        )
+        .join("\n");
+      expect(text).toBe(`${expected}\n`);
+    },
+  );
 
   it.each([32, 48] as const)(
     "uses the full Sandbox total and fits %s columns without losing the TEST ID",

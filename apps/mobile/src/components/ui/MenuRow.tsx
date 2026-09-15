@@ -17,20 +17,36 @@ export function MenuRow({
   detail,
   onPress,
   destructive = false,
+  disabled = false,
+  selected = false,
+  accessibilityLabel,
+  status,
 }: {
   icon: IconName;
   title: string;
   detail?: string;
   onPress: () => void;
   destructive?: boolean;
+  disabled?: boolean;
+  selected?: boolean;
+  accessibilityLabel?: string;
+  status?: string;
 }) {
   const responsive = useResponsiveStyles(styles);
   const color = destructive ? colors.error : colors.primary;
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [responsive.row, pressed && responsive.pressed]}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled, selected }}
+      disabled={disabled}
+      onPress={disabled ? undefined : onPress}
+      style={({ pressed }) => [
+        responsive.row,
+        selected && responsive.selected,
+        pressed && responsive.pressed,
+        disabled && responsive.disabled,
+      ]}
     >
       <View style={responsive.icon}>
         <Icon color={color} name={icon} />
@@ -40,8 +56,12 @@ export function MenuRow({
           {title}
         </Text>
         {detail ? <Text style={responsive.detail}>{detail}</Text> : null}
+        {status ? <Text style={responsive.status}>{status}</Text> : null}
       </View>
-      <Icon color={colors.outline} name="chevron-right" />
+      <Icon
+        color={selected ? colors.primary : colors.textMuted}
+        name={selected ? "check-circle" : "chevron-right"}
+      />
     </Pressable>
   );
 }
@@ -64,12 +84,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  copy: { flex: 1 },
+  copy: { flex: 1, minWidth: 0, gap: 2 },
   title: {
     fontFamily: typography.bodyMedium,
     fontSize: 15,
     color: colors.text,
   },
   detail: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
+  status: { ...textStyles.label, color: colors.primary },
+  selected: { backgroundColor: colors.primarySoft },
+  disabled: { opacity: 0.5 },
   pressed: { backgroundColor: colors.surface },
 });

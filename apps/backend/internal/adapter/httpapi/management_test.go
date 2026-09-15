@@ -55,7 +55,7 @@ func TestOrganizationManagementRequiresReadyAccountSuperadmin(t *testing.T) {
 	}{
 		{"account superadmin", domain.ContextAccount, domain.RoleSuperadmin, false, http.StatusOK},
 		{"account admin", domain.ContextAccount, domain.RoleAdmin, false, http.StatusForbidden},
-		{"tenant superadmin", domain.ContextTenant, domain.RoleSuperadmin, false, http.StatusForbidden},
+		{"tenant superadmin", domain.ContextTenant, domain.RoleSuperadmin, false, http.StatusOK},
 		{"retired platform permission", domain.ContextPlatform, domain.RoleSuperadmin, false, http.StatusForbidden},
 		{"temporary password", domain.ContextAccount, domain.RoleSuperadmin, true, http.StatusForbidden},
 	} {

@@ -18,3 +18,18 @@ export function canCorrectTransaction(
 }
 
 export const canManageTransactionPayment = canCorrectTransaction;
+
+/**
+ * Organization-wide administration (Pengguna, Kelola tenant, audit) belongs to an
+ * active Superadmin session. The account context and a selected-business context
+ * both authorize it, so Pengguna opens inside the bottom tab without exchanging
+ * context or opening a business database. The retired platform permission stays
+ * rejected, matching the server contract.
+ */
+export function canManageOrganization(
+  session: Session | null | undefined,
+): session is Session {
+  if (!session) return false;
+  if (session.user.role !== "superadmin") return false;
+  return session.contextKind !== "platform";
+}

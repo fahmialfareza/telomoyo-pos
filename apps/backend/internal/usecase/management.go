@@ -20,7 +20,7 @@ func RequireManagement(p domain.Principal) error {
 	if err := RequireReady(p); err != nil {
 		return err
 	}
-	if p.ContextKind != domain.ContextAccount || !p.IsSuperadmin() {
+	if (p.ContextKind != domain.ContextAccount && p.ContextKind != domain.ContextTenant) || !p.IsSuperadmin() {
 		return domain.NewError(domain.CodeForbidden, "Pengelolaan organisasi hanya tersedia pada akun Superadmin")
 	}
 	return nil

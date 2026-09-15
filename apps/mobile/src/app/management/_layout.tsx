@@ -2,6 +2,7 @@ import { Redirect, Stack, useFocusEffect, usePathname } from "expo-router";
 import { useCallback } from "react";
 import { BackHandler } from "react-native";
 import { useAuth } from "@/auth/AuthProvider";
+import { canManageOrganization } from "@/domain/permissions";
 import { useContextNavigation } from "@/navigation/context-navigation";
 import { useContextNavigationStore } from "@/navigation/context-navigation-store";
 
@@ -31,12 +32,7 @@ export default function ManagementLayout() {
   if (!session) return <Redirect href="/(auth)/login" />;
   if (session.user.mustChangePassword)
     return <Redirect href="/(auth)/change-password" />;
-  if (
-    bootError ||
-    scopeLocked ||
-    session.contextKind !== "account" ||
-    session.user.role !== "superadmin"
-  )
+  if (bootError || scopeLocked || !canManageOrganization(session))
     return <Redirect href="/contexts" />;
   return (
     <Stack key={session.sessionId} screenOptions={{ headerShown: false }} />

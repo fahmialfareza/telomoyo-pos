@@ -93,11 +93,11 @@ it("allows a signed-in account without a business to use the independent passwor
   );
 });
 
-it("keeps profile focused on identity with a separate password link", () => {
+it("keeps profile focused on identity without a duplicate password action", () => {
   const screen = render(<ProfileScreen />);
   expect(screen.queryByTestId("password-form")).toBeNull();
-  fireEvent.press(screen.getByRole("button", { name: "Ganti kata sandi" }));
-  expect(mockPush).toHaveBeenCalledWith("/account-password");
+  expect(screen.queryByRole("button", { name: "Ganti kata sandi" })).toBeNull();
+  expect(mockPush).not.toHaveBeenCalled();
 });
 
 it("keeps Sandbox password changes locked", () => {

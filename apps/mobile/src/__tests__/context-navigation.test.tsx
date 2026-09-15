@@ -76,12 +76,12 @@ jest.mock("expo-router", () => {
     options,
   }: {
     name: string;
-    listeners: { tabPress?: (event: { preventDefault: () => void }) => void };
+    listeners?: { tabPress?: (event: { preventDefault: () => void }) => void };
     options: { href?: null };
   }) {
     return options.href === null ? null : (
       <Pressable
-        onPress={() => listeners.tabPress?.({ preventDefault: jest.fn() })}
+        onPress={() => listeners?.tabPress?.({ preventDefault: jest.fn() })}
       >
         <Text>{name}</Text>
       </Pressable>
@@ -167,17 +167,13 @@ beforeEach(() => {
   });
 });
 
-it("opens Pengguna only on explicit tab press and navigates after account exchange", async () => {
+it("opens Pengguna directly without exchanging the active tenant session", async () => {
   render(<TabsLayout />);
   expect(mockSwitchContext).not.toHaveBeenCalled();
   await act(async () => fireEvent.press(screen.getByText("users")));
-  expect(mockSwitchContext).toHaveBeenCalledWith("account");
-  expect(useContextNavigationStore.getState()).toMatchObject({
-    status: "ready",
-    destination: "/management/users",
-    destinationSessionId: "account-session",
-    previousTenantId: "tenant-a",
-  });
+  expect(mockSwitchContext).not.toHaveBeenCalled();
+  expect(useAuthStore.getState().session).toBe(original);
+  expect(useContextNavigationStore.getState().status).toBe("idle");
   expect(mockReplace).not.toHaveBeenCalled();
 });
 
@@ -189,26 +185,16 @@ it("does not expose the Pengguna tab to an Admin", () => {
   expect(screen.queryByText("users")).toBeNull();
 });
 
-it("blocks duplicate presses through the exchange and route commit", async () => {
-  const waiting = deferred();
-  mockSwitchContext.mockImplementationOnce(async () => {
-    await waiting.promise;
-    useAuthStore.setState({ session: account });
-  });
-  const first = navigateContext({
-    kind: "management",
-    path: "/management/users",
-  });
-  await navigateContext({ kind: "management", path: "/management/tenants" });
-  expect(mockSwitchContext).toHaveBeenCalledTimes(1);
-  waiting.resolve();
-  await first;
-  await navigateContext({ kind: "business", tenantId: "tenant-b" });
-  expect(mockSwitchContext).toHaveBeenCalledTimes(1);
-  expect(useContextNavigationStore.getState().destination).toBe(
-    "/management/users",
-  );
-});
+it.each(["home", "sell", "history", "settings"])(
+  "moves directly from Pengguna to the %s tab without a context exchange",
+  async (tab) => {
+    render(<TabsLayout />);
+    await act(async () => fireEvent.press(screen.getByText("users")));
+    await act(async () => fireEvent.press(screen.getByText(tab)));
+    expect(mockSwitchContext).not.toHaveBeenCalled();
+    expect(useAuthStore.getState().session).toBe(original);
+  },
+);
 
 it("continues the selected Sandbox without exchanging or changing its mode", async () => {
   await navigateContext({ kind: "business", tenantId: "tenant-a" });
@@ -239,11 +225,11 @@ it("recovers a selected business with a database boot error instead of taking th
 it("keeps guards pending until the router commits the matching destination", async () => {
   await navigateContext({ kind: "management", path: "/management/users" });
   const view = render(<ContextNavigationCoordinator />);
-  expect(mockReplace).toHaveBeenCalledWith("/management/users");
+  expect(mockReplace).toHaveBeenCalledWith("/users");
   expect(useContextNavigationStore.getState().status).toBe("ready");
   view.rerender(<ContextNavigationCoordinator />);
   expect(mockReplace).toHaveBeenCalledTimes(1);
-  mockPathname = "/management/users";
+  mockPathname = "/users";
   view.rerender(<ContextNavigationCoordinator />);
   expect(useContextNavigationStore.getState().status).toBe("idle");
 });
@@ -280,9 +266,7 @@ it("persists failure feedback across route remounts without automatic retry", as
   expect(mockSwitchContext).toHaveBeenCalledTimes(1);
   await act(async () => fireEvent.press(screen.getByText("Coba lagi")));
   expect(mockSwitchContext).toHaveBeenCalledTimes(2);
-  expect(useContextNavigationStore.getState().destination).toBe(
-    "/management/users",
-  );
+  expect(useContextNavigationStore.getState().destination).toBe("/users");
 });
 
 it("offers Pusat Sinkron only for an accessible enrolled tenant", async () => {

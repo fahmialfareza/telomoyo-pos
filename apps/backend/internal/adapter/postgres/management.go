@@ -30,13 +30,13 @@ func ensureAccountTenantLink(ctx context.Context, tx pgx.Tx, tenantID, userID uu
 
 func (s *Store) authorizeManagement(ctx context.Context, actor domain.Principal) error {
 	defer observability.StartSegment(ctx, "Postgres.authorizeManagement")()
-	if actor.ContextKind != domain.ContextAccount {
+	if actor.ContextKind != domain.ContextAccount && actor.ContextKind != domain.ContextTenant {
 		return domain.NewError(domain.CodeForbidden, "Otorisasi akun Superadmin diperlukan")
 	}
 	var allowed bool
 	err := s.Pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users u JOIN sessions s ON s.user_id=u.id
-	 WHERE u.id=$1 AND s.id=$2 AND s.context_kind='account' AND s.revoked_at IS NULL
-	 AND u.role='superadmin' AND u.is_active AND u.deleted_at IS NULL AND NOT u.must_change_password)`, actor.UserID, actor.SessionID).Scan(&allowed)
+	 WHERE u.id=$1 AND s.id=$2 AND s.context_kind=$3 AND s.revoked_at IS NULL
+	 AND u.role='superadmin' AND u.is_active AND u.deleted_at IS NULL AND NOT u.must_change_password)`, actor.UserID, actor.SessionID, actor.ContextKind).Scan(&allowed)
 	if err != nil {
 		return dbError(err, "authorize organization management")
 	}

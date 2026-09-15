@@ -23,6 +23,10 @@ import {
   ContextNavigationLifecycle,
 } from "@/navigation/context-navigation";
 import {
+  isUsersTabContextTransition,
+  useContextNavigationStore,
+} from "@/navigation/context-navigation-store";
+import {
   useResponsiveStyles,
   useResponsiveTextStyles,
 } from "@/theme/responsive";
@@ -36,9 +40,14 @@ function AppRoutes() {
   // Keep the router tree unmounted for the full transition, including the
   // brief interval before recovery clears the retired session. This prevents
   // redirects to Login and stale screen reads while SQLite changes scope.
-  const transitioningMode = useAuthStore((state) => state.switchingMode);
+  const transitioningMode = useAuthStore(
+    (state) => state.switchingOperationMode,
+  );
+  const usersTabTransition = useContextNavigationStore(
+    isUsersTabContextTransition,
+  );
 
-  if (transitioningMode) {
+  if (transitioningMode && !usersTabTransition) {
     return (
       <View accessibilityRole="alert" style={styles.recovery}>
         <ActivityIndicator color={colors.primary} size="large" />

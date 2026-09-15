@@ -71,6 +71,8 @@ export interface AuthStore {
   demoEnabled: boolean;
   terminalEnrolled: boolean;
   switchingMode: boolean;
+  /** True only while switching between Production and Sandbox. */
+  switchingOperationMode: boolean;
   scopeLocked: boolean;
   switchContext: (kind: ContextKind, tenantId?: string) => Promise<void>;
   upgradeSession: () => Promise<void>;
@@ -225,6 +227,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   demoEnabled,
   terminalEnrolled: false,
   switchingMode: false,
+  switchingOperationMode: false,
   scopeLocked: false,
 
   dismissNotice: async () => {
@@ -364,7 +367,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     if (!session || get().scopeLocked)
       throw new Error("Pilih konteks yang aktif sebelum memperbarui sesi.");
     if (get().switchingMode) throw new Error(MODE_TRANSITION_BUSY_MESSAGE);
-    set({ switchingMode: true });
+    set({ switchingMode: true, switchingOperationMode: true });
     let lease: ModeTransitionLease | null = null;
     let replacement: Session | null = null;
     try {
@@ -413,7 +416,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       throw error;
     } finally {
       lease?.release();
-      set({ switchingMode: false });
+      set({ switchingMode: false, switchingOperationMode: false });
     }
   },
 

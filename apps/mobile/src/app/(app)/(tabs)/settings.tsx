@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/Card";
 import { MenuRow } from "@/components/ui/MenuRow";
 import { useConfirmation } from "@/components/ui/ConfirmationProvider";
 import { useContextNavigation } from "@/navigation/context-navigation";
+import { ManagedTenantsScreen } from "@/tenant/screens";
 import { useResponsiveStyles } from "@/theme/responsive";
 import {
   colors,
@@ -31,6 +32,11 @@ export default function SettingsScreen() {
   const navigation = useContextNavigation();
   const { confirm } = useConfirmation();
   const [error, setError] = useState<string | null>(null);
+  const [showTenants, setShowTenants] = useState(false);
+
+  if (showTenants) {
+    return <ManagedTenantsScreen onBack={() => setShowTenants(false)} />;
+  }
 
   return (
     <AppScreen>
@@ -66,9 +72,7 @@ export default function SettingsScreen() {
             icon="store-cog-outline"
             title="Kelola tenant"
             detail="Tambah bisnis, ubah nama, tangguhkan atau aktifkan"
-            onPress={() =>
-              void navigation.openManagement("/management/tenants")
-            }
+            onPress={() => setShowTenants(true)}
           />
         ) : null}
         {session?.user.role === "superadmin" &&

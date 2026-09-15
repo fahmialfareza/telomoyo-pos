@@ -32,7 +32,9 @@ export async function navigateContext(
         throw new Error("Pengelolaan hanya tersedia untuk Superadmin.");
       if (session.contextKind !== "account" || retry)
         await auth.switchContext("account");
-      destination = intent.path;
+      // Staff management lives in the bottom tab, while its session remains
+      // account-scoped. The old path is an entry alias, not another screen.
+      destination = intent.path === "/management/users" ? "/users" : intent.path;
     } else if (intent.kind === "business") {
       const sameBusiness =
         (!session.contextKind || session.contextKind === "tenant") &&
@@ -59,8 +61,10 @@ export async function navigateContext(
           ({ tenant }) =>
             tenant.id === previousTenantId && tenant.status === "active",
         );
-        if (allowed) await auth.switchContext("tenant", previousTenantId);
-        else destination = "/contexts";
+        if (allowed) {
+          await auth.switchContext("tenant", previousTenantId);
+          destination = intent.path ?? "/";
+        } else destination = "/contexts";
       }
     }
     const next = useAuthStore.getState();

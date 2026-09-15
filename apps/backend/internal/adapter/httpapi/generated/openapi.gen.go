@@ -306,7 +306,7 @@ type ApiError struct {
 
 // AvailableContexts defines model for AvailableContexts.
 type AvailableContexts struct {
-	// CanManageOrganization True only for an active global Superadmin; management requires account context.
+	// CanManageOrganization True only for an active global Superadmin; management is available without leaving a selected business.
 	CanManageOrganization bool `json:"canManageOrganization"`
 
 	// PlatformAdmin Retained for legacy response compatibility. Use canManageOrganization instead.

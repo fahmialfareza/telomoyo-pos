@@ -1,4 +1,4 @@
-import { Redirect, useRouter } from "expo-router";
+import { Redirect } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text } from "react-native";
 
@@ -17,7 +17,6 @@ import {
 
 export default function AccountProfileScreen() {
   const { session, scopeLocked, updateProfile } = useAuth();
-  const router = useRouter();
   const styles = useResponsiveStyles(baseStyles);
   const textStyles = useResponsiveTextStyles();
   const [fullName, setFullName] = useState(session?.user.fullName ?? "");
@@ -91,14 +90,6 @@ export default function AccountProfileScreen() {
           </Text>
         ) : null}
       </Card>
-      {!readOnly ? (
-        <Button
-          variant="secondary"
-          onPress={() => router.push("/account-password")}
-        >
-          Ganti kata sandi
-        </Button>
-      ) : null}
     </AppScreen>
   );
 }

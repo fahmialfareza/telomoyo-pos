@@ -1,1 +1,4 @@
-export { ManagedUsersScreen as default } from "@/tenant/screens";
+import { Redirect } from "expo-router";
+export default function LegacyUserDirectory() {
+  return <Redirect href="/(app)/(tabs)/users" />;
+}

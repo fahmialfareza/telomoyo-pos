@@ -76,7 +76,7 @@ export interface paths {
         put?: never;
         /**
          * Create an active business unit with an empty catalog
-         * @description Requires Superadmin account context and enabled provisioning. Initializes the receipt identity with the management name. No invitation or membership approval is created.
+         * @description Requires an authenticated Superadmin and enabled provisioning. Initializes the receipt identity with the management name. No invitation or membership approval is created.
          */
         post: operations["createManagedTenant"];
         delete?: never;
@@ -100,7 +100,7 @@ export interface paths {
         head?: never;
         /**
          * Change a tenant's management name without changing receipt identity
-         * @description Superadmin account context only. Requires the current management revision. Tenant ID and slug are immutable; tenant deletion is not supported.
+         * @description Authenticated Superadmin only. Requires the current management revision. Tenant ID and slug are immutable; tenant deletion is not supported.
          */
         patch: operations["updateManagedTenant"];
         trace?: never;
@@ -116,7 +116,7 @@ export interface paths {
         put?: never;
         /**
          * Activate, suspend, or reactivate a business unit
-         * @description Superadmin account context only. Activation accepts an existing pending_setup tenant without an invitation. Suspension preserves data and queued evidence; reactivation never revives revoked sessions.
+         * @description Authenticated Superadmin only. Activation accepts an existing pending_setup tenant without an invitation. Suspension preserves data and queued evidence; reactivation never revives revoked sessions.
          */
         post: operations["setManagedTenantStatus"];
         delete?: never;
@@ -137,7 +137,7 @@ export interface paths {
         put?: never;
         /**
          * Create a staff account using a temporary password
-         * @description Superadmin account context only. The staff account must change its temporary password before operating and can subsequently select every active tenant.
+         * @description Authenticated Superadmin only. The staff account must change its temporary password before operating and can subsequently select every active tenant.
          */
         post: operations["createManagedUser"];
         delete?: never;
@@ -164,7 +164,7 @@ export interface paths {
         head?: never;
         /**
          * Change an account's global role or active status
-         * @description Superadmin account context only. Role changes and deactivation revoke all account sessions. Self-demotion, self-deactivation, and removing the last active Superadmin are prohibited. Account deletion is not supported.
+         * @description Authenticated Superadmin only. Role changes and deactivation revoke all account sessions. Self-demotion, self-deactivation, and removing the last active Superadmin are prohibited. Account deletion is not supported.
          */
         patch: operations["updateManagedUser"];
         trace?: never;
@@ -180,7 +180,7 @@ export interface paths {
         put?: never;
         /**
          * Set a temporary password and revoke all of the account's sessions
-         * @description Superadmin account context only. The account must change this password before operating again. Credentials are never included in audit records.
+         * @description Authenticated Superadmin only. The account must change this password before operating again. Credentials are never included in audit records.
          */
         post: operations["resetManagedUserPassword"];
         delete?: never;
@@ -198,7 +198,7 @@ export interface paths {
         };
         /**
          * List durable organization-wide administrative audit history
-         * @description Superadmin account context only. Does not expose passwords, invitation codes, or raw QRIS payloads.
+         * @description Authenticated Superadmin only. Does not expose passwords, invitation codes, or raw QRIS payloads.
          */
         get: operations["listManagementAudit"];
         put?: never;
@@ -1064,7 +1064,7 @@ export interface components {
              * @constant
              */
             platformAdmin: false;
-            /** @description True only for an active global Superadmin; management requires account context. */
+            /** @description True only for an active global Superadmin; management is available without leaving a selected business. */
             canManageOrganization: boolean;
             /** @description Whether new business-unit creation is enabled. Existing tenant management remains available independently. */
             tenantProvisioningEnabled: boolean;
@@ -2488,7 +2488,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Organization-wide tenant list; account context is required. */
+            /** @description Organization-wide tenant list for an authenticated Superadmin. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2603,7 +2603,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Global accounts and roles; account context is required. */
+            /** @description Global accounts and roles for an authenticated Superadmin. */
             200: {
                 headers: {
                     [name: string]: unknown;

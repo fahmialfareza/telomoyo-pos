@@ -48,7 +48,7 @@ export default function ProfileScreen() {
       <Text style={responsive.note}>
         {session.dataMode === "sandbox"
           ? "Profil ini digunakan bersama dengan Produksi dan hanya dapat diubah dari Mode Produksi."
-          : "Nama dan kata sandi hanya dapat diubah oleh pemilik akun. Peran dikelola terpisah oleh superadmin setiap bisnis."}
+          : "Nama hanya dapat diubah oleh pemilik akun. Peran dikelola oleh Superadmin dan berlaku di seluruh bisnis."}
       </Text>
       <Button
         disabled={session.dataMode === "sandbox"}

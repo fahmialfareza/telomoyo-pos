@@ -5,12 +5,15 @@ import type { Session } from "@/domain/types";
 export type ManagementPath =
   "/management/users" | "/management/tenants" | "/management/audit";
 
+export type BusinessTabPath = "/home" | "/sell" | "/history" | "/settings";
+
 export type ContextNavigationIntent =
   | { kind: "management"; path: ManagementPath }
   | { kind: "business"; tenantId: string }
-  | { kind: "return" };
+  | { kind: "return"; path?: BusinessTabPath; source?: "users" };
 
-export type ContextDestination = ManagementPath | "/" | "/contexts";
+export type ContextDestination =
+  ManagementPath | BusinessTabPath | "/users" | "/" | "/contexts";
 
 interface ContextNavigationState {
   ownerId: string | null;
@@ -40,6 +43,20 @@ const initialState: ContextNavigationState = {
 export const useContextNavigationStore = create<ContextNavigationState>(
   () => initialState,
 );
+
+/**
+ * The Pengguna tab keeps the bottom-tab shell visible while an explicit chooser
+ * or legacy entry exchanges into account context for it. Opening the tab itself
+ * runs in the current session, so it never starts this transition.
+ */
+export function isUsersTabContextTransition(state: ContextNavigationState) {
+  if (state.status !== "running" && state.status !== "ready") return false;
+  return (
+    (state.intent?.kind === "management" &&
+      state.intent.path === "/management/users") ||
+    (state.intent?.kind === "return" && state.intent.source === "users")
+  );
+}
 
 export function resetContextNavigation() {
   const requestId = useContextNavigationStore.getState().requestId + 1;
