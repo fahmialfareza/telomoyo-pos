@@ -129,7 +129,11 @@ export async function apiRequest<T>(
             message: "Permintaan tidak dapat diproses.",
           };
     if (options.token && accessFailureHandler)
-      await accessFailureHandler(options.token, error.code);
+      // Local cleanup errors must not hide the server's authentication result.
+      // The handler keeps the affected scope locked if persistence fails.
+      await accessFailureHandler(options.token, error.code).catch(
+        () => undefined,
+      );
     throw new ApiError({
       status: response.status,
       code: error.code,

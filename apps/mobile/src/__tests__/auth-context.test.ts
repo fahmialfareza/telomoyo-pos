@@ -7,8 +7,10 @@ import {
   type Session,
 } from "@/domain/types";
 import { setModeFromSession, useModeStore } from "@/mode/mode-store";
+import { clearAuthNotice } from "@/security/secure-store";
 import {
   beginLocalMutation,
+  beginModeTransition,
   resetMutationBarrierForTests,
 } from "@/mode/mutation-barrier";
 
@@ -21,6 +23,7 @@ const mockPrepare = jest.fn();
 const mockMarkScopeRevalidated = jest.fn();
 const mockMarkEnrolled = jest.fn();
 const mockClearSession = jest.fn();
+const mockReadSession = jest.fn();
 const mockGetIdentity = jest.fn();
 const mockQuarantine = jest.fn();
 jest.mock("@react-native-community/netinfo", () => ({
@@ -41,9 +44,9 @@ jest.mock("@/db/repositories", () => ({
 jest.mock("@/security/secure-store", () => ({
   getOrCreateInstallationId: async () => "physical-phone",
   writeSession: (...args: unknown[]) => mockWriteSession(...args),
-  clearSession: () => mockClearSession(),
+  clearSession: (...args: unknown[]) => mockClearSession(...args),
   clearAuthNotice: jest.fn(),
-  readSession: jest.fn(),
+  readSession: (...args: unknown[]) => mockReadSession(...args),
   readAuthNotice: jest.fn(),
 }));
 jest.mock("@/security/terminal-identity", () => ({
@@ -139,6 +142,7 @@ describe("authenticated tenant context handoff", () => {
     });
     mockApiRequest.mockResolvedValue(tenantResponse);
     mockPending.mockResolvedValue(0);
+    mockReadSession.mockResolvedValue(original);
     mockGetIdentity.mockResolvedValue({ serverTerminalId: null });
     mockRunSync.mockResolvedValue({
       pushed: 0,
@@ -433,5 +437,486 @@ describe("authenticated tenant context handoff", () => {
     await failure;
     expect(mockClearSession).not.toHaveBeenCalled();
     expect(useAuthStore.getState().session).toBe(next);
+  });
+
+  it.each(["UNAUTHORIZED", "HTTP_401"])(
+    "automatically signs out a revoked tenant session for %s while preserving pending work",
+    async (code) => {
+      mockPending.mockResolvedValue(4);
+      await handleAccessFailure(original.token, code);
+      expect(mockQuarantine).toHaveBeenCalledWith(original, "SESSION_INVALID");
+      expect(mockClearSession).toHaveBeenCalledWith(
+        original.token,
+        expect.stringContaining("masuk kembali"),
+      );
+      expect(useAuthStore.getState()).toMatchObject({
+        session: null,
+        terminalEnrolled: false,
+        scopeLocked: false,
+        bootError: null,
+        notice: expect.stringContaining("belum tersinkron"),
+      });
+      expect(useModeStore.getState()).toMatchObject({
+        contextKind: "account",
+        tenantId: null,
+        dataMode: "production",
+      });
+      expect(mockPending).not.toHaveBeenCalled();
+      expect(mockRunSync).not.toHaveBeenCalled();
+      expect(mockPrepare).not.toHaveBeenCalled();
+      expect(mockMarkScopeRevalidated).not.toHaveBeenCalled();
+      expect(mockMarkEnrolled).not.toHaveBeenCalled();
+    },
+  );
+
+  it("automatically signs out account context without touching business storage", async () => {
+    const account = {
+      ...original,
+      contextKind: "account" as const,
+      tenantId: null,
+      dataSpaceId: null,
+    };
+    useAuthStore.setState({ session: account, terminalEnrolled: false });
+    setModeFromSession(account);
+    await handleAccessFailure(account.token, "UNAUTHORIZED");
+    expect(useAuthStore.getState().session).toBeNull();
+    expect(mockClearSession).toHaveBeenCalledWith(
+      account.token,
+      expect.any(String),
+    );
+    expect(mockQuarantine).not.toHaveBeenCalled();
+    expect(mockPrepare).not.toHaveBeenCalled();
+    expect(mockRunSync).not.toHaveBeenCalled();
+  });
+
+  it("allows logout when sync rejects an invalid session even with unsynced entries", async () => {
+    mockPending.mockResolvedValue(3);
+    mockRunSync.mockRejectedValue({ status: 401, code: "UNAUTHORIZED" });
+    await expect(useAuthStore.getState().logout()).resolves.toBeUndefined();
+    expect(mockRunSync).toHaveBeenCalledWith(original);
+    expect(mockQuarantine).toHaveBeenCalledWith(original, "SESSION_INVALID");
+    expect(mockClearSession).toHaveBeenCalledWith(
+      original.token,
+      expect.any(String),
+    );
+    expect(mockPending).not.toHaveBeenCalled();
+    expect(mockApiRequest).not.toHaveBeenCalled();
+    expect(mockMarkScopeRevalidated).not.toHaveBeenCalled();
+    expect(mockPrepare).not.toHaveBeenCalled();
+    expect(useAuthStore.getState()).toMatchObject({
+      session: null,
+      switchingMode: false,
+    });
+  });
+
+  it.each(["UNAUTHORIZED", "HTTP_401"])(
+    "allows logout when the logout endpoint already rejects the token with %s",
+    async (code) => {
+      mockApiRequest.mockRejectedValue({ status: 401, code });
+      await expect(useAuthStore.getState().logout()).resolves.toBeUndefined();
+      expect(mockApiRequest).toHaveBeenCalledWith("/auth/logout", {
+        method: "POST",
+        token: original.token,
+      });
+      expect(mockQuarantine).toHaveBeenCalledWith(original, "SESSION_INVALID");
+      expect(mockClearSession).toHaveBeenCalledTimes(1);
+      expect(useAuthStore.getState()).toMatchObject({
+        session: null,
+        switchingMode: false,
+      });
+    },
+  );
+
+  it.each(["network", "forbidden", "pending"])(
+    "retains normal logout safeguards for %s instead of treating it as invalid authentication",
+    async (failure) => {
+      if (failure === "network")
+        mockRunSync.mockRejectedValue(new Error("server offline"));
+      if (failure === "forbidden")
+        mockRunSync.mockRejectedValue({ status: 403, code: "FORBIDDEN" });
+      if (failure === "pending") mockPending.mockResolvedValue(1);
+      await expect(useAuthStore.getState().logout()).rejects.toBeDefined();
+      expect(useAuthStore.getState().session).toBe(original);
+      expect(useAuthStore.getState().switchingMode).toBe(false);
+      expect(mockClearSession).not.toHaveBeenCalled();
+      expect(mockQuarantine).not.toHaveBeenCalled();
+    },
+  );
+
+  it("ignores an authentication failure belonging to an earlier token", async () => {
+    await handleAccessFailure("stale-token", "UNAUTHORIZED");
+    expect(useAuthStore.getState().session).toBe(original);
+    expect(useAuthStore.getState().scopeLocked).toBe(false);
+    expect(mockQuarantine).not.toHaveBeenCalled();
+    expect(mockClearSession).not.toHaveBeenCalled();
+    expect(mockReadSession).not.toHaveBeenCalled();
+  });
+
+  it("does not clear replacement in-memory authentication after delayed secure-store cleanup", async () => {
+    let finishClear!: () => void;
+    let clearStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      clearStarted = resolve;
+    });
+    mockClearSession.mockImplementationOnce(() => {
+      clearStarted();
+      return new Promise<void>((resolve) => {
+        finishClear = resolve;
+      });
+    });
+    const invalidation = handleAccessFailure(original.token, "UNAUTHORIZED");
+    await started;
+    const next = {
+      ...original,
+      token: "fresh-token",
+      sessionId: "fresh-session",
+    };
+    useAuthStore.setState({ session: next, scopeLocked: false, notice: null });
+    setModeFromSession(next);
+    finishClear();
+    await invalidation;
+    expect(mockClearSession).toHaveBeenCalledWith(
+      original.token,
+      expect.any(String),
+    );
+    expect(useAuthStore.getState().session).toBe(next);
+    expect(useAuthStore.getState().scopeLocked).toBe(false);
+    expect(useModeStore.getState().dataSpaceId).toBe(next.dataSpaceId);
+  });
+
+  it("coalesces concurrent rejected requests into one quarantine and one conditional clear", async () => {
+    let finish!: () => void;
+    mockQuarantine.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const first = handleAccessFailure(original.token, "UNAUTHORIZED");
+    const second = handleAccessFailure(original.token, "HTTP_401");
+    const third = handleAccessFailure(original.token, "UNAUTHORIZED");
+    expect(mockQuarantine).toHaveBeenCalledTimes(1);
+    expect(useAuthStore.getState().scopeLocked).toBe(true);
+    finish();
+    await Promise.all([first, second, third]);
+    expect(mockClearSession).toHaveBeenCalledTimes(1);
+    expect(useAuthStore.getState().session).toBeNull();
+  });
+
+  it.each(["profile", "password"])(
+    "does not persist a successful %s response that resumes while revocation is quarantining work",
+    async (operation) => {
+      const production = {
+        ...original,
+        dataMode: "production" as const,
+        dataSpaceId: PRODUCTION_DATA_SPACE_ID,
+        sandboxGeneration: null,
+      };
+      useAuthStore.setState({ session: production });
+      setModeFromSession(production);
+      let finishResponse!: () => void;
+      let requestStarted!: () => void;
+      const started = new Promise<void>((resolve) => {
+        requestStarted = resolve;
+      });
+      mockApiRequest.mockImplementationOnce(() => {
+        requestStarted();
+        return new Promise((resolve) => {
+          finishResponse = () =>
+            resolve({ ...production.user, fullName: "Updated Name" });
+        });
+      });
+      let finishQuarantine!: () => void;
+      mockQuarantine.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishQuarantine = resolve;
+          }),
+      );
+      const updating =
+        operation === "profile"
+          ? useAuthStore.getState().updateProfile("Updated Name")
+          : useAuthStore
+              .getState()
+              .changePassword("old-password", "new-password");
+      await started;
+      const invalidation = handleAccessFailure(
+        production.token,
+        "UNAUTHORIZED",
+      );
+      try {
+        expect(useAuthStore.getState().scopeLocked).toBe(true);
+        finishResponse();
+        await expect(updating).resolves.toBeUndefined();
+        expect(mockWriteSession).not.toHaveBeenCalled();
+        expect(mockPrepare).not.toHaveBeenCalled();
+        expect(useAuthStore.getState().session).toBe(production);
+        expect(useAuthStore.getState().scopeLocked).toBe(true);
+        expect(useModeStore.getState().accessBlocked).toBe(true);
+      } finally {
+        finishQuarantine();
+        await invalidation;
+      }
+      expect(useAuthStore.getState().session).toBeNull();
+      expect(mockClearSession).toHaveBeenCalledWith(
+        production.token,
+        expect.any(String),
+      );
+    },
+  );
+
+  it.each(["profile", "password"])(
+    "does not restore a revoked %s session when database preparation finishes after persistence",
+    async (operation) => {
+      const production = {
+        ...original,
+        dataMode: "production" as const,
+        dataSpaceId: PRODUCTION_DATA_SPACE_ID,
+        sandboxGeneration: null,
+      };
+      useAuthStore.setState({ session: production });
+      setModeFromSession(production);
+      mockApiRequest.mockResolvedValueOnce({
+        ...production.user,
+        fullName: "Updated Name",
+      });
+      let finishPrepare!: () => void;
+      let prepareStarted!: () => void;
+      const started = new Promise<void>((resolve) => {
+        prepareStarted = resolve;
+      });
+      mockPrepare.mockImplementationOnce(() => {
+        prepareStarted();
+        return new Promise<void>((resolve) => {
+          finishPrepare = resolve;
+        });
+      });
+      const updating =
+        operation === "profile"
+          ? useAuthStore.getState().updateProfile("Updated Name")
+          : useAuthStore
+              .getState()
+              .changePassword("old-password", "new-password");
+      await started;
+      expect(mockWriteSession).toHaveBeenCalledTimes(1);
+      await handleAccessFailure(production.token, "UNAUTHORIZED");
+      expect(useAuthStore.getState().session).toBeNull();
+      finishPrepare();
+      await expect(updating).rejects.toThrow("Sesi");
+      expect(mockWriteSession).toHaveBeenCalledTimes(1);
+      expect(useAuthStore.getState()).toMatchObject({
+        session: null,
+        terminalEnrolled: false,
+        bootError: null,
+        notice: expect.stringContaining("masuk kembali"),
+      });
+      expect(useModeStore.getState()).toMatchObject({
+        contextKind: "account",
+        tenantId: null,
+        dataMode: "production",
+      });
+    },
+  );
+
+  it.each(["switch", "upgrade"])(
+    "retains the reauthentication notice when a %s replacement is revoked during its initial sync",
+    async (operation) => {
+      mockApiRequest.mockResolvedValueOnce(
+        operation === "switch"
+          ? tenantResponse
+          : {
+              ...tenantResponse,
+              tenantId: original.tenantId,
+              dataMode: "sandbox",
+              dataSpaceId: original.dataSpaceId,
+              sandboxGeneration: original.sandboxGeneration,
+              protocolVersion: 3,
+              sandboxQrisPolicy: "transaction_total",
+            },
+      );
+      mockRunSync
+        .mockResolvedValueOnce({})
+        .mockImplementationOnce(async (session: Session) => {
+          await handleAccessFailure(session.token, "UNAUTHORIZED");
+          throw { status: 401, code: "UNAUTHORIZED" };
+        });
+      const changing =
+        operation === "switch"
+          ? useAuthStore.getState().switchContext("tenant", targetTenantId)
+          : useAuthStore.getState().upgradeSession();
+      await expect(changing).rejects.toMatchObject({
+        status: 401,
+        code: "UNAUTHORIZED",
+      });
+      expect(mockQuarantine).toHaveBeenCalledWith(
+        expect.objectContaining({ token: tenantResponse.sessionToken }),
+        "SESSION_INVALID",
+      );
+      expect(useAuthStore.getState()).toMatchObject({
+        session: null,
+        terminalEnrolled: false,
+        scopeLocked: false,
+        switchingMode: false,
+        notice: expect.stringContaining("masuk kembali"),
+      });
+      expect(useAuthStore.getState().notice).not.toContain(
+        "Konteks sudah berganti",
+      );
+      expect(useAuthStore.getState().notice).not.toContain(
+        "Sesi baru sudah diterbitkan",
+      );
+      expect(useModeStore.getState().tenantId).toBeNull();
+    },
+  );
+
+  it("does not erase a new revocation notice when login notice cleanup resumes", async () => {
+    mockApiRequest.mockResolvedValueOnce(accountResponse);
+    let finishNoticeClear!: () => void;
+    let noticeClearStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      noticeClearStarted = resolve;
+    });
+    jest.mocked(clearAuthNotice).mockImplementationOnce(() => {
+      noticeClearStarted();
+      return new Promise<void>((resolve) => {
+        finishNoticeClear = resolve;
+      });
+    });
+    const loggingIn = useAuthStore.getState().login("staff", "test-password");
+    await started;
+    expect(clearAuthNotice).toHaveBeenCalledWith(accountResponse.sessionToken);
+    await handleAccessFailure(accountResponse.sessionToken, "UNAUTHORIZED");
+    finishNoticeClear();
+    await expect(loggingIn).rejects.toThrow("Sesi");
+    expect(useAuthStore.getState()).toMatchObject({
+      session: null,
+      terminalEnrolled: false,
+      scopeLocked: false,
+      notice: expect.stringContaining("masuk kembali"),
+    });
+    expect(mockApiRequest).toHaveBeenCalledTimes(1);
+    expect(mockQuarantine).not.toHaveBeenCalled();
+  });
+
+  it.each(["local", "transition"])(
+    "invalidates without deadlocking when its request already holds a real %s lease",
+    async (kind) => {
+      const release =
+        kind === "local"
+          ? beginLocalMutation(original)
+          : (await beginModeTransition()).release;
+      try {
+        await handleAccessFailure(original.token, "UNAUTHORIZED");
+        expect(useAuthStore.getState().session).toBeNull();
+        expect(mockQuarantine).toHaveBeenCalledTimes(1);
+      } finally {
+        release();
+      }
+    },
+  );
+
+  it.each([
+    "FORBIDDEN",
+    "NETWORK_ERROR",
+    "HTTP_500",
+    "SANDBOX_GENERATION_RETIRED",
+    "SANDBOX_DISABLED",
+  ])("does not auto-logout for %s", async (code) => {
+    await handleAccessFailure(original.token, code);
+    expect(useAuthStore.getState().session).toBe(original);
+    expect(useAuthStore.getState().scopeLocked).toBe(false);
+    expect(mockClearSession).not.toHaveBeenCalled();
+    expect(mockQuarantine).not.toHaveBeenCalled();
+  });
+
+  it("keeps invalid access locked with recovery feedback if quarantining evidence fails", async () => {
+    mockQuarantine.mockRejectedValue(new Error("database unavailable"));
+    await expect(
+      handleAccessFailure(original.token, "UNAUTHORIZED"),
+    ).rejects.toThrow("database unavailable");
+    expect(useAuthStore.getState()).toMatchObject({
+      session: original,
+      scopeLocked: true,
+      bootError: expect.stringContaining("Jangan hapus data aplikasi"),
+    });
+    expect(useModeStore.getState().accessBlocked).toBe(true);
+    expect(mockClearSession).not.toHaveBeenCalled();
+    expect(mockMarkScopeRevalidated).not.toHaveBeenCalled();
+  });
+
+  it("finishes headless invalidation even when hydration finishes before quarantine", async () => {
+    useAuthStore.setState({
+      session: null,
+      booting: true,
+      terminalEnrolled: false,
+    });
+    setModeFromSession(null);
+    let finishQuarantine!: () => void;
+    let quarantineStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      quarantineStarted = resolve;
+    });
+    mockQuarantine.mockImplementationOnce(() => {
+      quarantineStarted();
+      return new Promise<void>((resolve) => {
+        finishQuarantine = resolve;
+      });
+    });
+    const invalidation = handleAccessFailure(original.token, "UNAUTHORIZED");
+    await started;
+    useAuthStore.setState({ booting: false });
+    finishQuarantine();
+    await invalidation;
+    expect(mockClearSession).toHaveBeenCalledWith(
+      original.token,
+      expect.any(String),
+    );
+    expect(useAuthStore.getState()).toMatchObject({
+      session: null,
+      booting: false,
+      scopeLocked: false,
+      notice: expect.stringContaining("masuk kembali"),
+    });
+  });
+
+  it("invalidates a headless durable session without letting in-flight hydration restore it", async () => {
+    useAuthStore.setState({
+      session: null,
+      booting: true,
+      terminalEnrolled: false,
+    });
+    setModeFromSession(null);
+    let finishPrepare!: () => void;
+    let prepareStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      prepareStarted = resolve;
+    });
+    mockPrepare.mockImplementationOnce(() => {
+      prepareStarted();
+      return new Promise<void>((resolve) => {
+        finishPrepare = resolve;
+      });
+    });
+    const hydration = useAuthStore.getState().hydrate();
+    await started;
+    await handleAccessFailure(original.token, "UNAUTHORIZED");
+    finishPrepare();
+    await hydration;
+    expect(mockReadSession).toHaveBeenCalledTimes(2);
+    expect(mockQuarantine).toHaveBeenCalledWith(original, "SESSION_INVALID");
+    expect(mockClearSession).toHaveBeenCalledWith(
+      original.token,
+      expect.any(String),
+    );
+    expect(useAuthStore.getState()).toMatchObject({
+      session: null,
+      booting: false,
+      bootError: null,
+      notice: expect.stringContaining("masuk kembali"),
+    });
+    expect(useModeStore.getState()).toMatchObject({
+      contextKind: "account",
+      tenantId: null,
+    });
   });
 });

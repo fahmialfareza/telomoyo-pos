@@ -116,12 +116,18 @@ export async function writeSession(
   });
 }
 
-export async function clearSession(expectedToken?: string): Promise<void> {
+export async function clearSession(
+  expectedToken?: string,
+  notice?: string,
+): Promise<void> {
   await serializeSessionWrite(async () => {
     if (expectedToken) {
       const current = await readJson<Session>(keys.session);
       if (current?.token !== expectedToken) return;
     }
+    // Keep the explanation tied to the token being removed. A delayed failure
+    // must not overwrite a newer login's notice or clear its credentials.
+    if (notice) await writeAuthNotice(notice);
     await SecureStore.deleteItemAsync(keys.session);
   });
 }
@@ -165,8 +171,14 @@ export async function writeAuthNotice(message: string): Promise<void> {
   await SecureStore.setItemAsync(keys.authNotice, message, secureOptions);
 }
 
-export async function clearAuthNotice(): Promise<void> {
-  await SecureStore.deleteItemAsync(keys.authNotice);
+export async function clearAuthNotice(expectedToken?: string): Promise<void> {
+  await serializeSessionWrite(async () => {
+    if (expectedToken) {
+      const current = await readJson<Session>(keys.session);
+      if (current?.token !== expectedToken) return;
+    }
+    await SecureStore.deleteItemAsync(keys.authNotice);
+  });
 }
 
 export async function readTerminalIdentity(

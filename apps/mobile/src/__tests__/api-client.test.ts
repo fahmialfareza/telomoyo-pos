@@ -1,4 +1,8 @@
-import { ApiError, apiRequest } from "@/api/client";
+import {
+  ApiError,
+  apiRequest,
+  registerAccessFailureHandler,
+} from "@/api/client";
 import {
   INVALID_SERVER_RESPONSE_MESSAGE,
   SERVER_UNREACHABLE_MESSAGE,
@@ -6,10 +10,13 @@ import {
 
 const originalFetch = globalThis.fetch;
 const mockFetch = jest.fn();
+const mockAccessFailure = jest.fn<Promise<void>, [string, string]>();
 
 describe("API client error boundary", () => {
   beforeEach(() => {
     mockFetch.mockReset();
+    mockAccessFailure.mockReset().mockResolvedValue(undefined);
+    registerAccessFailureHandler(mockAccessFailure);
     globalThis.fetch = mockFetch as typeof fetch;
   });
 
@@ -76,5 +83,85 @@ describe("API client error boundary", () => {
       message: "Username sudah digunakan.",
       requestId: "REQUEST-1",
     });
+  });
+
+  it.each(["UNAUTHORIZED", "HTTP_401"])(
+    "reports a top-level %s for the exact bearer token before rejecting",
+    async (code) => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 401,
+        headers: {
+          get: () => (code === "HTTP_401" ? "text/plain" : "application/json"),
+        },
+        json: async () => ({
+          error: { code, message: "Sesi tidak valid atau telah dicabut" },
+        }),
+      });
+      await expect(
+        apiRequest("/sync/pull", { token: "revoked-token" }),
+      ).rejects.toMatchObject({ status: 401, code });
+      expect(mockAccessFailure).toHaveBeenCalledTimes(1);
+      expect(mockAccessFailure).toHaveBeenCalledWith("revoked-token", code);
+    },
+  );
+
+  it("does not invalidate auth for a failed login without a bearer token", async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 401,
+      headers: { get: () => "application/json" },
+      json: async () => ({
+        error: { code: "UNAUTHORIZED", message: "Kredensial salah" },
+      }),
+    });
+    await expect(
+      apiRequest("/auth/login", { method: "POST" }),
+    ).rejects.toMatchObject({ status: 401 });
+    expect(mockAccessFailure).not.toHaveBeenCalled();
+  });
+
+  it("keeps the original API error when local invalidation cleanup fails", async () => {
+    mockAccessFailure.mockRejectedValue(new Error("SecureStore unavailable"));
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 401,
+      headers: { get: () => "application/json" },
+      json: async () => ({
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Sesi tidak valid atau telah dicabut",
+        },
+      }),
+    });
+    await expect(
+      apiRequest("/auth/logout", { token: "revoked-token", method: "POST" }),
+    ).rejects.toMatchObject({
+      status: 401,
+      code: "UNAUTHORIZED",
+      message: "Sesi tidak valid atau telah dicabut",
+    });
+  });
+
+  it("does not treat a rejected offline origin inside a successful sync envelope as a revoked uploading session", async () => {
+    const data = {
+      results: [
+        {
+          operationId: "old-operation",
+          status: "rejected",
+          error: { code: "UNAUTHORIZED", message: "Origin tidak valid" },
+        },
+      ],
+    };
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => "application/json" },
+      json: async () => ({ data }),
+    });
+    await expect(
+      apiRequest("/sync/push", { token: "valid-token", method: "POST" }),
+    ).resolves.toEqual(data);
+    expect(mockAccessFailure).not.toHaveBeenCalled();
   });
 });

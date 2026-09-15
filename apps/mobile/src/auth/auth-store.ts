@@ -5,6 +5,11 @@ import { create } from "zustand";
 import { apiRequest, registerAccessFailureHandler } from "@/api/client";
 import type { LoginResponse, AuthContextsResponse } from "@/api/contracts";
 import { sessionFromLoginResponse } from "@/auth/session";
+import {
+  isSessionReauthenticationError,
+  requiresSessionReauthentication,
+  SESSION_INVALID_MESSAGE,
+} from "@/auth/session-errors";
 import { prepareDatabaseForSession } from "@/db/client";
 import {
   countPendingOutbox,
@@ -89,6 +94,8 @@ const demoEnabled =
     true;
 
 let hydration: Promise<void> | null = null;
+let sessionInvalidationEpoch = 0;
+const sessionInvalidations = new Map<string, Promise<void>>();
 
 const MODE_DATABASE_ERROR =
   "Penyimpanan terenkripsi untuk mode baru belum dapat dibuka. Tutup dan buka kembali aplikasi untuk mencoba lagi.";
@@ -112,26 +119,41 @@ async function persistSession(
   session: Session,
   set: (state: Partial<AuthStore>) => void,
 ) {
+  const epoch = sessionInvalidationEpoch;
+  const stillValid = () =>
+    epoch === sessionInvalidationEpoch &&
+    !sessionInvalidations.has(session.token);
+  if (!stillValid()) throw new Error(SESSION_INVALID_MESSAGE);
   // Persist first, prepare the explicitly scoped store, then expose the
   // session to providers. If preparation fails, expose only behind bootError
   // so screens cannot render data from a previously active scope.
   try {
     await writeSession(session);
   } catch (error) {
-    resetSyncStateForSession(session);
-    exposeSession(session, set, MODE_SESSION_ERROR);
+    if (stillValid()) {
+      resetSyncStateForSession(session);
+      exposeSession(session, set, MODE_SESSION_ERROR);
+    }
     throw error;
   }
+  if (!stillValid()) throw new Error(SESSION_INVALID_MESSAGE);
   try {
     await prepareDatabaseForSession(session);
+    if (!stillValid()) throw new Error(SESSION_INVALID_MESSAGE);
     await hydrateSyncStateForSession(session);
   } catch (error) {
     // A successfully issued session must replace the old scope even when its
     // local database cannot be opened. Blocking the protected layout prevents
     // data from the previous mode from rendering under the new credentials.
-    resetSyncStateForSession(session);
-    exposeSession(session, set, MODE_DATABASE_ERROR);
+    if (stillValid()) {
+      resetSyncStateForSession(session);
+      exposeSession(session, set, MODE_DATABASE_ERROR);
+    }
     throw error;
+  }
+  if (!stillValid()) {
+    resetSyncStateForSession(useAuthStore.getState().session);
+    throw new Error(SESSION_INVALID_MESSAGE);
   }
   exposeSession(session, set);
 }
@@ -213,6 +235,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   hydrate: () => {
     hydration ??= beginModeSafeLocalAccess()
       .then(async (releaseLocalAccess) => {
+        const epoch = sessionInvalidationEpoch;
         try {
           const [storedSession, notice] = await Promise.all([
             readSession(),
@@ -227,6 +250,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 storedSession.tenantId ?? INITIAL_TENANT_ID,
               )
             : null;
+          if (epoch !== sessionInvalidationEpoch) return;
           setModeFromSession(storedSession);
           resetSyncStateForSession(storedSession);
           if (storedSession) {
@@ -235,6 +259,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           const locked = isTenant
             ? Boolean(await blockedScopeReason(storedSession))
             : false;
+          if (epoch !== sessionInvalidationEpoch) return;
           useModeStore.setState({ accessBlocked: locked });
           if (isTenant && !locked) {
             await recoverInterruptedPrintAttempts(storedSession).catch(
@@ -242,6 +267,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             );
           }
           await hydrateSyncStateForSession(storedSession);
+          if (epoch !== sessionInvalidationEpoch) {
+            resetSyncStateForSession(get().session);
+            return;
+          }
           // A background reset may have requested the transition while this
           // startup read held the local-access lease. It now owns exposure of
           // the replacement session, so never put the retired one back.
@@ -284,7 +313,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     });
     const session = sessionFromLoginResponse(result);
     await persistSession(session, set);
-    await clearAuthNotice();
+    if (
+      get().session?.token !== session.token ||
+      sessionInvalidations.has(session.token)
+    )
+      throw new Error(SESSION_INVALID_MESSAGE);
+    await clearAuthNotice(session.token);
+    if (
+      get().session?.token !== session.token ||
+      sessionInvalidations.has(session.token)
+    )
+      throw new Error(SESSION_INVALID_MESSAGE);
     set({ notice: null, scopeLocked: false, terminalEnrolled: false });
     if (session.contextKind === "account" && !session.user.mustChangePassword) {
       const contexts = await apiRequest<AuthContextsResponse>(
@@ -366,7 +405,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           "Sesi diperbarui. Transaksi Mode Uji baru menggunakan nominal penuh; transaksi lama tidak berubah.",
       });
     } catch (error) {
-      if (replacement)
+      if (replacement && get().session?.token === replacement.token)
         set({
           notice:
             "Sesi baru sudah diterbitkan. Periksa koneksi dan lanjutkan sinkronisasi; jangan hapus data aplikasi.",
@@ -441,7 +480,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         }
       }
     } catch (error) {
-      if (replacement)
+      if (replacement && get().session?.token === replacement.token)
         set({
           notice:
             "Konteks sudah berganti. Jika sinkronisasi awal belum selesai, periksa koneksi lalu coba lagi.",
@@ -562,6 +601,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       exposeSession(nextSession, set);
     } catch (error) {
       const affectedSession = nextSession ?? session;
+      if (isSessionReauthenticationError(error)) {
+        // A replacement can be revoked during its initial pull, before it is
+        // exposed to providers. Do not restore it as an incomplete setup.
+        if (nextSession && get().session?.token === session.token)
+          exposeSession(nextSession, set);
+        await handleAccessFailure(affectedSession.token, error.code);
+        throw error;
+      }
       if (
         affectedSession.dataMode === "sandbox" &&
         isSandboxGenerationRetired(error)
@@ -628,6 +675,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         token: session.token,
         body: { fullName: fullName.trim() },
       });
+      if (get().session?.token !== session.token || get().scopeLocked) return;
       // Account roles are global, but profile editing changes only the owner's name.
       await persistSession(
         { ...session, user: { ...session.user, fullName: result.fullName } },
@@ -655,6 +703,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           body: { currentPassword, newPassword },
         });
       }
+      if (get().session?.token !== session.token || get().scopeLocked) return;
       await persistSession(
         {
           ...session,
@@ -697,6 +746,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       });
       serverTerminalId = result.id;
     }
+    if (get().session?.token !== session.token || get().scopeLocked) return;
     await markTerminalEnrolled(
       serverTerminalId,
       session.tenantId ?? INITIAL_TENANT_ID,
@@ -744,7 +794,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         });
       }
       try {
-        await clearSession();
+        await clearSession(session.token);
       } catch (error) {
         setModeFromSession(null);
         resetSyncStateForSession(null);
@@ -755,6 +805,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         });
         throw error;
       }
+      if (get().session?.token !== session.token) return;
       setModeFromSession(null);
       resetSyncStateForSession(null);
       set({
@@ -764,6 +815,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         scopeLocked: false,
       });
     } catch (error) {
+      if (isSessionReauthenticationError(error)) {
+        // Sync or /auth/logout may discover that the server already revoked
+        // this token. Local sign-out must not depend on syncing it successfully.
+        await handleAccessFailure(session.token, error.code);
+        return;
+      }
       if (session.dataMode === "sandbox" && isSandboxGenerationRetired(error)) {
         // Logout never rotates into another authenticated session. Clear only
         // the retired Sandbox scope and retain the normal Production default.
@@ -780,35 +837,75 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 }));
 
-registerAccessFailureHandler(async (token, code) => {
+async function invalidateSession(token: string, code: string): Promise<void> {
   const auth = useAuthStore.getState();
-  if (!SCOPE_ACCESS_CODES.has(code) || auth.session?.token !== token) return;
-  const session = auth.session;
-  if (code === "ACCOUNT_ACCESS_CHANGED") {
-    // Account changes revoke all sessions. Keep every scoped queue/key intact,
-    // but require fresh credentials instead of trying another tenant with a
-    // revoked token. Other actors still need explicit origin revalidation.
-    const message =
-      "Akses akun atau kata sandi berubah. Masuk kembali untuk melanjutkan. Data yang belum tersinkron tetap diamankan pada bisnis asalnya.";
-    useModeStore.setState({ accessBlocked: true });
-    useAuthStore.setState({ scopeLocked: true, notice: message });
+  // Headless sync can run before AuthProvider hydrates. Only the matching
+  // durable token may be invalidated then; never infer a session from a scope.
+  const fromStorage = !auth.session && auth.booting;
+  const session = fromStorage ? await readSession() : auth.session;
+  if (session?.token !== token) return;
+  const current = useAuthStore.getState();
+  if (
+    current.session?.token !== token &&
+    !(fromStorage && current.booting && !current.session)
+  )
+    return;
+  const epoch = ++sessionInvalidationEpoch;
+  const stillCurrent = () => {
+    const current = useAuthStore.getState();
+    return (
+      current.session?.token === token ||
+      (fromStorage && !current.session && sessionInvalidationEpoch === epoch)
+    );
+  };
+  const accountChanged = code === "ACCOUNT_ACCESS_CHANGED";
+  const message = accountChanged
+    ? "Akses akun atau kata sandi berubah. Masuk kembali untuk melanjutkan. Data yang belum tersinkron tetap diamankan pada bisnis asalnya."
+    : SESSION_INVALID_MESSAGE;
+  useModeStore.setState({ accessBlocked: true });
+  useAuthStore.setState({ scopeLocked: true, notice: message });
+  try {
+    // Do not wait on a transition here: this callback may run inside a sync,
+    // logout, profile update, or print that already owns a local/transition lease.
     if (!session.contextKind || session.contextKind === "tenant")
-      await quarantineScope(session, code);
-    if (useAuthStore.getState().session?.token !== token) return;
-    await clearSession(token);
-    // An unrelated login can finish while local persistence is pending.
-    if (useAuthStore.getState().session?.token === token) {
+      await quarantineScope(session, accountChanged ? code : "SESSION_INVALID");
+    if (!stillCurrent()) return;
+    await clearSession(token, message);
+    if (stillCurrent()) {
       setModeFromSession(null);
       resetSyncStateForSession(null);
       useAuthStore.setState({
         session: null,
         terminalEnrolled: false,
         scopeLocked: false,
+        bootError: null,
         notice: message,
       });
     }
-    return;
+  } catch (error) {
+    if (stillCurrent())
+      useAuthStore.setState({
+        bootError:
+          "Sesi tidak valid dan akses sudah dikunci, tetapi penyimpanan lokal belum dapat diamankan. Jangan hapus data aplikasi; coba keluar lagi atau hubungi pengelola.",
+      });
+    throw error;
   }
+}
+
+async function handleAccessFailure(token: string, code: string): Promise<void> {
+  if (requiresSessionReauthentication(code)) {
+    const pending = sessionInvalidations.get(token);
+    if (pending) return pending;
+    const invalidation = invalidateSession(token, code).finally(() => {
+      if (sessionInvalidations.get(token) === invalidation)
+        sessionInvalidations.delete(token);
+    });
+    sessionInvalidations.set(token, invalidation);
+    return invalidation;
+  }
+  const auth = useAuthStore.getState();
+  if (!SCOPE_ACCESS_CODES.has(code) || auth.session?.token !== token) return;
+  const session = auth.session;
   if (session.contextKind && session.contextKind !== "tenant") return;
   useAuthStore.setState({
     scopeLocked: true,
@@ -817,4 +914,6 @@ registerAccessFailureHandler(async (token, code) => {
   });
   useModeStore.setState({ accessBlocked: true });
   await quarantineScope(session, code);
-});
+}
+
+registerAccessFailureHandler(handleAccessFailure);

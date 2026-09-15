@@ -135,34 +135,35 @@ describe("tenant quarantine and explicit origin revalidation", () => {
     ).resolves.toBe("TENANT_SUSPENDED");
   });
 
-  it("global account revocation follows the affected actor without changing signed outbox bytes", async () => {
-    await quarantineScope(session, "ACCOUNT_ACCESS_CHANGED");
-    expect(mockRunAsync).toHaveBeenNthCalledWith(
-      1,
-      expect.any(String),
-      "ACCOUNT_ACCESS_CHANGED",
-      session.user.id,
-      expect.any(String),
-    );
-    mockGetFirstAsync.mockResolvedValue({
-      blocked_reason: "ACCOUNT_ACCESS_CHANGED",
-      blocked_actor_id: session.user.id,
-    });
-    await expect(
-      blockedScopeReason({
-        ...session,
-        user: { ...session.user, id: "another-account" },
-      }),
-    ).resolves.toBeNull();
-    await expect(blockedScopeReason(session)).resolves.toBe(
-      "ACCOUNT_ACCESS_CHANGED",
-    );
-    expect(
-      mockRunAsync.mock.calls.some(([sql]) =>
-        /SET\s+operation_json|DELETE/.test(String(sql)),
-      ),
-    ).toBe(false);
-  });
+  it.each(["ACCOUNT_ACCESS_CHANGED", "SESSION_INVALID"])(
+    "%s follows the affected actor without changing signed outbox bytes",
+    async (reason) => {
+      await quarantineScope(session, reason);
+      expect(mockRunAsync).toHaveBeenNthCalledWith(
+        1,
+        expect.any(String),
+        reason,
+        session.user.id,
+        expect.any(String),
+      );
+      mockGetFirstAsync.mockResolvedValue({
+        blocked_reason: reason,
+        blocked_actor_id: session.user.id,
+      });
+      await expect(
+        blockedScopeReason({
+          ...session,
+          user: { ...session.user, id: "another-account" },
+        }),
+      ).resolves.toBeNull();
+      await expect(blockedScopeReason(session)).resolves.toBe(reason);
+      expect(
+        mockRunAsync.mock.calls.some(([sql]) =>
+          /SET\s+operation_json|DELETE/.test(String(sql)),
+        ),
+      ).toBe(false);
+    },
+  );
 
   it("deduplicates immutable origins and releases only the exact approved actor/session/enrollment tuple", async () => {
     const first = queued("one");
