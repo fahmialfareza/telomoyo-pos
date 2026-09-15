@@ -1,0 +1,70 @@
+:root {
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #191b23;
+  background: #f4f5f7;
+  line-height: 1.7;
+  font-size: 16px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: #003d9b; text-underline-offset: 0.22em; overflow-wrap: anywhere; }
+a:hover { text-decoration-thickness: 2px; }
+a:focus-visible { outline: 3px solid #a34e00; outline-offset: 5px; border-radius: 3px; }
+.skip-link { position: absolute; top: -100px; left: 16px; padding: 12px 18px; background: white; z-index: 1; }
+.skip-link:focus { top: 12px; }
+.site-header { background: white; border-bottom: 1px solid #e1e5ec; }
+.header-inner { max-width: 1008px; margin: auto; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.brand { display: inline-flex; align-items: center; gap: 7px; font-size: 21px; font-weight: 750; text-decoration: none; letter-spacing: -0.4px; }
+.brand-light { font-weight: 450; }
+.brand-mark { display: inline-grid; place-items: center; width: 38px; height: 38px; margin-right: 3px; background: #003d9b; color: white; border-bottom: 4px solid #ff8b00; border-radius: 10px; font-size: 23px; }
+.header-inner nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.header-inner nav a { padding: 10px 12px; min-height: 48px; display: inline-flex; align-items: center; text-decoration: none; font-size: 14px; border-radius: 8px; }
+.header-inner nav a[aria-current="page"] { background: #eaf1ff; font-weight: 650; }
+.page { max-width: 1008px; padding: 0 24px; margin: auto; }
+.hero { max-width: 780px; padding: 52px 0 28px; }
+.eyebrow { text-transform: uppercase; letter-spacing: 0.11em; font-size: 11px; font-weight: 750; color: #003d9b; margin: 0 0 12px; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.04em; line-height: 1.15; margin: 0 0 18px; overflow-wrap: anywhere; }
+.lead { color: #5e6270; font-size: 18px; line-height: 1.6; margin: 0 0 20px; }
+.updated { font-size: 13px; color: #5e6270; margin: 0; }
+.contact-card { background: #eaf1ff; border: 1px solid #d7e3fa; border-left: 4px solid #003d9b; border-radius: 12px; padding: 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.contact-card > div { min-width: 0; flex: 1; }
+.contact-card .eyebrow { margin-bottom: 4px; }
+.contact-card p { margin: 4px 0; }
+.operator { font-weight: 700; font-size: 18px; }
+.button { display: inline-flex; justify-content: center; align-items: center; text-align: center; min-height: 48px; padding: 13px 20px; background: #003d9b; color: white; border-radius: 8px; text-decoration: none; font-weight: 650; line-height: 1.5; max-width: 280px; }
+.button:hover { background: #002f78; }
+.contents { padding: 20px 0; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.contents a { display: inline-flex; align-items: center; min-height: 48px; font-size: 14px; }
+.card { background: white; padding: 36px; border: 1px solid #e1e5ec; border-radius: 12px; }
+.policy section + section { border-top: 1px solid #e8ebf0; padding-top: 26px; margin-top: 30px; }
+h2 { margin: 0 0 14px; font-size: 21px; line-height: 1.4; letter-spacing: -0.025em; overflow-wrap: anywhere; scroll-margin-top: 20px; }
+p { margin: 0 0 14px; }
+section p:last-child { margin-bottom: 0; }
+ul, ol { padding-left: 24px; margin: 14px 0; }
+li { padding-left: 4px; margin-bottom: 12px; }
+.text-link { font-weight: 650; display: inline-block; padding: 8px 0; }
+.notice { margin: 20px 0; padding: 18px 22px; border: 1px solid #f1d29c; border-left: 4px solid #ff8b00; border-radius: 10px; background: #fff7e8; color: #573700; }
+.site-footer { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; color: #5e6270; font-size: 13px; padding: 28px 0; }
+@media (max-width: 600px) {
+  .header-inner { padding: 12px 16px; gap: 8px; }
+  .page { padding: 0 16px; }
+  .hero { padding-top: 32px; }
+  .lead { font-size: 16px; }
+  .contact-card { flex-direction: column; align-items: stretch; padding: 20px; gap: 16px; }
+  .button { max-width: none; }
+  .card { padding: 24px 20px; }
+  h2 { font-size: 19px; }
+  .site-footer { display: block; }
+}
+@media print {
+  :root { color: black; background: white; font-size: 11pt; }
+  .site-header, .skip-link, .contents { display: none; }
+  .page { max-width: none; padding: 0; }
+  .hero { padding-top: 0; }
+  .card, .contact-card, .notice { border: 0; padding: 0; background: white; }
+  .contact-card { display: block; }
+  .contact-card .button { display: none; }
+  h2 { break-after: avoid; }
+  a { color: black; }
+}

@@ -1,0 +1,44 @@
+{{define "layout"}}<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{{.Description}}">
+  <meta name="color-scheme" content="light">
+  <title>{{.Title}} — Telomoyo POS</title>
+  <link rel="stylesheet" href="/legal/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Langsung ke isi</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/privacy-policy" aria-label="Telomoyo POS — Kebijakan Privasi"><span class="brand-mark" aria-hidden="true">T</span>Telomoyo <span class="brand-light">POS</span></a>
+      <nav aria-label="Informasi privasi">
+        <a href="/privacy-policy"{{if not .IsDeletion}} aria-current="page"{{end}}>Privasi</a>
+        <a href="/account-deletion"{{if .IsDeletion}} aria-current="page"{{end}}>Penghapusan akun</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="page" tabindex="-1">
+    <header class="hero">
+      <p class="eyebrow">Telomoyo POS · Informasi pengguna</p>
+      <h1>{{.Title}}</h1>
+      <p class="lead">{{if .IsDeletion}}Account &amp; Data Deletion — ajukan permintaan tanpa perlu masuk atau memasang ulang aplikasi.{{else}}Privacy Policy — bagaimana data Anda digunakan dalam operasional internal Telomoyo POS.{{end}}</p>
+      <p class="updated">Terakhir diperbarui: <time datetime="2026-09-15">15 September 2026</time></p>
+    </header>
+    {{if .Available}}
+      {{if .IsDeletion}}{{template "deletion" .}}{{else}}{{template "privacy" .}}{{end}}
+    {{else}}
+      <section class="card" aria-labelledby="unavailable-title">
+        <h2 id="unavailable-title">Informasi kontak sedang disiapkan</h2>
+        <p>Halaman ini belum tersedia karena kontak privasi pengelola belum dikonfigurasi. Silakan coba lagi setelah pengelola memperbarui layanan.</p>
+        <p>Tidak ada permintaan penghapusan yang dikirim melalui halaman ini.</p>
+      </section>
+    {{end}}
+    <footer class="site-footer">
+      <p><strong>Telomoyo POS</strong><br>{{.OperatorName}}</p>
+      <p>Informasi publik · Tidak memerlukan login</p>
+    </footer>
+  </main>
+</body>
+</html>{{end}}

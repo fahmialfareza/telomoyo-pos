@@ -45,6 +45,7 @@ type Dependencies struct {
 	Redis        Pinger
 	Logger       *logrus.Logger
 	NewRelic     *newrelic.Application
+	LegalPages   LegalPageOptions
 }
 
 type Server struct {
@@ -64,6 +65,12 @@ func New(deps Dependencies) *gin.Engine {
 	)
 
 	api := router.Group("/api/v1")
+	// Public, read-only pages: no session, tenant, or database access required.
+	for _, method := range []string{http.MethodGet, http.MethodHead} {
+		router.Handle(method, "/privacy-policy", server.privacyPolicy)
+		router.Handle(method, "/account-deletion", server.accountDeletion)
+		router.Handle(method, "/legal/styles.css", server.legalStyles)
+	}
 	api.GET("/health/live", server.live)
 	api.GET("/health/ready", server.ready)
 	api.POST("/auth/login", server.login)

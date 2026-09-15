@@ -49,6 +49,9 @@ func run() error {
 	}
 	defer telemetry.Shutdown(5 * time.Second)
 	logger := telemetry.Logger
+	if cfg.PrivacyContactEmail == "" {
+		logger.Warn("Public privacy and account-deletion pages are unavailable until PRIVACY_CONTACT_EMAIL is configured")
+	}
 	if cfg.SandboxQRISAmountDeprecated {
 		logger.Warn("SANDBOX_QRIS_AMOUNT is deprecated and applies only to legacy sessions; protocol 3 Sandbox payments use the transaction total")
 	}
@@ -121,6 +124,11 @@ func run() error {
 		Sandbox:      sandbox,
 		Tenancy:      usecase.Tenancy{Repo: store, Passwords: passwords, ProvisioningEnabled: cfg.TenantProvisioningEnabled},
 		Redis:        redisPinger, Logger: logger, NewRelic: telemetry.App,
+		LegalPages: httpapi.LegalPageOptions{
+			OperatorName:         cfg.PrivacyOperatorName,
+			ContactEmail:         cfg.PrivacyContactEmail,
+			SandboxRetentionDays: cfg.SandboxRetentionDays,
+		},
 	})
 	if err := router.SetTrustedProxies(cfg.TrustedProxies); err != nil {
 		return err

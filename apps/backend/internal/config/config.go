@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/mail"
 	"os"
 	"strconv"
 	"strings"
@@ -11,6 +12,8 @@ import (
 type Config struct {
 	TenantProvisioningEnabled   bool
 	HTTPAddr                    string
+	PrivacyOperatorName         string
+	PrivacyContactEmail         string
 	DatabaseURL                 string
 	RedisURL                    string
 	AutoMigrate                 bool
@@ -35,6 +38,8 @@ type Config struct {
 func Load() (Config, error) {
 	cfg := Config{
 		HTTPAddr:               env("HTTP_ADDR", ":8080"),
+		PrivacyOperatorName:    env("PRIVACY_OPERATOR_NAME", "Pengelola Wisata Telomoyo"),
+		PrivacyContactEmail:    strings.TrimSpace(os.Getenv("PRIVACY_CONTACT_EMAIL")),
 		DatabaseURL:            strings.TrimSpace(os.Getenv("DATABASE_URL")),
 		RedisURL:               strings.TrimSpace(os.Getenv("REDIS_URL")),
 		SandboxRetentionDays:   30,
@@ -52,6 +57,15 @@ func Load() (Config, error) {
 	}
 	if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
+	}
+	// Optional for existing deployments, but public legal pages are unavailable
+	// until a real contact is configured. Never publish a placeholder mailbox.
+	if cfg.PrivacyContactEmail != "" {
+		address, err := mail.ParseAddress(cfg.PrivacyContactEmail)
+		if err != nil || address.Name != "" || address.Address != cfg.PrivacyContactEmail ||
+			strings.ContainsAny(cfg.PrivacyContactEmail, "\r\n?#&%\"<>") {
+			return Config{}, fmt.Errorf("PRIVACY_CONTACT_EMAIL must be a single plain email address")
+		}
 	}
 
 	var err error

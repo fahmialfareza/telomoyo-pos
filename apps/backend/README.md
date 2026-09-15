@@ -29,6 +29,67 @@ Health endpoints are available at `/api/v1/health/live` and
 `/api/v1/health/ready`, with `/healthz` and `/readyz` aliases for hosting
 platforms.
 
+## Public privacy and account-deletion pages
+
+The API also serves two public Indonesian HTML pages, without login or a
+separate frontend:
+
+- `/privacy-policy` — privacy policy, processing disclosures, and contact.
+- `/account-deletion` — instructions and an email link to request account and
+  associated-data deletion without reinstalling or signing into the app.
+
+Both pages and their stylesheet are embedded in the Go binary, so the existing
+distroless image needs no extra files or Dockerfile changes. Their handlers do
+not query PostgreSQL/Redis or authenticate a session. The API still follows its
+normal startup requirements. Requests retain the existing logging and New Relic
+middleware. GET and HEAD are supported; these are not JSON API mutation routes.
+
+In Railway's **API service → Variables**, set:
+
+```dotenv
+PRIVACY_OPERATOR_NAME="Pengelola Wisata Telomoyo"
+PRIVACY_CONTACT_EMAIL=your-real-monitored-mailbox
+```
+
+Replace `your-real-monitored-mailbox` with a real, monitored email address (no
+`mailto:` prefix or display name). Do not publish the placeholder above. Operator
+name defaults to Pengelola Wisata Telomoyo. An omitted/blank email keeps existing
+API deployments working, but both legal pages return **503** with a setup notice
+and `noindex`; a nonempty malformed email is rejected at startup. A startup
+warning identifies missing configuration without logging credentials.
+
+Deploy the backend, then use your public HTTPS domain—not the internal Railway
+hostname or a private/local IP—in Google Play Console:
+
+| Console field                            | Public URL                                        |
+| ---------------------------------------- | ------------------------------------------------- |
+| Privacy policy                           | `https://YOUR-PUBLIC-API-DOMAIN/privacy-policy`   |
+| Account and associated-data deletion URL | `https://YOUR-PUBLIC-API-DOMAIN/account-deletion` |
+
+Replace the host with the API's generated Railway domain or its custom domain.
+No `/api/v1` prefix is used. Keep these routes and `/legal/styles.css` publicly
+accessible; do not put them behind authentication, geographic restrictions, or
+an interactive proxy challenge. Serve production through HTTPS.
+
+Check both URLs while signed out and confirm the actual mailbox is shown:
+
+```sh
+curl --fail --head https://YOUR-PUBLIC-API-DOMAIN/privacy-policy
+curl --fail --head https://YOUR-PUBLIC-API-DOMAIN/account-deletion
+```
+
+Expect `200` and `Content-Type: text/html; charset=utf-8`, not a login screen or
+JSON response. Open the pages in a browser, navigate between them, and test the
+email link. It opens the user's email client with a subject; **the user must
+send the email**. The backend does not accept/store requests, send mail, or
+delete anything from these routes. No email-service credentials are needed.
+
+Before Play submission, complete the
+[publication and manual-request checklist](../../docs/google-play-privacy.md).
+In particular, approve the actual retention/deletion process and provide the
+in-app privacy/deletion links; publishing HTML alone is not an account-erasure
+implementation or a guarantee of Google Play approval.
+
 ## Container targets
 
 The Dockerfile produces separate non-root images so the serving image contains

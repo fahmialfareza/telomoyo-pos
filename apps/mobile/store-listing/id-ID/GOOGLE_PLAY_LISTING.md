@@ -51,6 +51,12 @@ Aplikasi ini memerlukan akun staf dari pengelola dan perangkat yang telah disiap
 
 File untuk diunggah: [feature-graphic.jpg](./feature-graphic.jpg).
 
+Untuk kolom **Privacy policy** dan **Account and associated-data deletion**, gunakan
+halaman backend `/privacy-policy` dan `/account-deletion` pada domain HTTPS publik.
+Lihat [petunjuk publikasi dan penanganan permintaan](../../../../docs/google-play-privacy.md).
+Pastikan email kontak nyata telah dikonfigurasi dan proses penghapusan disetujui
+pengelola sebelum menyerahkan URL ke Play Console.
+
 ![Telomoyo POS dengan ilustrasi pegunungan biru, jalan jingga, struk, dan laporan: Operasional wisata, lebih tertata.](./feature-graphic.jpg)
 
 Spesifikasi: **1024 × 500 piksel**, JPEG RGB, tanpa transparansi. Google Play menerima JPEG atau PNG 24-bit tanpa alfa pada ukuran ini. [Ketentuan feature graphic Google Play](https://support.google.com/googleplay/android-developer/answer/9866151?hl=id).
@@ -92,4 +98,3 @@ Constraints: No changes to the app name; no Sewa Motor wording; no fake awards, 
 ```
 
 </details>
-

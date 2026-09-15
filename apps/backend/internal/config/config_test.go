@@ -9,6 +9,8 @@ import (
 func setRequiredTestEnvironment(t *testing.T) {
 	t.Helper()
 	t.Setenv("DATABASE_URL", "postgres://test:test@localhost:5432/test")
+	t.Setenv("PRIVACY_OPERATOR_NAME", "")
+	t.Setenv("PRIVACY_CONTACT_EMAIL", "")
 	t.Setenv("AUTO_MIGRATE", "")
 	t.Setenv("SANDBOX_ENABLED", "")
 	t.Setenv("SANDBOX_RETENTION_DAYS", "")
@@ -48,6 +50,42 @@ func TestLoadUsesProductionSafeSandboxDefaults(t *testing.T) {
 	}
 	if cfg.SandboxCleanupInterval != 24*time.Hour {
 		t.Fatalf("SandboxCleanupInterval = %s", cfg.SandboxCleanupInterval)
+	}
+}
+
+func TestLoadPrivacyPageConfiguration(t *testing.T) {
+	setRequiredTestEnvironment(t)
+	t.Setenv("NEW_RELIC_ENABLED", "false")
+	t.Setenv("NEW_RELIC_LICENSE_KEY", "")
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.PrivacyOperatorName != "Pengelola Wisata Telomoyo" || cfg.PrivacyContactEmail != "" {
+		t.Fatal("privacy defaults must name the operator without inventing a contact")
+	}
+	t.Setenv("PRIVACY_OPERATOR_NAME", "  Pengelola Uji  ")
+	t.Setenv("PRIVACY_CONTACT_EMAIL", "  privacy+telomoyo@example.org  ")
+	cfg, err = Load()
+	if err != nil || cfg.PrivacyOperatorName != "Pengelola Uji" || cfg.PrivacyContactEmail != "privacy+telomoyo@example.org" {
+		t.Fatalf("unexpected privacy configuration: operator=%q email=%q err=%v", cfg.PrivacyOperatorName, cfg.PrivacyContactEmail, err)
+	}
+}
+
+func TestLoadRejectsInvalidPrivacyEmail(t *testing.T) {
+	for _, email := range []string{
+		"not-an-email", "mailto:privacy@example.org", "Privacy <privacy@example.org>",
+		"one@example.org,two@example.org", "privacy@example.org?bcc=other@example.org",
+		"privacy@example.org\r\nBcc: other@example.org", "\"question?\"@example.org",
+	} {
+		t.Run(email, func(t *testing.T) {
+			setRequiredTestEnvironment(t)
+			t.Setenv("PRIVACY_CONTACT_EMAIL", email)
+			_, err := Load()
+			if err == nil || !strings.Contains(err.Error(), "PRIVACY_CONTACT_EMAIL") {
+				t.Fatalf("invalid contact was accepted: %v", err)
+			}
+		})
 	}
 }
 

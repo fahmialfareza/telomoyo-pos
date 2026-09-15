@@ -1,0 +1,86 @@
+{{define "privacy"}}
+<aside class="contact-card" aria-label="Pengelola dan kontak privasi">
+  <div><p class="eyebrow">Pengelola aplikasi</p><p class="operator">{{.OperatorName}}</p><p>Aplikasi kasir internal untuk staf dan unit bisnis yang dikelola organisasi.</p></div>
+  <a class="button" href="{{.PrivacyMailURL}}">Hubungi pengelola</a>
+</aside>
+<nav class="contents" aria-label="Daftar isi kebijakan privasi">
+  <a href="#data">Data yang diproses</a><a href="#permissions">Izin perangkat</a><a href="#sharing">Akses &amp; penyedia layanan</a><a href="#retention">Penyimpanan &amp; retensi</a><a href="#rights">Hak &amp; penghapusan</a>
+</nav>
+<article class="card policy">
+  <section aria-labelledby="scope">
+    <h2 id="scope">1. Tentang kebijakan ini</h2>
+    <p>Kebijakan ini menjelaskan pemrosesan data melalui aplikasi Android Telomoyo POS, API, dan halaman informasi publiknya. Telomoyo POS digunakan untuk mencatat transaksi, pembayaran, struk, dan laporan operasional. Akun staf diberikan oleh Superadmin; tidak tersedia pendaftaran akun publik.</p>
+    <p>Unit bisnis memiliki data operasional terpisah, tetapi merupakan bagian dari organisasi yang sama. Akun staf aktif dapat memilih unit bisnis aktif sesuai model akses organisasi; kewenangan melakukan tindakan ditentukan oleh peran Admin atau Superadmin.</p>
+  </section>
+  <section aria-labelledby="data">
+    <h2 id="data">2. Data yang diproses</h2>
+    <ul>
+      <li><strong>Akun staf:</strong> nama lengkap, nama pengguna, peran, status akun, waktu pembuatan/perubahan akun, serta informasi sesi dan autentikasi. Kata sandi disimpan di server dalam bentuk hash, bukan teks asli.</li>
+      <li><strong>Transaksi dan pembayaran:</strong> paket, jumlah, harga, total, waktu transaksi, metode tunai atau QRIS, nominal dan status pembayaran, petugas, terminal, riwayat koreksi, serta alasan perubahan yang diisi staf.</li>
+      <li><strong>Identitas bisnis dan QRIS:</strong> nama bisnis, alamat dan nomor telepon bila diisi, isi kode QRIS merchant, versi konfigurasi, serta identitas struk yang tersimpan pada transaksi.</li>
+      <li><strong>Perangkat dan pencetakan:</strong> identitas instalasi dan terminal, model perangkat, versi sistem/aplikasi, kunci publik pendaftaran terminal, identitas printer, serta hasil dan kesalahan pencetakan.</li>
+      <li><strong>Sinkronisasi dan keamanan:</strong> operasi yang menunggu pengiriman, waktu sinkronisasi, konflik, jejak audit, alamat IP, rute permintaan, status respons, waktu eksekusi, dan informasi diagnostik kesalahan.</li>
+      <li><strong>Permintaan bantuan atau privasi:</strong> alamat email dan informasi yang Anda kirimkan kepada pengelola untuk menanggapi atau memverifikasi permintaan.</li>
+    </ul>
+    <p>Formulir transaksi tidak meminta identitas pembeli seperti nomor KTP atau kredensial perbankan. Jangan memasukkan informasi pribadi yang tidak diperlukan ke dalam alasan koreksi, nama paket, atau kolom teks lainnya.</p>
+  </section>
+  <section aria-labelledby="purposes">
+    <h2 id="purposes">3. Tujuan penggunaan</h2>
+    <p>Data digunakan untuk mengautentikasi staf, menerapkan kewenangan, menjalankan transaksi dan pelaporan, menyiapkan QRIS, mencetak struk, menyinkronkan pekerjaan luring, menjaga riwayat perubahan, mencegah penyalahgunaan, serta memperbaiki keandalan layanan. Data permintaan privasi digunakan untuk memverifikasi identitas dan menindaklanjuti permintaan.</p>
+    <p>Telomoyo POS tidak menampilkan iklan dan tidak menggunakan data operasional untuk penargetan iklan. Data tidak dijual.</p>
+  </section>
+  <section aria-labelledby="permissions">
+    <h2 id="permissions">4. Kamera, gambar, dan izin perangkat</h2>
+    <ul>
+      <li><strong>Kamera dan pemilih gambar:</strong> digunakan ketika staf mengambil foto atau memilih gambar QRIS merchant. Kode dibaca di perangkat. Saat konfigurasi disimpan, teks QRIS dikirim ke backend; fitur ini tidak mengunggah berkas foto aslinya ke backend. Salinan sementara dapat berada di penyimpanan aplikasi atau sistem.</li>
+      <li><strong>Bluetooth/perangkat terdekat:</strong> digunakan untuk memilih dan menghubungkan printer yang kompatibel. Pada versi Android tertentu, izin lokasi diperlukan untuk fungsi Bluetooth; aplikasi tidak memiliki fitur pelacakan lokasi GPS.</li>
+      <li><strong>Jaringan dan tugas latar belakang:</strong> digunakan untuk autentikasi dan sinkronisasi ketika jaringan serta sistem operasi mengizinkannya.</li>
+      <li><strong>Penyimpanan dan berbagi:</strong> digunakan untuk data lokal, pembuatan laporan, dan berbagi berkas atas tindakan pengguna.</li>
+    </ul>
+    <p>Izin dapat dikelola melalui pengaturan Android. Menolak izin tertentu dapat menonaktifkan fitur terkait, seperti pengambilan QRIS atau pencetakan, tanpa memberikan aplikasi akses ke seluruh isi perangkat.</p>
+  </section>
+  <section aria-labelledby="payments">
+    <h2 id="payments">5. Pembayaran QRIS dan Sandbox</h2>
+    <p>Aplikasi menampilkan QRIS merchant dengan nominal pembayaran. Pembayar menyelesaikan pembayaran melalui aplikasi bank atau penyedia pembayarannya sendiri, yang memiliki kebijakan privasi tersendiri. Telomoyo POS tidak meminta PIN, kata sandi bank, OTP, atau akses rekening pembayar. Status pembayaran dikonfirmasi manual oleh staf, bukan diverifikasi otomatis oleh aplikasi.</p>
+    <p>Sandbox memisahkan pencatatan uji dari laporan Produksi, tetapi QRIS-nya tetap menggunakan merchant nyata. Membayar QRIS Sandbox tetap memindahkan uang sungguhan sesuai nominal yang ditampilkan. Riwayat QRIS dipertahankan untuk menjaga kecocokan transaksi dan cetak ulang.</p>
+  </section>
+  <section aria-labelledby="sharing">
+    <h2 id="sharing">6. Siapa yang dapat mengakses data</h2>
+    <ul>
+      <li><strong>Staf dan pengelola yang berwenang:</strong> sesuai peran dan kebutuhan operasional organisasi, termasuk penanganan akun, transaksi, laporan, dan audit.</li>
+      <li><strong>Penyedia infrastruktur:</strong> layanan hosting dan penyimpanan backend, termasuk Railway pada deployment yang menggunakannya, memproses data untuk menjalankan layanan. Administrator infrastruktur dapat mengelola basis data dan cadangan untuk pemulihan.</li>
+      <li><strong>New Relic:</strong> ketika monitoring diaktifkan, menerima data kinerja, jejak permintaan, kesalahan, dan log yang diteruskan sesuai konfigurasi. Data ini dapat mencakup alamat IP dan identitas teknis permintaan, tenant, atau sesi. Log diagnostik tidak dianggap anonim.</li>
+      <li><strong>Penerima yang dipilih pengguna:</strong> printer menerima isi struk; aplikasi atau pihak yang dipilih melalui fitur berbagi menerima laporan yang dibagikan.</li>
+      <li><strong>Penyedia email dan pihak yang diwajibkan hukum:</strong> email digunakan untuk menerima permintaan; informasi dapat diungkapkan apabila diperlukan untuk memenuhi kewajiban hukum atau menangani insiden keamanan.</li>
+    </ul>
+    <p>Lokasi pemrosesan mengikuti wilayah layanan yang digunakan pengelola dan penyedia tersebut, yang dapat berada di luar Indonesia. Pengelola dapat dihubungi untuk informasi penyedia dan pengaturan penyimpanan yang berlaku.</p>
+  </section>
+  <section aria-labelledby="security">
+    <h2 id="security">7. Penyimpanan dan pengamanan</h2>
+    <p>Data operasional disimpan pada backend dan pada basis data lokal terenkripsi yang dipisahkan per unit bisnis dan mode. Kunci serta kredensial lokal dikelola melalui penyimpanan aman perangkat. Server menerapkan pemeriksaan sesi, peran, terminal, dan ruang data; koneksi layanan Produksi harus menggunakan HTTPS.</p>
+    <p>Pemisahan akses, hash kata sandi, dan pencatatan audit membantu melindungi data, tetapi tidak menjamin keamanan mutlak. Perangkat bersama, hasil ekspor, dan struk fisik juga harus dijaga oleh staf yang menggunakannya.</p>
+    <p>Halaman informasi publik ini tidak menggunakan cookie, skrip analitik, atau pelacak iklan. Server dan penyedia hosting tetap dapat mencatat kunjungan, termasuk IP, waktu, rute, dan status respons, untuk operasi dan keamanan layanan.</p>
+  </section>
+  <section aria-labelledby="retention">
+    <h2 id="retention">8. Retensi data</h2>
+    <ul>
+      <li><strong>Akun dan data Produksi:</strong> disimpan selama diperlukan untuk operasional, pertanggungjawaban transaksi, keamanan, dan kewajiban yang berlaku. Tidak ada penghapusan otomatis berdasarkan usia pada aplikasi saat ini. Riwayat transaksi, revisi, identitas petugas, dan audit tidak otomatis hilang ketika akun dinonaktifkan atau transaksi ditandai dihapus.</li>
+      <li><strong>Sandbox:</strong> data aktif bertahan hingga direset. Generasi yang sudah direset dijadwalkan untuk dibersihkan setelah masa retensi yang ditetapkan saat reset; konfigurasi saat ini adalah {{.SandboxRetentionDays}} hari. Pembersihan dijalankan berkala, bukan seketika. Bukti reset/pembersihan dan akun staf tetap dipertahankan.</li>
+      <li><strong>Data di perangkat:</strong> logout atau pencabutan sesi tidak menghapus seluruh basis data maupun antrean yang belum tersinkron. Bukti luring dapat dikunci untuk mencegah pengiriman oleh akun lain. Penanganannya perlu dikoordinasikan dengan pengelola.</li>
+      <li><strong>Cadangan dan log:</strong> cadangan pemulihan, log hosting, dan data monitoring mengikuti retensi layanan dan kebijakan operator masing-masing. Reset Sandbox tidak menghapus salinan cadangan. Berkas ekspor serta struk yang sudah dibagikan berada pada penerimanya.</li>
+    </ul>
+    <p>Pengelola menilai data yang dapat dihapus atau dianonimkan serta data yang masih perlu disimpan ketika menerima permintaan, dan menjelaskan alasan serta jangka waktu retensi yang berlaku. Retensi Sandbox bukan batas retensi untuk akun, data Produksi, log, atau cadangan.</p>
+  </section>
+  <section aria-labelledby="rights">
+    <h2 id="rights">9. Akses, koreksi, dan penghapusan</h2>
+    <p>Anda dapat menghubungi pengelola untuk meminta informasi, akses, koreksi, atau penghapusan akun dan data terkait. Pengelola perlu memverifikasi identitas pemohon dan menilai kewajiban penyimpanan sebelum menindaklanjuti. Menonaktifkan akun tidak sama dengan menghapus akun dan datanya.</p>
+    <p><a class="text-link" href="/account-deletion">Buka petunjuk permintaan penghapusan akun &amp; data →</a></p>
+    <p>Jalur permintaan tersebut dapat digunakan tanpa login dan tanpa memasang aplikasi. Jangan mengirim kata sandi, OTP, PIN, atau informasi rekening rahasia.</p>
+  </section>
+  <section aria-labelledby="updates">
+    <h2 id="updates">10. Pembaruan dan kontak</h2>
+    <p>Telomoyo POS ditujukan untuk penggunaan internal oleh staf, bukan layanan yang ditujukan kepada anak-anak. Kebijakan ini dapat diperbarui saat fungsi aplikasi atau pemrosesan data berubah; tanggal pembaruan ditampilkan di bagian atas halaman.</p>
+    <p>Untuk pertanyaan privasi, hubungi <strong>{{.OperatorName}}</strong> melalui <a href="{{.PrivacyMailURL}}">{{.ContactEmail}}</a>.</p>
+  </section>
+</article>
+{{end}}

@@ -1,0 +1,44 @@
+{{define "deletion"}}
+<section class="contact-card" aria-labelledby="request-title">
+  <div><p class="eyebrow">Permintaan kepada pengelola</p><h2 id="request-title">Ajukan lewat email</h2><p>Kirim ke <a href="{{.DeletionMailURL}}">{{.ContactEmail}}</a><br>Dikelola oleh {{.OperatorName}}.</p></div>
+  <a class="button" href="{{.DeletionMailURL}}">Minta penghapusan akun &amp; data</a>
+</section>
+<div class="notice"><strong>Ini adalah jalur permintaan manual.</strong> Tombol membuka aplikasi email Anda. Membuka halaman atau tombol tidak mengirim permintaan dan tidak langsung menghapus data. Kirim email untuk mengajukan permintaan; bila aplikasi email tidak tersedia, gunakan alamat di atas melalui layanan email pilihan Anda.</div>
+<article class="card policy">
+  <section aria-labelledby="steps">
+    <h2 id="steps">1. Cara mengajukan permintaan</h2>
+    <ol>
+      <li>Gunakan subjek <strong>Permintaan penghapusan akun dan data Telomoyo POS</strong>.</li>
+      <li>Cantumkan nama dan nama pengguna akun Telomoyo POS. Nama unit bisnis dapat ditambahkan untuk membantu pencarian akun.</li>
+      <li>Nyatakan apakah Anda meminta penghapusan akun beserta data terkait, atau hanya data tertentu. Anda tidak perlu memberikan alasan permintaan.</li>
+      <li>Kirim email dan tunggu tanggapan pengelola untuk verifikasi identitas serta tindak lanjut.</li>
+    </ol>
+    <p>Anda tetap dapat mengajukan permintaan jika tidak dapat login, akun telah dinonaktifkan, atau aplikasi telah dihapus dari perangkat. Jangan mengirim kata sandi, OTP, PIN, foto identitas, atau kredensial perbankan dalam permintaan awal.</p>
+  </section>
+  <section aria-labelledby="process">
+    <h2 id="process">2. Setelah permintaan diterima</h2>
+    <p>Pengelola memverifikasi bahwa permintaan berasal dari pemilik akun atau pihak yang berwenang, kemudian memeriksa data akun dan data terkait di seluruh unit bisnis serta mode yang relevan. Karena satu akun digunakan lintas unit bisnis, penghapusan akun bukan sekadar keluar dari satu bisnis.</p>
+    <p>Pengelola akan menjelaskan data yang dapat dihapus atau dianonimkan, data yang perlu dipertahankan beserta alasannya, serta perkiraan waktu penyelesaian. Pemrosesan dilakukan oleh pengelola, bukan penghapusan otomatis oleh halaman ini. Konfirmasi hasil disampaikan melalui email setelah tindakan selesai.</p>
+  </section>
+  <section aria-labelledby="scope">
+    <h2 id="scope">3. Akun dan data yang tercakup</h2>
+    <p>Permintaan dapat mencakup profil staf (nama dan nama pengguna), kredensial serta sesi, kaitan perangkat, dan data pribadi lain yang terkait dengan akun. Pengelola juga meninjau data pada perangkat, antrean sinkronisasi, penyedia layanan, dan cadangan yang relevan; data tersebut tidak otomatis hilang ketika akun dinonaktifkan.</p>
+    <p><strong>Penonaktifan bukan penghapusan.</strong> Saat ini, fitur pengelolaan akun dalam aplikasi dapat mencabut akses, tetapi tetap menyimpan akun dan referensi historis. Keluar dari aplikasi, menonaktifkan akun, atau menandai transaksi dihapus bukan bukti bahwa akun dan data terkait telah dihapus.</p>
+  </section>
+  <section aria-labelledby="retained">
+    <h2 id="retained">4. Data yang mungkin perlu dipertahankan</h2>
+    <ul>
+      <li><strong>Bukti transaksi dan pembayaran:</strong> rincian paket, nominal, status, struk, revisi, serta atribusi petugas yang diperlukan untuk pertanggungjawaban dan kewajiban penyimpanan.</li>
+      <li><strong>Audit dan keamanan:</strong> catatan perubahan, pencabutan sesi atau terminal, insiden, dan bukti luring yang belum terselesaikan.</li>
+      <li><strong>Cadangan dan salinan:</strong> cadangan pemulihan, log layanan, cache perangkat, serta laporan atau struk yang sudah diterima pihak lain memerlukan penanganan terpisah.</li>
+    </ul>
+    <p>Data Produksi dan akun tidak memiliki jadwal penghapusan otomatis berdasarkan usia. Jika data tertentu tetap disimpan, pengelola harus menjelaskan kebutuhan dan jangka waktu penyimpanannya saat menanggapi permintaan. Tidak ada janji bahwa seluruh riwayat, cadangan, atau struk fisik akan langsung terhapus setelah email dikirim.</p>
+    <p>Untuk reset Sandbox baru, konfigurasi retensi saat ini adalah {{.SandboxRetentionDays}} hari sebelum memenuhi syarat pembersihan berkala. Generasi sebelumnya mengikuti retensi yang ditetapkan saat reset. Aturan ini tidak menghapus akun, tidak mencakup semua bukti audit, dan tidak berlaku sebagai tenggat penghapusan data Produksi atau cadangan.</p>
+  </section>
+  <section aria-labelledby="follow-up">
+    <h2 id="follow-up">5. Pertanyaan atau tindak lanjut</h2>
+    <p>Untuk meminta perkembangan atau penjelasan, balas rangkaian email permintaan Anda dari layanan email yang Anda gunakan. Jika perlu mengirim tindak lanjut baru, gunakan <a href="{{.DeletionMailURL}}">{{.ContactEmail}}</a>. Informasi yang Anda kirim digunakan untuk verifikasi dan penanganan permintaan.</p>
+    <p><a class="text-link" href="/privacy-policy">Baca Kebijakan Privasi Telomoyo POS →</a></p>
+  </section>
+</article>
+{{end}}
