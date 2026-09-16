@@ -96,7 +96,9 @@ describe("thermal receipt", () => {
     const bytes = Array.from(encodeEscPos(sandboxReceipt, 48));
     const doubleHeightCommand = [0x1d, 0x21, 0x10];
     expect(countByteSequence(bytes, doubleHeightCommand)).toBe(0);
+    // Full-bold job: one ESC E on/off pair around everything.
     expect(countByteSequence(bytes, [0x1b, 0x45, 0x01])).toBe(1);
+    expect(countByteSequence(bytes, [0x1b, 0x45, 0x00])).toBe(1);
   });
 
   it.each([

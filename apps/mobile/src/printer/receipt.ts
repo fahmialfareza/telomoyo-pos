@@ -113,24 +113,27 @@ export function encodeEscPos(
   const boldOn = Uint8Array.from([0x1b, 0x45, 0x01]);
   const boldOff = Uint8Array.from([0x1b, 0x45, 0x00]);
   const cut = Uint8Array.from([0x1d, 0x56, 0x41, 0x00]);
-  // Emphasize every line without increasing character width/height, so both
-  // paper widths retain the same text layout. Starting each job with ESC @
-  // also clears any emphasis/alignment left by an interrupted earlier print.
+  // Bold everything: single ESC E on/off pair around the whole job. No font
+  // size/width change, so the text layout is identical — only darker.
+  // Starting each job with ESC @ clears emphasis/alignment left by an
+  // interrupted earlier print. The native Bluetooth writer sends this in
+  // paced 64B chunks with a settle delay, so the full-bold job (slower,
+  // hotter head) is not truncated by buffer overrun or early disconnect.
   const chunks: Uint8Array[] = [initialize, leftAlign, boldOn];
   for (const line of formatReceipt(document, columns).split("\n")) {
+    const trimmed = line.trim();
     const warning =
       document.dataMode === "sandbox" &&
-      (line.trim() === "TEST - MODE UJI" ||
-        line.trim() === "BUKAN STRUK RESMI");
+      (trimmed === "TEST - MODE UJI" || trimmed === "BUKAN STRUK RESMI");
     if (warning) {
       chunks.push(
         centerAlign,
-        encodePrinterText(`${line.trim()}\n`),
+        encodePrinterText(`${trimmed}\n`),
         leftAlign,
       );
-    } else {
-      chunks.push(encodePrinterText(`${line}\n`));
+      continue;
     }
+    chunks.push(encodePrinterText(`${line}\n`));
   }
   // Leave the printer in its normal text state for the next job. Do not use
   // model-specific heat/density commands: their ranges vary by hardware.
