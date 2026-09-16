@@ -94,7 +94,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "http://10.0.2.2:8000/api/v1",
     enableDemoLogin: process.env.EXPO_PUBLIC_ENABLE_DEMO_LOGIN === "true",
     eas: {
-      projectId: process.env.EAS_PROJECT_ID,
+      projectId: process.env.EXPO_EAS_PROJECT_ID,
     },
   },
   runtimeVersion: {
