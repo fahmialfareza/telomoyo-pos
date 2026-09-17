@@ -13,6 +13,7 @@ require (
 	github.com/newrelic/go-agent/v3/integrations/nrgin v1.4.2
 	github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.4
 	github.com/newrelic/go-agent/v3/integrations/nrpgx5 v1.3.4
+	github.com/newrelic/go-agent/v3/integrations/nrredis-v9 v1.1.2
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/redis/go-redis/v9 v9.19.0
 	github.com/sirupsen/logrus v1.9.4

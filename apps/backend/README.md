@@ -198,8 +198,11 @@ APM history, dashboards, or alerts.
 
 The Gin middleware creates a New Relic web transaction for every route. The
 request context is propagated through use cases, GORM, pgx, and Redis, with
-function-level segments for business and repository work. SQL query parameters
-are excluded from pgx telemetry. All API errors, rejected operations inside a
+function-level segments for business and repository work. pgx and GORM emit
+PostgreSQL datastore segments; Redis commands are instrumented as Redis
+datastore segments so both appear under APM Databases. SQL query parameters
+and Redis keys (session-index token hashes and rate-limit identifiers) are
+excluded from telemetry. All API errors, rejected operations inside a
 successful sync batch, database/cache failures, and recovered panics are
 reported through `NoticeError`.
 

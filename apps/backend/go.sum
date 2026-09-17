@@ -160,6 +160,8 @@ github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.4 h1:YI+Hkj8IWMX9dnog
 github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.4/go.mod h1:ov48JeoaPZuD1Ysf924qQcyVAsNUHMii9UqqWVCrVqo=
 github.com/newrelic/go-agent/v3/integrations/nrpgx5 v1.3.4 h1:7sEMnE9h0al593pQtNBBI3RxTFyLOo6bFfRDzQ3nsew=
 github.com/newrelic/go-agent/v3/integrations/nrpgx5 v1.3.4/go.mod h1:DKI/Zim0CJVASzMCj3FnNPS850ERsDzi1nxYDJsXWbU=
+github.com/newrelic/go-agent/v3/integrations/nrredis-v9 v1.1.2 h1:Yi8MH7fw8RqfILmGSc4yf0AysoNrlHdihJPMqfpT8xY=
+github.com/newrelic/go-agent/v3/integrations/nrredis-v9 v1.1.2/go.mod h1:8YQCdVir0v8y+Ovc7Oi/hwakevRAuymDNj806kjSE/k=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=

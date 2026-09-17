@@ -8,6 +8,7 @@ import (
 
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/observability"
 	"github.com/google/uuid"
+	nrredis "github.com/newrelic/go-agent/v3/integrations/nrredis-v9"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -31,7 +32,19 @@ func New(rawURL string, ttl time.Duration) (*Cache, error) {
 	options.MaxRetries = 5
 	options.MinRetryBackoff = 200 * time.Millisecond
 	options.MaxRetryBackoff = 2 * time.Second
-	return &Cache{client: redis.NewClient(options), ttl: ttl}, nil
+	client := redis.NewClient(options)
+	instrumentClient(client, options)
+	return &Cache{client: client, ttl: ttl}, nil
+}
+
+func instrumentClient(client *redis.Client, options *redis.Options) {
+	client.AddHook(newRedisDatastoreHook(options))
+}
+
+func newRedisDatastoreHook(options *redis.Options) redis.Hook {
+	// nrredis defaults leave Redis keys out of telemetry. Session-index hashes
+	// and rate-limit identifiers must stay private, matching pgx query-arg exclusion.
+	return nrredis.NewHook(options)
 }
 
 func (c *Cache) Close() error { return c.client.Close() }
