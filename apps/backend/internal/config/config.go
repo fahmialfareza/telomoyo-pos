@@ -16,6 +16,8 @@ type Config struct {
 	PrivacyContactEmail         string
 	DatabaseURL                 string
 	RedisURL                    string
+	DBConnectMaxAttempts        int
+	DBConnectMaxBackoff         time.Duration
 	AutoMigrate                 bool
 	SandboxEnabled              bool
 	SandboxRetentionDays        int
@@ -42,6 +44,8 @@ func Load() (Config, error) {
 		PrivacyContactEmail:    strings.TrimSpace(os.Getenv("PRIVACY_CONTACT_EMAIL")),
 		DatabaseURL:            strings.TrimSpace(os.Getenv("DATABASE_URL")),
 		RedisURL:               strings.TrimSpace(os.Getenv("REDIS_URL")),
+		DBConnectMaxAttempts:   10,
+		DBConnectMaxBackoff:    time.Minute,
 		SandboxRetentionDays:   30,
 		SandboxQRISAmount:      1_000,
 		SandboxCleanupInterval: 24 * time.Hour,
@@ -55,8 +59,15 @@ func Load() (Config, error) {
 			os.Getenv("NEW_RELIC_LICENSE_KEY"),
 		),
 	}
+	var err error
 	if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
+	}
+	if cfg.DBConnectMaxAttempts, err = strconv.Atoi(env("DB_CONNECT_MAX_ATTEMPTS", "10")); err != nil || cfg.DBConnectMaxAttempts < 1 {
+		return Config{}, fmt.Errorf("DB_CONNECT_MAX_ATTEMPTS must be a positive integer")
+	}
+	if cfg.DBConnectMaxBackoff, err = time.ParseDuration(env("DB_CONNECT_MAX_BACKOFF", "60s")); err != nil || cfg.DBConnectMaxBackoff < time.Second {
+		return Config{}, fmt.Errorf("DB_CONNECT_MAX_BACKOFF must be a duration of at least 1s")
 	}
 	// Optional for existing deployments, but public legal pages are unavailable
 	// until a real contact is configured. Never publish a placeholder mailbox.
@@ -68,7 +79,6 @@ func Load() (Config, error) {
 		}
 	}
 
-	var err error
 	if cfg.TenantProvisioningEnabled, err = strconv.ParseBool(env("TENANT_PROVISIONING_ENABLED", "false")); err != nil {
 		return Config{}, fmt.Errorf("TENANT_PROVISIONING_ENABLED: %w", err)
 	}

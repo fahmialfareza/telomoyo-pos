@@ -14,12 +14,12 @@ import (
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/adapter/postgres"
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/adapter/redisinfra"
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/adapter/security"
+	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/bootstrap"
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/config"
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/domain"
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/observability"
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/port"
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/usecase"
-	"github.com/fahmialfareza/sewa-motor-app/apps/backend/migrations"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/sirupsen/logrus"
 )
@@ -58,9 +58,11 @@ func run() error {
 	if err := telemetry.WaitForConnection(5 * time.Second); err != nil {
 		logger.WithError(err).Warn("New Relic connection is not ready; telemetry will retry in the background")
 	}
-	connectCtx, connectCancel := context.WithTimeout(context.Background(), 15*time.Second)
-	store, err := postgres.Open(connectCtx, cfg.DatabaseURL, postgres.WithLogger(logger))
-	connectCancel()
+	store, err := postgres.OpenWithRetry(
+		context.Background(), cfg.DatabaseURL,
+		cfg.DBConnectMaxAttempts, cfg.DBConnectMaxBackoff, logger,
+		postgres.WithLogger(logger),
+	)
 	if err != nil {
 		return err
 	}
@@ -69,7 +71,10 @@ func run() error {
 		migrationCtx, migrationCancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		migrationTransaction := telemetry.App.StartTransaction("DatabaseMigration")
 		migrationCtx = newrelic.NewContext(migrationCtx, migrationTransaction)
-		err := migrations.Apply(migrationCtx, store.ORM)
+		err := bootstrap.ApplyMigrationsWithRetry(
+			migrationCtx, store.ORM,
+			cfg.DBConnectMaxAttempts, cfg.DBConnectMaxBackoff, logger,
+		)
 		migrationCancel()
 		migrationTransaction.End()
 		if err != nil {

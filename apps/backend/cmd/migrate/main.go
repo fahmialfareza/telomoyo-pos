@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/adapter/postgres"
+	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/bootstrap"
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/config"
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/observability"
-	"github.com/fahmialfareza/sewa-motor-app/apps/backend/migrations"
 	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
@@ -44,12 +44,19 @@ func run() error {
 	defer transaction.End()
 	ctx = newrelic.NewContext(ctx, transaction)
 
-	store, err := postgres.Open(ctx, cfg.DatabaseURL, postgres.WithLogger(telemetry.Logger))
+	store, err := postgres.OpenWithRetry(
+		ctx, cfg.DatabaseURL,
+		cfg.DBConnectMaxAttempts, cfg.DBConnectMaxBackoff, telemetry.Logger,
+		postgres.WithLogger(telemetry.Logger),
+	)
 	if err != nil {
 		return fmt.Errorf("connect postgres: %w", err)
 	}
 	defer store.Close()
-	if err := migrations.Apply(ctx, store.ORM); err != nil {
+	if err := bootstrap.ApplyMigrationsWithRetry(
+		ctx, store.ORM,
+		cfg.DBConnectMaxAttempts, cfg.DBConnectMaxBackoff, telemetry.Logger,
+	); err != nil {
 		return err
 	}
 	telemetry.Logger.WithContext(ctx).Info("GORM migrations applied")

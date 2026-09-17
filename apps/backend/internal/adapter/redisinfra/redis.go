@@ -21,6 +21,16 @@ func New(rawURL string, ttl time.Duration) (*Cache, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse REDIS_URL: %w", err)
 	}
+	// Serverless Redis (e.g. Railway) can sleep through cold starts; explicit
+	// dial and retry budgets give a waking instance time to come up. Callers
+	// already treat Redis errors as cache-miss/allow, so PostgreSQL stays the
+	// source of truth while Redis is unreachable.
+	options.DialTimeout = 5 * time.Second
+	options.ReadTimeout = 3 * time.Second
+	options.WriteTimeout = 3 * time.Second
+	options.MaxRetries = 5
+	options.MinRetryBackoff = 200 * time.Millisecond
+	options.MaxRetryBackoff = 2 * time.Second
 	return &Cache{client: redis.NewClient(options), ttl: ttl}, nil
 }
 

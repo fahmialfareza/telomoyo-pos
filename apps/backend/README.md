@@ -27,7 +27,26 @@ DATABASE_URL='postgres://sewa_motor:sewa_motor@localhost:5432/sewa_motor?sslmode
 
 Health endpoints are available at `/api/v1/health/live` and
 `/api/v1/health/ready`, with `/healthz` and `/readyz` aliases for hosting
-platforms.
+platforms. `/readyz` (and `/api/v1/health/ready`) ping PostgreSQL, so point
+hosting healthchecks there; `/healthz` always returns 200 and only reports
+Redis status.
+
+## Cold starts on serverless databases (Railway)
+
+PostgreSQL/Redis on serverless plans may sleep through a deploy or cold start.
+Startup therefore retries the initial Postgres connection and the GORM
+migrations with capped exponential backoff and full jitter, controlled by:
+
+```dotenv
+DB_CONNECT_MAX_ATTEMPTS=10   # minimum 1
+DB_CONNECT_MAX_BACKOFF=60s   # minimum 1s; per-attempt dial timeout is 15s
+```
+
+The Redis client gets explicit dial/retry budgets (`DialTimeout` 5s,
+`MaxRetries` 5, retry backoff 200ms–2s); while Redis is unreachable its errors
+degrade to cache-miss/allow so PostgreSQL stays the source of truth. Configure
+the Railway healthcheck against `/readyz` so traffic only arrives after
+Postgres is reachable.
 
 ## Public privacy and account-deletion pages
 
