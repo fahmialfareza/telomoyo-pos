@@ -29,27 +29,12 @@ class SewaPrinterModule : Module() {
       val socket = bluetoothSocket
         ?: throw IllegalStateException("Printer Bluetooth belum tersambung")
       val bytes = Base64.decode(payload, Base64.DEFAULT)
-      // Cheap SPP printers have tiny RX buffers (~128-512B). A single burst
-      // write overruns the buffer and the tail (everything after the title)
-      // is silently dropped — worse when ESC E bold slows the head. Chunk
-      // with flush + pacing so the printer can consume each segment.
+      // Dumb pipe: the JS layer (adapters.ts) is the single pacing layer and
+      // already chunks with gaps plus a settle delay before disconnect, so a
+      // burst write + flush per call keeps printing at normal speed.
       val output = socket.outputStream
-      var offset = 0
-      // Full-bold jobs run the head hotter and slower, so pace conservatively:
-      // smaller chunks + longer gap prevent RX-buffer overrun on 58mm printers.
-      val chunkSize = 64
-      while (offset < bytes.size) {
-        val end = minOf(offset + chunkSize, bytes.size)
-        output.write(bytes, offset, end - offset)
-        output.flush()
-        // ~50ms per 64B keeps ~1.3KB/s, safe for full-emphasis printing.
-        Thread.sleep(50)
-        offset = end
-      }
-      // The printer keeps burning the buffered lines after our last flush.
-      // Full-bold output needs extra time; closing the RFCOMM socket early
-      // aborts the tail and only the title survives.
-      Thread.sleep(1500)
+      output.write(bytes)
+      output.flush()
       bytes.size
     }
 

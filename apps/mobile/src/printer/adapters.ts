@@ -10,15 +10,14 @@ import type {
   ReceiptPrinter,
 } from "./types";
 
-// Full-bold jobs run the thermal head hotter and slower, and cheap SPP
-// printers have tiny RX buffers (~128-512B). A single burst write overruns
-// the buffer and the tail (everything after the title) is silently dropped —
-// then an immediate socket close aborts whatever is left. Pace the job from
-// JS so it works regardless of whether the native module was rebuilt: the
-// bridge stays a dumb single-write pipe.
-const BLUETOOTH_CHUNK_BYTES = 64;
-const BLUETOOTH_CHUNK_GAP_MS = 50;
-const BLUETOOTH_SETTLE_MS = 1500;
+// Cheap SPP printers have small RX buffers (~512B), so the job is still
+// chunked from JS — but only here: the native module is a dumb single-write
+// pipe. Gaps between chunks keep the printer consuming at normal speed, and a
+// short settle before returning prevents the socket close from cutting the
+// tail of the job.
+const BLUETOOTH_CHUNK_BYTES = 512;
+const BLUETOOTH_CHUNK_GAP_MS = 20;
+const BLUETOOTH_SETTLE_MS = 400;
 
 function sleep(milliseconds: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -33,9 +32,9 @@ async function writeBluetoothPaced(bytes: Uint8Array): Promise<number> {
       await sleep(BLUETOOTH_CHUNK_GAP_MS);
     }
   }
-  // The printer keeps burning buffered lines after our last flush. Full-bold
-  // output needs extra time; returning early lets the caller disconnect and
-  // close the RFCOMM socket while the tail is still printing.
+  // The printer keeps burning buffered lines after our last flush; returning
+  // early lets the caller disconnect and close the RFCOMM socket while the
+  // tail is still printing.
   await sleep(BLUETOOTH_SETTLE_MS);
   return written;
 }
