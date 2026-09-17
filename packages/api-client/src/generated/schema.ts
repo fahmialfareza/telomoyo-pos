@@ -853,9 +853,12 @@ export interface paths {
         put?: never;
         /**
          * Mark the current transaction revision payment as successful or failed
-         * @description Admins may update their own transactions and superadmins may update any
-         *     transaction. Repeating the current outcome is idempotent. A successful
-         *     payment is final until a correction creates a new pending revision.
+         * @description Legacy endpoint retained for older clients; transactions are recorded
+         *     as payment-successful at creation since the confirmation step was
+         *     removed. Admins may update their own transactions and superadmins may
+         *     update any transaction. Repeating the current outcome is idempotent. A
+         *     successful payment is final until a correction creates a new revision
+         *     (which is again successful from the start).
          */
         post: operations["setTransactionPaymentStatus"];
         delete?: never;
@@ -1299,7 +1302,13 @@ export interface components {
          *     ownership or payment settlement.
          */
         QrisPayloadHash: string;
-        /** @enum {string} */
+        /**
+         * @description Transactions are recorded as `success` from creation: there is no
+         *     confirmation step, so freshly created and corrected revisions are
+         *     immediately payable/printable. `pending` and `failed` remain only for
+         *     legacy rows and explicit legacy payment updates.
+         * @enum {string}
+         */
         PaymentStatus: "pending" | "success" | "failed";
         /** @enum {string} */
         PaymentOutcome: "success" | "failed";
@@ -1743,6 +1752,10 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        /**
+         * @description Creates a transaction whose payment is recorded as `success` for
+         *     revision 1 immediately; no payment confirmation step exists.
+         */
         CreateTransactionRequest: {
             /** @description Cached tenant business-profile revision to snapshot. Omission selects the current profile for compatibility. */
             receiptProfileRevision?: number;
@@ -1764,6 +1777,12 @@ export interface components {
             qrisPayloadHash?: components["schemas"]["QrisPayloadHash"];
             items: components["schemas"]["TransactionLineInput"][];
         };
+        /**
+         * @description Legacy: transactions are payment-confirmed at creation since the
+         *     confirmation step was removed. Retained so older clients can still
+         *     apply their queued payment updates (repeating the current outcome is
+         *     idempotent).
+         */
         SetPaymentStatusRequest: {
             baseRevision: number;
             status: components["schemas"]["PaymentOutcome"];
