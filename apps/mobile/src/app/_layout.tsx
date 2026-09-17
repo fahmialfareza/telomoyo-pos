@@ -15,6 +15,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthProvider } from "@/auth/AuthProvider";
 import { useAuthStore } from "@/auth/auth-store";
+import { AppQueryProvider } from "@/api/query-client";
 import { SyncProvider } from "@/sync/SyncProvider";
 import { ConfirmationProvider } from "@/components/ui/ConfirmationProvider";
 import {
@@ -97,8 +98,10 @@ export default function RootLayout() {
           <ConfirmationProvider>
             <ContextNavigationLifecycle />
             <SyncProvider>
-              <StatusBar style="light" />
-              <AppRoutes />
+              <AppQueryProvider>
+                <StatusBar style="light" />
+                <AppRoutes />
+              </AppQueryProvider>
             </SyncProvider>
           </ConfirmationProvider>
         </AuthProvider>

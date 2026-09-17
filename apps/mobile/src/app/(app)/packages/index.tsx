@@ -1,9 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
 } from "@/theme/responsive";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { apiRequest } from "@/api/client";
@@ -26,37 +27,62 @@ export default function PackagesScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const [packages, setPackages] = useState<RentalPackage[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!session) return;
-    setError(null);
+    setLoadError(null);
     setPackages(await listPackages(true, session));
-    if (session && !session.token.startsWith("dev-only-")) {
-      const remote = await apiRequest<PackageListResponse>(
-        "/packages?limit=100",
-        {
-          token: session.token,
-        },
-      );
-      const mapped = remote.map(mapApiPackage);
-      await Promise.all(mapped.map((item) => upsertPackage(item, session)));
-      setPackages(await listPackages(true, session));
-    }
   }, [session]);
 
   useFocusEffect(
     useCallback(() => {
       void load().catch((reason) =>
-        setError(
+        setLoadError(
           toUserFacingErrorMessage(
             reason,
-            "Daftar paket belum dapat diperbarui.",
+            "Daftar paket belum dapat dimuat.",
           ),
         ),
       );
     }, [load]),
   );
+
+  const remotePackages = useQuery({
+    queryKey: ["packages", "remote", session?.user.id],
+    enabled: Boolean(session) && !session?.token.startsWith("dev-only-"),
+    queryFn: async () => {
+      const remote = await apiRequest<PackageListResponse>(
+        "/packages?limit=100",
+        { token: session!.token },
+      );
+      return remote.map(mapApiPackage);
+    },
+  });
+
+  useEffect(() => {
+    if (!remotePackages.data || !session) return;
+    void (async () => {
+      await Promise.all(
+        remotePackages.data!.map((item) => upsertPackage(item, session)),
+      );
+      setPackages(await listPackages(true, session));
+    })().catch((reason: unknown) =>
+      setLoadError(
+        toUserFacingErrorMessage(
+          reason,
+          "Daftar paket belum dapat diperbarui.",
+        ),
+      ),
+    );
+  }, [remotePackages.data, session]);
+
+  const error = remotePackages.error
+    ? toUserFacingErrorMessage(
+        remotePackages.error,
+        "Daftar paket belum dapat diperbarui.",
+      )
+    : loadError;
 
   return (
     <AppScreen>

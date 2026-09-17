@@ -2,6 +2,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Switch, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
+import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/api/client";
 import type { TenantQrisResponse } from "@/api/contracts";
 import { INITIAL_TENANT_ID } from "@/domain/types";
@@ -139,33 +140,39 @@ export default function QrisSettingsScreen() {
   const [activate, setActivate] = useState(true);
   const [candidate, setCandidate] = useState<ParsedQris | null>(null);
   const [replacing, setReplacing] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [processingSource, setProcessingSource] = useState<PickerSource | null>(
     null,
   );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [restoring, setRestoring] = useState(true);
   const pickerActiveRef = useRef(false);
   const saveActiveRef = useRef(false);
 
+  const qrisConfigQuery = useQuery({
+    queryKey: ["tenant-qris", session?.user.id],
+    enabled:
+      role === "superadmin" &&
+      Boolean(session) &&
+      session?.dataMode !== "sandbox",
+    queryFn: () =>
+      apiRequest<TenantQrisResponse>("/tenant/qris", {
+        token: session!.token,
+      }),
+  });
+
   useEffect(() => {
-    if (role !== "superadmin" || !session || session.dataMode === "sandbox") {
-      return;
-    }
+    const config = qrisConfigQuery.data;
+    if (!config || !session) return;
 
     let active = true;
     void (async () => {
-      const config = await apiRequest<TenantQrisResponse>("/tenant/qris", {
-        token: session.token,
-      });
       await cacheTenantConfiguration("qris", config, session);
       const selected = config.payloads.find(
         (item) => item.payloadHash === config.activePayloadHash,
       );
-      const current = selected
-        ? validateStaticQris(selected.staticPayload)
-        : null;
+      const current = selected ? validateStaticQris(selected.staticPayload) : null;
       if (!active) return;
       setSaved(current);
       setRevision(config.revision);
@@ -174,9 +181,7 @@ export default function QrisSettingsScreen() {
         if (
           previous &&
           active &&
-          !config.payloads.some(
-            (item) => item.staticPayload === previous.staticPayload,
-          )
+          !config.payloads.some((item) => item.staticPayload === previous.staticPayload)
         )
           setLegacy(validateStaticQris(previous.staticPayload));
       }
@@ -211,13 +216,13 @@ export default function QrisSettingsScreen() {
         );
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active) setRestoring(false);
       });
 
     return () => {
       active = false;
     };
-  }, [role, session]);
+  }, [qrisConfigQuery.data, session]);
 
   if (role !== "superadmin" || session?.dataMode === "sandbox") {
     return (
@@ -236,7 +241,7 @@ export default function QrisSettingsScreen() {
     );
   }
 
-  if (loading) {
+  if (qrisConfigQuery.isLoading || (qrisConfigQuery.isSuccess && restoring)) {
     return (
       <AppScreen>
         <PageHeader back title="QRIS Dinamis" />
@@ -521,6 +526,14 @@ export default function QrisSettingsScreen() {
       {error ? (
         <Text accessibilityRole="alert" style={styles.error}>
           {error}
+        </Text>
+      ) : null}
+      {qrisConfigQuery.error ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {toUserFacingErrorMessage(
+            qrisConfigQuery.error,
+            "Konfigurasi QRIS tidak dapat dibaca.",
+          )}
         </Text>
       ) : null}
       {message ? (

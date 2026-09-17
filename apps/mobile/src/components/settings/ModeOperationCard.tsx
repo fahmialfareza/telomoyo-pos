@@ -1,6 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { useResponsiveStyles } from "@/theme/responsive";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { apiRequest } from "@/api/client";
@@ -23,52 +24,39 @@ export function ModeOperationCard() {
   const responsive = useResponsiveStyles(styles);
   const { session, switchMode, upgradeSession, switchingMode } = useAuth();
   const sync = useSyncRuntime();
-  const [status, setStatus] = useState<SandboxStatusResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [resetExpanded, setResetExpanded] = useState(false);
   const [confirmation, setConfirmation] = useState("");
   const [resetting, setResetting] = useState(false);
-  const requestSequence = useRef(0);
+  const [actionError, setActionError] = useState<string | null>(null);
   const token = session?.token;
 
-  const loadStatus = useCallback(async () => {
-    const request = ++requestSequence.current;
-    if (!token || token.startsWith("dev-only-")) {
-      setStatus(null);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const next = await apiRequest<SandboxStatusResponse>("/sandbox/status", {
-        token,
-      });
-      if (request !== requestSequence.current) return;
-      setStatus(next);
-      setError(null);
-    } catch (reason) {
-      if (request !== requestSequence.current) return;
-      setError(
-        toUserFacingErrorMessage(
-          reason,
-          "Status Mode Uji belum dapat dimuat. Coba lagi.",
-        ),
-      );
-    } finally {
-      if (request === requestSequence.current) setLoading(false);
-    }
-  }, [token]);
+  const statusQuery = useQuery({
+    queryKey: ["sandbox-status", session?.user.id],
+    enabled: Boolean(token) && !token?.startsWith("dev-only-"),
+    queryFn: () =>
+      apiRequest<SandboxStatusResponse>("/sandbox/status", {
+        token: token!,
+      }),
+  });
 
   useFocusEffect(
     useCallback(() => {
-      void loadStatus();
-      return () => {
-        requestSequence.current += 1;
-      };
-    }, [loadStatus]),
+      if (token && !token.startsWith("dev-only-")) void statusQuery.refetch();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [token]),
   );
+
+  const status = statusQuery.data ?? null;
+  const loading = statusQuery.isLoading;
+  const error =
+    actionError ??
+    (statusQuery.error
+      ? toUserFacingErrorMessage(
+          statusQuery.error,
+          "Status Mode Uji belum dapat dimuat. Coba lagi.",
+        )
+      : null);
 
   if (!session) return null;
 
@@ -84,13 +72,13 @@ export function ModeOperationCard() {
     status.generation !== null;
 
   const changeMode = async () => {
-    setError(null);
+    setActionError(null);
     setMessage(null);
     try {
       await switchMode(targetMode);
       await sync.refresh();
     } catch (reason) {
-      setError(
+      setActionError(
         toUserFacingErrorMessage(
           reason,
           "Mode operasi belum dapat diganti. Coba lagi.",
@@ -102,7 +90,7 @@ export function ModeOperationCard() {
   const resetSandbox = async () => {
     if (!canReset || status.generation === null) return;
     setResetting(true);
-    setError(null);
+    setActionError(null);
     setMessage(null);
     try {
       const result = await apiRequest<SandboxResetResponse>("/sandbox/reset", {
@@ -118,9 +106,9 @@ export function ModeOperationCard() {
       setMessage(
         `Mode Uji direset ke generasi ${result.current.generation}. ${result.clonedPackageCount} paket produksi disalin.`,
       );
-      await loadStatus();
+      await statusQuery.refetch();
     } catch (reason) {
-      setError(
+      setActionError(
         toUserFacingErrorMessage(
           reason,
           "Mode Uji belum dapat direset. Muat ulang status dan coba lagi.",
@@ -168,11 +156,11 @@ export function ModeOperationCard() {
           disabled={resetting}
           onPress={() =>
             void (async () => {
-              setError(null);
+              setActionError(null);
               try {
                 await upgradeSession();
               } catch (reason) {
-                setError(
+                setActionError(
                   toUserFacingErrorMessage(
                     reason,
                     "Sesi belum dapat diperbarui. Coba lagi.",

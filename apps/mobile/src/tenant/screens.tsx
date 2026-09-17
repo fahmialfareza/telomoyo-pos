@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/api/client";
 import type { AuthContextsResponse } from "@/api/contracts";
 import { useAuth } from "@/auth/AuthProvider";
@@ -106,45 +107,32 @@ function RolePicker({
   );
 }
 
-/** Only focused, authorized screens fetch; late responses cannot update a new context. */
+/** Only focused, authorized screens fetch; React Query dedupes and retries. */
 function useRemote<T>(path: string, token?: string) {
-  const [value, setValue] = useState<T | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(Boolean(token));
-  const sequence = useRef(0);
-  const reload = useCallback(async () => {
-    const request = ++sequence.current;
-    if (!token) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const next = await apiRequest<T>(path, { token });
-      if (request === sequence.current) {
-        setValue(next);
-        setError(null);
-      }
-    } catch (reason) {
-      if (request === sequence.current)
-        setError(
-          toUserFacingErrorMessage(
-            reason,
-            "Data belum dapat dimuat. Coba lagi.",
-          ),
-        );
-    } finally {
-      if (request === sequence.current) setLoading(false);
-    }
-  }, [path, token]);
+  const query = useQuery({
+    queryKey: ["remote", path, token],
+    enabled: Boolean(token),
+    queryFn: () => apiRequest<T>(path, { token: token! }),
+  });
   useFocusEffect(
     useCallback(() => {
-      setValue(null);
-      void reload();
-      return () => {
-        sequence.current += 1;
-      };
-    }, [reload]),
+      if (token) void query.refetch();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [path, token]),
   );
-  return { value, error, loading, reload, setValue };
+  const value = query.data ?? null;
+  const error = query.error
+    ? toUserFacingErrorMessage(
+        query.error,
+        "Data belum dapat dimuat. Coba lagi.",
+      )
+    : null;
+  const loading = query.isLoading || query.isRefetching;
+  const reload = useCallback(async () => {
+    await query.refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path, token]);
+  return { value, error, loading, reload };
 }
 
 function LoadingMessage({ children }: { children: string }) {

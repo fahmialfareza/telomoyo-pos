@@ -4,10 +4,12 @@ import {
   render as renderScreen,
   waitFor,
 } from "@testing-library/react-native";
-import type { ReactNode } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import type { ReactElement, ReactNode } from "react";
 import { TextInput } from "react-native";
 import { ConfirmationProvider } from "@/components/ui/ConfirmationProvider";
 
+import { createQueryClient } from "@/api/query-client";
 import QrisSettingsScreen from "@/app/(app)/settings/qris";
 
 const STATIC_QRIS =
@@ -51,8 +53,16 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 24, bottom: 24, left: 0, right: 0 }),
 }));
 
-function render(element: React.ReactElement) {
-  return renderScreen(element, { wrapper: ConfirmationProvider });
+function render(element: ReactElement) {
+  const queryClient = createQueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={queryClient}>
+      <ConfirmationProvider>{children}</ConfirmationProvider>
+    </QueryClientProvider>
+  );
+  return renderScreen(element, { wrapper });
 }
 
 jest.mock("@/api/client", () => ({

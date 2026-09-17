@@ -1,6 +1,13 @@
-import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
-import type { ReactNode } from "react";
+import {
+  act,
+  fireEvent,
+  render as renderScreen,
+  waitFor,
+} from "@testing-library/react-native";
+import { QueryClientProvider } from "@tanstack/react-query";
+import type { ReactElement, ReactNode } from "react";
 
+import { createQueryClient } from "@/api/query-client";
 import {
   ManagedUsersScreen as UsersScreen,
   ManagedUserEditor,
@@ -11,6 +18,15 @@ import {
 } from "@/tenant/screens";
 import type { Session, UserSummary } from "@/domain/types";
 import { SERVER_UNREACHABLE_MESSAGE } from "@/utils/errors";
+
+function render(element: ReactElement) {
+  const queryClient = createQueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return renderScreen(
+    <QueryClientProvider client={queryClient}>{element}</QueryClientProvider>,
+  );
+}
 
 const mockApiRequest = jest.fn();
 const mockRouterPush = jest.fn();
@@ -314,7 +330,9 @@ describe("management directory and account forms", () => {
     const screen = render(<UsersScreen />);
     expect(screen.getByText("Memuat daftar pengguna…")).toBeTruthy();
     await act(async () => resolve([loadedUser, sessionUser]));
-    expect(screen.queryByText("Memuat daftar pengguna…")).toBeNull();
+    await waitFor(() =>
+      expect(screen.queryByText("Memuat daftar pengguna…")).toBeNull(),
+    );
     expect(screen.queryByRole("button", { name: "Kelola tenant" })).toBeNull();
     fireEvent.changeText(screen.getByLabelText("Cari pengguna"), "ADMIN.TOKO");
     expect(screen.getByText(loadedUser.fullName)).toBeTruthy();
