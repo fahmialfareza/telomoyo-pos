@@ -109,7 +109,11 @@ export default function PrinterSettingsScreen() {
         {([32, 48] as const).map((columns) => (
           <Pressable
             key={columns}
-            onPress={() => setConfig({ ...config, paperColumns: columns })}
+            onPress={() => {
+              const next = { ...config, paperColumns: columns };
+              setConfig(next);
+              void writePrinterConfig(next);
+            }}
             style={[
               responsive.option,
               config.paperColumns === columns && responsive.selected,

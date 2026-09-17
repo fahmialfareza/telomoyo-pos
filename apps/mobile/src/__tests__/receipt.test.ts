@@ -111,8 +111,9 @@ describe("thermal receipt", () => {
     (dataMode, columns) => {
       const document = { ...receipt, dataMode, isCopy: true };
       const bytes = Array.from(encodeEscPos(document, columns));
-      expect(bytes.slice(0, 8)).toEqual([
+      expect(bytes.slice(0, 11)).toEqual([
         0x1b, 0x40, // initialize: reset a prior interrupted job
+        0x1b, 0x4d, 0x00, // Font A so 32/48 columns match 58/80 mm
         0x1b, 0x61, 0x00, // left alignment
         0x1b, 0x45, 0x01, // emphasis on before the first printed character
       ]);
@@ -128,6 +129,7 @@ describe("thermal receipt", () => {
       // emitted text is unchanged. No font size, width, or density changes.
       const text = String.fromCharCode(...bytes)
         .replace(/\x1b[@]/g, "")
+        .replace(/\x1b\x4d[\x00\x01]/g, "")
         .replace(/\x1b[\x61\x45][\x00\x01]/g, "")
         .replace(/\x1d\x56\x41\x00/g, "");
       const expected = formatReceipt(document, columns)
@@ -157,6 +159,53 @@ describe("thermal receipt", () => {
       expect(output.replace(/\n/g, "")).toContain(
         "TEST-TRX-01ARZ3NDEKTSV4RRFFQ69G5FAV",
       );
+      for (const line of output.trimEnd().split("\n")) {
+        expect(line.length).toBeLessThanOrEqual(columns);
+      }
+    },
+  );
+
+  it.each([32, 48] as const)(
+    "word-wraps long cashier, identity, and item names within %s columns",
+    (columns) => {
+      const cashierName = Array.from(
+        { length: 20 },
+        (_, index) => `Nama${index + 1}`,
+      ).join(" ");
+      const businessName =
+        "Penyewaan Motor Gunung Merbabu Jawa Tengah Indonesia";
+      const address =
+        "Jl. Merbabu Raya Nomor 12 Kelurahan Selo Kabupaten Boyolali";
+      const itemName =
+        "Paket Sunrise Plus Extra Helm dan Jas Hujan untuk dua orang";
+      const output = formatReceipt(
+        {
+          ...receipt,
+          cashierName,
+          lines: [
+            {
+              name: itemName,
+              unitPrice: 100_000,
+              quantity: 2,
+              lineTotal: 200_000,
+            },
+          ],
+          receiptIdentity: {
+            businessName,
+            address,
+            phone: "081234567890123456789",
+            revision: 3,
+          },
+        },
+        columns,
+      );
+      const printed = output.replace(/\n/g, " ").replace(/\s+/g, " ");
+      expect(printed).toContain(cashierName);
+      expect(printed).toContain(businessName);
+      expect(printed).toContain(address);
+      expect(printed).toContain(itemName);
+      expect(output).not.toMatch(/Penyewaa\n\s*n/);
+      expect(output).not.toMatch(/Wijay\n\s*a/);
       for (const line of output.trimEnd().split("\n")) {
         expect(line.length).toBeLessThanOrEqual(columns);
       }

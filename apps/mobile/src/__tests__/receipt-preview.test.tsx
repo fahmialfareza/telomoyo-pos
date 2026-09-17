@@ -190,6 +190,9 @@ it.each([32, 48] as const)(
       ),
     );
     expect(screen.getByText(new RegExp(`${columns} kolom`))).toBeTruthy();
+    expect(
+      screen.getByText(new RegExp(columns === 32 ? "58 mm" : "80 mm")),
+    ).toBeTruthy();
     expect(mockGetTransaction).toHaveBeenCalledWith(
       transaction.id,
       mockSession,

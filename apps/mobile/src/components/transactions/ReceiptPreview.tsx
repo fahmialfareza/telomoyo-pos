@@ -22,7 +22,7 @@ export function ReceiptPreview({ document, columns }: ReceiptPreviewProps) {
     <Card style={responsive.card} testID="receipt-preview">
       <Text style={headings.heading}>Pratinjau struk</Text>
       <Text style={responsive.caption}>
-        {columns} kolom · Pratinjau tidak mencetak atau mengubah status cetak.
+        {`${columns === 32 ? "58 mm • 32 kolom" : "80 mm • 48 kolom"} · Pratinjau tidak mencetak atau mengubah status cetak.`}
       </Text>
       <ScrollView
         nestedScrollEnabled

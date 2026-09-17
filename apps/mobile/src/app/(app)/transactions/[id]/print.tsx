@@ -63,7 +63,14 @@ export default function PrintTransactionScreen() {
         "hardwareBackPress",
         () => activeAttempt.current,
       );
-      return () => listener.remove();
+      let current = true;
+      void readPrinterConfig().then((config) => {
+        if (current) setPrinterConfig(config);
+      });
+      return () => {
+        current = false;
+        listener.remove();
+      };
     }, []),
   );
 
