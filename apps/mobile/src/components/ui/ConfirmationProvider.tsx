@@ -101,21 +101,24 @@ export function ConfirmationProvider({ children }: { children: ReactNode }) {
     }
     running.current = true;
     setBusy(true);
+    setError(null);
     const request = sequence.current;
     try {
       await pending.onConfirm();
       if (request === sequence.current) dismiss();
     } catch (reason) {
-      if (request === sequence.current) {
-        setError(
-          toUserFacingErrorMessage(
-            reason,
-            "Permintaan belum berhasil. Coba lagi.",
-          ),
-        );
-        running.current = false;
-        setBusy(false);
-      }
+      if (request !== sequence.current) return;
+      running.current = false;
+      // Clear busy before showing the error so retry is tappable in the same
+      // paint. Splitting these updates left the confirm button disabled while
+      // the alert was already visible.
+      setBusy(false);
+      setError(
+        toUserFacingErrorMessage(
+          reason,
+          "Permintaan belum berhasil. Coba lagi.",
+        ),
+      );
     }
   };
 

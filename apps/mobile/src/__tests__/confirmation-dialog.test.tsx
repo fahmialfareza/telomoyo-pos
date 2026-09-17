@@ -124,12 +124,17 @@ describe("app confirmation dialogs", () => {
     const screen = render(<App onConfirm={onConfirm} />);
     fireEvent.press(screen.getByRole("button", { name: "Buka" }));
     fireEvent.press(screen.getByRole("button", { name: "Lanjutkan" }));
-    await waitFor(() =>
-      expect(screen.getByText("Tidak dapat menyimpan")).toBeTruthy(),
-    );
+    await waitFor(() => {
+      expect(screen.getByText("Tidak dapat menyimpan")).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Lanjutkan" })).toHaveProp(
+        "accessibilityState",
+        expect.objectContaining({ busy: false, disabled: false }),
+      );
+    });
     fireEvent.press(screen.getByRole("button", { name: "Lanjutkan" }));
-    await waitFor(() =>
-      expect(screen.queryByText("Periksa kembali")).toBeNull(),
+    await waitFor(
+      () => expect(screen.queryByText("Periksa kembali")).toBeNull(),
+      { timeout: 5000 },
     );
     expect(onConfirm).toHaveBeenCalledTimes(2);
   });

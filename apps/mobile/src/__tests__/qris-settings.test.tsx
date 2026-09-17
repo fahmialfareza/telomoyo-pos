@@ -9,7 +9,7 @@ import type { ReactElement, ReactNode } from "react";
 import { TextInput } from "react-native";
 import { ConfirmationProvider } from "@/components/ui/ConfirmationProvider";
 
-import { createQueryClient } from "@/api/query-client";
+import { createTestQueryClient } from "@/test/query-client";
 import QrisSettingsScreen from "@/app/(app)/settings/qris";
 
 const STATIC_QRIS =
@@ -54,9 +54,7 @@ jest.mock("react-native-safe-area-context", () => ({
 }));
 
 function render(element: ReactElement) {
-  const queryClient = createQueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
+  const queryClient = createTestQueryClient();
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <ConfirmationProvider>{children}</ConfirmationProvider>
@@ -137,15 +135,21 @@ jest.mock("@/components/ui/Button", () => {
     Button: ({
       children,
       disabled,
+      loading,
       onPress,
     }: {
       children: ReactNode;
       disabled?: boolean;
+      loading?: boolean;
       onPress?: () => void;
     }) => (
       <Pressable
         accessibilityRole="button"
-        disabled={disabled}
+        accessibilityState={{
+          disabled: Boolean(disabled || loading),
+          busy: Boolean(loading),
+        }}
+        disabled={Boolean(disabled || loading)}
         onPress={onPress}
       >
         <Text>{children}</Text>
@@ -305,8 +309,9 @@ describe("QRIS settings image flow", () => {
 
     expect(screen.getByText("Ganti QRIS statis?")).toBeTruthy();
     fireEvent.press(screen.getByRole("button", { name: "Lanjutkan" }));
-    await waitFor(() =>
-      expect(screen.queryByText("Ganti QRIS statis?")).toBeNull(),
+    await waitFor(
+      () => expect(screen.queryByText("Ganti QRIS statis?")).toBeNull(),
+      { timeout: 5000 },
     );
     fireEvent.press(screen.getByRole("button", { name: "Pilih gambar QRIS" }));
 

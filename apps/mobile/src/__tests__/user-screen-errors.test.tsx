@@ -7,7 +7,7 @@ import {
 import { QueryClientProvider } from "@tanstack/react-query";
 import type { ReactElement, ReactNode } from "react";
 
-import { createQueryClient } from "@/api/query-client";
+import { createTestQueryClient } from "@/test/query-client";
 import {
   ManagedUsersScreen as UsersScreen,
   ManagedUserEditor,
@@ -20,9 +20,7 @@ import type { Session, UserSummary } from "@/domain/types";
 import { SERVER_UNREACHABLE_MESSAGE } from "@/utils/errors";
 
 function render(element: ReactElement) {
-  const queryClient = createQueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
+  const queryClient = createTestQueryClient();
   return renderScreen(
     <QueryClientProvider client={queryClient}>{element}</QueryClientProvider>,
   );
