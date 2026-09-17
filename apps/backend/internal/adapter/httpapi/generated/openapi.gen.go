@@ -416,7 +416,8 @@ type CreateTransactionMutationPayload struct {
 	ReceiptProfileRevision *int `json:"receiptProfileRevision,omitempty"`
 }
 
-// CreateTransactionRequest defines model for CreateTransactionRequest.
+// CreateTransactionRequest Creates a transaction whose payment is recorded as `success` for
+// revision 1 immediately; no payment confirmation step exists.
 type CreateTransactionRequest struct {
 	// Id Canonical uppercase ULID without a display prefix.
 	Id            ULID                    `json:"id"`
@@ -703,14 +704,19 @@ type PaymentOutcome string
 
 // PaymentStateConflictDetails defines model for PaymentStateConflictDetails.
 type PaymentStateConflictDetails struct {
-	BaseRevision             int                               `json:"baseRevision"`
-	CurrentRevision          int                               `json:"currentRevision"`
-	Kind                     PaymentStateConflictDetailsKind   `json:"kind"`
-	PaymentConfirmedRevision *int                              `json:"paymentConfirmedRevision"`
-	PaymentStatus            PaymentStatus                     `json:"paymentStatus"`
-	Reason                   PaymentStateConflictDetailsReason `json:"reason"`
-	RequestedStatus          PaymentOutcome                    `json:"requestedStatus"`
-	ServerSnapshot           TransactionSnapshot               `json:"serverSnapshot"`
+	BaseRevision             int                             `json:"baseRevision"`
+	CurrentRevision          int                             `json:"currentRevision"`
+	Kind                     PaymentStateConflictDetailsKind `json:"kind"`
+	PaymentConfirmedRevision *int                            `json:"paymentConfirmedRevision"`
+
+	// PaymentStatus Transactions are recorded as `success` from creation: there is no
+	// confirmation step, so freshly created and corrected revisions are
+	// immediately payable/printable. `pending` and `failed` remain only for
+	// legacy rows and explicit legacy payment updates.
+	PaymentStatus   PaymentStatus                     `json:"paymentStatus"`
+	Reason          PaymentStateConflictDetailsReason `json:"reason"`
+	RequestedStatus PaymentOutcome                    `json:"requestedStatus"`
+	ServerSnapshot  TransactionSnapshot               `json:"serverSnapshot"`
 }
 
 // PaymentStateConflictDetailsKind defines model for PaymentStateConflictDetails.Kind.
@@ -729,7 +735,10 @@ type PaymentStateConflictEnvelope struct {
 	} `json:"error"`
 }
 
-// PaymentStatus defines model for PaymentStatus.
+// PaymentStatus Transactions are recorded as `success` from creation: there is no
+// confirmation step, so freshly created and corrected revisions are
+// immediately payable/printable. `pending` and `failed` remain only for
+// legacy rows and explicit legacy payment updates.
 type PaymentStatus string
 
 // PlatformAuditEvent defines model for PlatformAuditEvent.
@@ -1002,7 +1011,10 @@ type SetPaymentStatusMutationPayload struct {
 	Status PaymentOutcome `json:"status"`
 }
 
-// SetPaymentStatusRequest defines model for SetPaymentStatusRequest.
+// SetPaymentStatusRequest Legacy: transactions are payment-confirmed at creation since the
+// confirmation step was removed. Retained so older clients can still
+// apply their queued payment updates (repeating the current outcome is
+// idempotent).
 type SetPaymentStatusRequest struct {
 	BaseRevision int            `json:"baseRevision"`
 	OccurredAt   time.Time      `json:"occurredAt"`
@@ -1378,6 +1390,11 @@ type Transaction struct {
 	// PaymentMethod Stored payment method. `legacy` is read-only compatibility for
 	// transactions created before payment selection was introduced.
 	PaymentMethod PaymentMethod `json:"paymentMethod"`
+
+	// PaymentStatus Transactions are recorded as `success` from creation: there is no
+	// confirmation step, so freshly created and corrected revisions are
+	// immediately payable/printable. `pending` and `failed` remain only for
+	// legacy rows and explicit legacy payment updates.
 	PaymentStatus PaymentStatus `json:"paymentStatus"`
 	Print         PrintMetadata `json:"print"`
 
@@ -1418,6 +1435,11 @@ type TransactionFilter struct {
 	// PaymentMethod Stored payment method. `legacy` is read-only compatibility for
 	// transactions created before payment selection was introduced.
 	PaymentMethod *PaymentMethod `json:"paymentMethod,omitempty"`
+
+	// PaymentStatus Transactions are recorded as `success` from creation: there is no
+	// confirmation step, so freshly created and corrected revisions are
+	// immediately payable/printable. `pending` and `failed` remain only for
+	// legacy rows and explicit legacy payment updates.
 	PaymentStatus *PaymentStatus `json:"paymentStatus,omitempty"`
 	Search        *string        `json:"search,omitempty"`
 	TerminalId    *UUID          `json:"terminalId,omitempty"`
@@ -1512,6 +1534,11 @@ type TransactionSnapshot struct {
 	// PaymentMethod Stored payment method. `legacy` is read-only compatibility for
 	// transactions created before payment selection was introduced.
 	PaymentMethod PaymentMethod `json:"paymentMethod"`
+
+	// PaymentStatus Transactions are recorded as `success` from creation: there is no
+	// confirmation step, so freshly created and corrected revisions are
+	// immediately payable/printable. `pending` and `failed` remain only for
+	// legacy rows and explicit legacy payment updates.
 	PaymentStatus PaymentStatus `json:"paymentStatus"`
 
 	// QrisPayloadHash Lowercase SHA-256 digest of the exact configured static merchant QRIS

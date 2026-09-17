@@ -17,7 +17,6 @@ import {
   getTransaction,
 } from "@/db/repositories";
 import type { Transaction } from "@/domain/types";
-import { isPaymentConfirmedForCurrentRevision } from "@/domain/payments";
 import { getConfiguredPrinter } from "@/printer/service";
 import { receiptFromTransaction, type ReceiptDocument } from "@/printer/types";
 import { readPrinterConfig, type PrinterConfig } from "@/security/secure-store";
@@ -103,25 +102,6 @@ export default function PrintTransactionScreen() {
             message={error}
           />
         ) : null}
-      </AppScreen>
-    );
-  }
-  if (!isPaymentConfirmedForCurrentRevision(transaction)) {
-    return (
-      <AppScreen>
-        <PageHeader back title="Cetak struk" />
-        <StateView
-          actionLabel="Buka detail transaksi"
-          icon="lock-outline"
-          message="Pembayaran harus berhasil untuk revisi transaksi saat ini sebelum struk dapat dicetak."
-          onAction={() =>
-            router.replace({
-              pathname: "/transactions/[id]",
-              params: { id: transaction.id },
-            })
-          }
-          title="Pencetakan terkunci"
-        />
       </AppScreen>
     );
   }

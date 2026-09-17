@@ -307,7 +307,7 @@ describe("payment-aware transaction repository", () => {
     }
   });
 
-  it("creates a pending transaction with an explicit signed payment method", async () => {
+  it("creates a payment-confirmed transaction with an explicit signed payment method", async () => {
     const created = await createTransaction(
       [
         {
@@ -331,8 +331,8 @@ describe("payment-aware transaction repository", () => {
 
     expect(created).toMatchObject({
       paymentMethod: "qris",
-      paymentStatus: "pending",
-      paymentConfirmedRevision: null,
+      paymentStatus: "success",
+      paymentConfirmedRevision: 1,
       qrisPayloadHash: QRIS_PAYLOAD_HASH,
     });
     const outboxCall = mockRunAsync.mock.calls.find(([sql]) =>
@@ -467,7 +467,7 @@ describe("payment-aware transaction repository", () => {
     });
   });
 
-  it("resets payment confirmation when a paid transaction is corrected", async () => {
+  it("reconfirms payment automatically when a paid transaction is corrected", async () => {
     mockGetFirstAsync.mockResolvedValueOnce({
       ...row,
       print_state: "success",
@@ -487,15 +487,15 @@ describe("payment-aware transaction repository", () => {
     expect(corrected).toMatchObject({
       revision: 3,
       paymentMethod: "qris",
-      paymentStatus: "pending",
-      paymentConfirmedRevision: null,
+      paymentStatus: "success",
+      paymentConfirmedRevision: 3,
       qrisPayloadHash: QRIS_PAYLOAD_HASH,
       printState: "needs-reprint",
     });
     const transactionUpdate = mockRunAsync.mock.calls.find(([sql]) =>
       String(sql).includes("qris_payload_hash = ?"),
     );
-    expect(transactionUpdate?.[9]).toBe(QRIS_PAYLOAD_HASH);
+    expect(transactionUpdate?.[10]).toBe(QRIS_PAYLOAD_HASH);
     const revisionInsert = mockRunAsync.mock.calls.find(([sql]) =>
       String(sql).includes("INSERT INTO transaction_revisions"),
     );

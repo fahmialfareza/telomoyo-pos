@@ -438,8 +438,8 @@ func assertCrossSpaceTransactionMutationsRejected(
 	if err != nil {
 		t.Fatalf("read transaction %s after cross-space mutations: %v", targetTransactionID, err)
 	}
-	if unchanged.Revision != 1 || unchanged.PaymentStatus != domain.PaymentStatusPending ||
-		unchanged.PaymentConfirmedRevision != nil {
+	if unchanged.Revision != 1 || unchanged.PaymentStatus != domain.PaymentStatusSuccess ||
+		unchanged.PaymentConfirmedRevision == nil || *unchanged.PaymentConfirmedRevision != unchanged.Revision {
 		t.Fatalf("cross-space mutation changed transaction %s: %+v", targetTransactionID, unchanged)
 	}
 	attempts, err := store.ListPrintAttempts(ctx, targetDataSpaceID, targetTransactionID)

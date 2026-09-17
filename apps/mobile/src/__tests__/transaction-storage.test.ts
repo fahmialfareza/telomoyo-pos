@@ -289,7 +289,7 @@ describe("transaction item storage", () => {
 
     await runMigrations(database);
 
-    expect(latestMigrationVersion).toBe(10);
+    expect(latestMigrationVersion).toBe(11);
     const migrationSql = String(execAsync.mock.calls[0]?.[0]);
     expect(migrationSql).toContain("SELECT MAX(rowid)");
     expect(migrationSql).toContain(
@@ -307,7 +307,7 @@ describe("transaction item storage", () => {
 
     await runMigrations(database);
 
-    expect(latestMigrationVersion).toBe(10);
+    expect(latestMigrationVersion).toBe(11);
     const migrationSql = String(execAsync.mock.calls[0]?.[0]);
     expect(migrationSql).toContain("payment_method");
     expect(migrationSql).toContain("payment_status = 'success'");
@@ -325,7 +325,7 @@ describe("transaction item storage", () => {
 
     await runMigrations(database);
 
-    expect(latestMigrationVersion).toBe(10);
+    expect(latestMigrationVersion).toBe(11);
     const migrationSql = String(execAsync.mock.calls[0]?.[0]);
     expect(migrationSql).toContain("transaction_revision");
     expect(migrationSql).toContain("SET print_state = 'unknown'");
@@ -345,7 +345,7 @@ describe("transaction item storage", () => {
 
     await runMigrations(database);
 
-    expect(latestMigrationVersion).toBe(10);
+    expect(latestMigrationVersion).toBe(11);
     const migrationSql = String(execAsync.mock.calls[0]?.[0]);
     expect(migrationSql).toContain("Operasi dikarantina");
     expect(migrationSql).toContain(
@@ -364,7 +364,7 @@ describe("transaction item storage", () => {
 
     await runMigrations(database);
 
-    expect(latestMigrationVersion).toBe(10);
+    expect(latestMigrationVersion).toBe(11);
     const migrationSql = String(execAsync.mock.calls[0]?.[0]);
     expect(migrationSql).toContain("strftime(\n        '%Y-%m-%dT%H:%M:%fZ'");
     expect(migrationSql).toContain(
@@ -382,7 +382,7 @@ describe("transaction item storage", () => {
 
     await runMigrations(database);
 
-    expect(latestMigrationVersion).toBe(10);
+    expect(latestMigrationVersion).toBe(11);
     const migrationSql = String(execAsync.mock.calls[0]?.[0]);
     expect(migrationSql).toContain("ADD COLUMN qris_payload_hash TEXT");
     expect(migrationSql).toContain("length(qris_payload_hash) = 64");

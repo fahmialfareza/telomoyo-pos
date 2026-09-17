@@ -50,8 +50,9 @@ func (t Transactions) Create(ctx context.Context, principal domain.Principal, in
 	if input.OccurredAt.IsZero() || input.OccurredAt.After(t.Clock.Now().Add(10*time.Minute)) {
 		return domain.Transaction{}, domain.Validation("Waktu transaksi tidak valid", map[string]any{"field": "occurredAt"})
 	}
-	input.InitialPaymentStatus = domain.PaymentStatusPending
-	input.InitialPaymentConfirmedRevision = nil
+	confirmedRevision := 1
+	input.InitialPaymentStatus = domain.PaymentStatusSuccess
+	input.InitialPaymentConfirmedRevision = &confirmedRevision
 	input.Identity = identity(principal)
 	return t.Repo.CreateTransaction(ctx, input)
 }

@@ -49,7 +49,7 @@ func (s *Store) createTransactionTx(ctx context.Context, tx pgx.Tx, input domain
 	}
 	paymentStatus := input.InitialPaymentStatus
 	if paymentStatus == "" {
-		paymentStatus = domain.PaymentStatusPending
+		paymentStatus = domain.PaymentStatusSuccess
 	}
 	if !input.PaymentMethod.Valid() || !paymentStatus.Valid() {
 		return domain.Transaction{}, domain.Validation("Data pembayaran transaksi tidak valid", nil)
@@ -58,6 +58,10 @@ func (s *Store) createTransactionTx(ctx context.Context, tx pgx.Tx, input domain
 		return domain.Transaction{}, err
 	}
 	confirmedRevision := input.InitialPaymentConfirmedRevision
+	if confirmedRevision == nil && paymentStatus == domain.PaymentStatusSuccess {
+		defaultConfirmed := 1
+		confirmedRevision = &defaultConfirmed
+	}
 	switch paymentStatus {
 	case domain.PaymentStatusSuccess:
 		if confirmedRevision == nil || *confirmedRevision != 1 {
@@ -536,14 +540,14 @@ func applyQrisPayloadHash(snapshot map[string]any, hash *string) {
 }
 
 func correctedPaymentState(
-	legacyCompatibility bool,
+	_ bool,
 	revision int,
 ) (domain.PaymentStatus, *int, bool) {
-	if legacyCompatibility {
-		confirmedRevision := revision
-		return domain.PaymentStatusSuccess, &confirmedRevision, false
-	}
-	return domain.PaymentStatusPending, nil, true
+	// Corrections start payment-confirmed for the new revision: there is no
+	// confirmation step anymore, so the corrected revision is immediately
+	// printable like a freshly created transaction.
+	confirmedRevision := revision
+	return domain.PaymentStatusSuccess, &confirmedRevision, false
 }
 
 func (s *Store) GetTransaction(ctx context.Context, dataSpaceID uuid.UUID, id string, includeDeleted bool) (domain.Transaction, error) {

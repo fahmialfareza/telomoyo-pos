@@ -9,29 +9,21 @@ import { DynamicQrisCard } from "@/components/payments/DynamicQrisCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ActionGroup } from "@/components/ui/ActionGroup";
-import { useConfirmation } from "@/components/ui/ConfirmationProvider";
 import {
   PaymentMethodBadge,
   PaymentStatusBadge,
 } from "@/components/ui/PaymentBadge";
 import { StateView } from "@/components/ui/StateView";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import {
-  getTransaction,
-  hasTerminalTransactionBlock,
-  setPaymentStatus,
-} from "@/db/repositories";
-import {
-  canCorrectTransaction,
-  canManageTransactionPayment,
-} from "@/domain/permissions";
+import { getTransaction, hasTerminalTransactionBlock } from "@/db/repositories";
+import { canCorrectTransaction } from "@/domain/permissions";
 import { isPaymentConfirmedForCurrentRevision } from "@/domain/payments";
 import {
   createDynamicQris,
   fingerprintStaticQris,
   validateStaticQris,
 } from "@/domain/qris";
-import type { PaymentStatus, Transaction } from "@/domain/types";
+import type { Transaction } from "@/domain/types";
 import { readQrisConfig, type QrisConfig } from "@/security/secure-store";
 import { qrisPayloadForTransaction } from "@/tenant/configuration";
 import { useSyncRuntime } from "@/sync/SyncProvider";
@@ -57,7 +49,6 @@ interface QrisPresentation {
 export default function TransactionDetailScreen() {
   const styles = useResponsiveStyles(baseStyles);
   const textStyles = useResponsiveTextStyles();
-  const { confirm } = useConfirmation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session } = useAuth();
@@ -66,10 +57,6 @@ export default function TransactionDetailScreen() {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [paymentUpdating, setPaymentUpdating] = useState<PaymentStatus | null>(
-    null,
-  );
-  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [terminalBlocked, setTerminalBlocked] = useState(false);
   const [qrisConfig, setQrisConfig] = useState<QrisConfig | null>(null);
   const [qrisConfigFingerprint, setQrisConfigFingerprint] = useState<
@@ -270,67 +257,21 @@ export default function TransactionDetailScreen() {
     !terminalBlocked &&
     !archived &&
     canCorrectTransaction(session, transaction);
-  const mayManagePayment =
-    !hasUnresolvedConflict &&
-    !terminalBlocked &&
-    !archived &&
-    canManageTransactionPayment(session, transaction);
-  const paymentConfirmed =
-    !hasUnresolvedConflict &&
-    !terminalBlocked &&
-    !archived &&
-    isPaymentConfirmedForCurrentRevision(transaction);
-
-  const updatePayment = async (status: Exclude<PaymentStatus, "pending">) => {
-    if (!session || !mayManagePayment) return;
-    setPaymentUpdating(status);
-    setPaymentError(null);
-    try {
-      setTransaction(await setPaymentStatus(transaction.id, status, session));
-      await sync.refresh();
-      void sync.syncNow();
-    } catch (reason) {
-      setPaymentError(
-        reason instanceof Error
-          ? reason.message
-          : "Status pembayaran tidak dapat diperbarui.",
-      );
-    } finally {
-      setPaymentUpdating(null);
-    }
-  };
-
-  const confirmPayment = (status: Exclude<PaymentStatus, "pending">) => {
-    const successMessage =
-      transaction.paymentMethod === "cash"
-        ? "Pastikan uang tunai sudah diterima penuh. Status berhasil akan final untuk revisi transaksi ini."
-        : transaction.paymentMethod === "qris"
-          ? "Pastikan aplikasi penyedia atau bank menampilkan pembayaran berhasil. Status berhasil akan final untuk revisi transaksi ini."
-          : "Pastikan pembayaran sudah diterima. Status berhasil akan final untuk revisi transaksi ini.";
-    confirm({
-      title:
-        status === "success"
-          ? "Konfirmasi pembayaran berhasil?"
-          : "Tandai pembayaran gagal?",
-      message:
-        status === "success"
-          ? successMessage
-          : "Transaksi tetap tersimpan, tidak dihitung sebagai pendapatan, dan tidak dapat dicetak sampai pembayaran berhasil.",
-      confirmLabel:
-        status === "success" ? "Ya, pembayaran berhasil" : "Tandai gagal",
-      destructive: status === "failed",
-      onConfirm: () => updatePayment(status),
-    });
-  };
+  const paymentConfirmed = isPaymentConfirmedForCurrentRevision(transaction);
+  const printable =
+    paymentConfirmed && !hasUnresolvedConflict && !terminalBlocked && !archived;
+  const previouslyPrinted =
+    transaction.printState === "success" ||
+    transaction.printState === "unknown" ||
+    transaction.printState === "needs-reprint";
 
   return (
     <AppScreen
       stickyFooter={
-        mayCorrect || mayManagePayment || paymentConfirmed || paymentError ? (
+        mayCorrect || printable ? (
           <ActionGroup>
             {mayCorrect ? (
               <Button
-                disabled={paymentUpdating !== null}
                 icon="pencil-outline"
                 onPress={() =>
                   router.push({
@@ -343,35 +284,7 @@ export default function TransactionDetailScreen() {
                 Koreksi transaksi
               </Button>
             ) : null}
-            {mayManagePayment && !paymentConfirmed ? (
-              <ActionGroup>
-                <Button
-                  disabled={paymentUpdating !== null}
-                  icon="check-circle-outline"
-                  loading={paymentUpdating === "success"}
-                  onPress={() => confirmPayment("success")}
-                >
-                  Pembayaran berhasil
-                </Button>
-                {transaction.paymentStatus !== "failed" ? (
-                  <Button
-                    disabled={paymentUpdating !== null}
-                    icon="close-circle-outline"
-                    loading={paymentUpdating === "failed"}
-                    onPress={() => confirmPayment("failed")}
-                    variant="danger"
-                  >
-                    Pembayaran gagal
-                  </Button>
-                ) : null}
-              </ActionGroup>
-            ) : null}
-            {paymentError ? (
-              <Text accessibilityRole="alert" style={styles.paymentError}>
-                {paymentError}
-              </Text>
-            ) : null}
-            {paymentConfirmed ? (
+            {printable ? (
               <Button
                 icon="printer-outline"
                 onPress={() =>
@@ -381,11 +294,7 @@ export default function TransactionDetailScreen() {
                   })
                 }
               >
-                {transaction.printState === "success" ||
-                transaction.printState === "unknown" ||
-                transaction.printState === "needs-reprint"
-                  ? "Cetak salinan"
-                  : "Cetak struk"}
+                {previouslyPrinted ? "Cetak salinan" : "Cetak struk"}
               </Button>
             ) : null}
           </ActionGroup>
@@ -448,9 +357,10 @@ export default function TransactionDetailScreen() {
         </Card>
       ) : null}
 
-      {mayManagePayment &&
-      !paymentConfirmed &&
-      transaction.paymentMethod === "qris" &&
+      {transaction.paymentMethod === "qris" &&
+      !archived &&
+      !hasUnresolvedConflict &&
+      !terminalBlocked &&
       qrisPresentation ? (
         <DynamicQrisCard
           amount={transaction.paymentAmount}
@@ -505,35 +415,22 @@ export default function TransactionDetailScreen() {
         </View>
       </Card>
 
-      <Card
-        style={[
-          styles.payment,
-          paymentConfirmed ? styles.paymentSuccess : styles.paymentAttention,
-        ]}
-      >
+      <Card style={[styles.payment, styles.paymentSuccess]}>
         <View style={styles.paymentHeader}>
           <View style={styles.paymentCopy}>
             <Text style={textStyles.label}>PEMBAYARAN</Text>
-            <Text style={styles.paymentTitle}>
-              {paymentConfirmed
-                ? "Pembayaran berhasil"
-                : transaction.paymentStatus === "failed"
-                  ? "Pembayaran gagal"
-                  : "Menunggu konfirmasi"}
-            </Text>
+            <Text style={styles.paymentTitle}>Pembayaran berhasil</Text>
           </View>
           <PaymentStatusBadge status={transaction.paymentStatus} />
         </View>
         <Text style={styles.muted}>
-          {paymentConfirmed
-            ? `Lunas melalui ${
-                transaction.paymentMethod === "cash"
-                  ? "Tunai"
-                  : transaction.paymentMethod === "qris"
-                    ? "QRIS"
-                    : "metode lama yang tidak tercatat"
-              } untuk revisi #${transaction.revision}.`
-            : "Struk baru dapat dicetak setelah pembayaran berhasil untuk revisi transaksi saat ini."}
+          {`Lunas melalui ${
+            transaction.paymentMethod === "cash"
+              ? "Tunai"
+              : transaction.paymentMethod === "qris"
+                ? "QRIS"
+                : "metode lama yang tidak tercatat"
+          } untuk revisi #${transaction.revision}.`}
         </Text>
         {session?.dataMode === "sandbox" &&
         transaction.paymentMethod === "qris" ? (
@@ -557,13 +454,12 @@ export default function TransactionDetailScreen() {
         </Text>
       </Card>
 
-      {!paymentConfirmed ? (
-        <Card style={styles.printLocked}>
-          <Text style={styles.printLockedTitle}>Pencetakan terkunci</Text>
+      {previouslyPrinted ? (
+        <Card style={styles.printedInfo}>
+          <Text style={styles.printedInfoTitle}>Sudah pernah dicetak</Text>
           <Text style={styles.muted}>
-            {terminalBlocked
-              ? "Pencetakan tetap terkunci sampai data server dipulihkan."
-              : "Tandai pembayaran berhasil agar tombol cetak tersedia."}
+            Struk untuk revisi ini sudah pernah dicetak sebelumnya. Informasi
+            ini hanya penanda; Anda tetap dapat mencetak salinan kapan pun.
           </Text>
         </Card>
       ) : null}
@@ -615,7 +511,6 @@ const baseStyles = StyleSheet.create({
   audit: { gap: spacing.xs, backgroundColor: colors.surfaceBright },
   payment: { gap: spacing.sm },
   paymentSuccess: { backgroundColor: colors.successSoft },
-  paymentAttention: { backgroundColor: colors.warningSoft },
   paymentHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -623,9 +518,8 @@ const baseStyles = StyleSheet.create({
   },
   paymentCopy: { flex: 1 },
   paymentTitle: { ...textStyles.heading, marginTop: spacing.xs },
-  paymentError: { ...textStyles.body, color: colors.error },
-  printLocked: { gap: spacing.xs, backgroundColor: colors.container },
-  printLockedTitle: { ...textStyles.heading, color: colors.textMuted },
+  printedInfo: { gap: spacing.xs, backgroundColor: colors.container },
+  printedInfoTitle: { ...textStyles.heading, color: colors.textMuted },
   terminal: { ...textStyles.technical, fontSize: 9 },
   onlineOnly: {
     ...textStyles.body,

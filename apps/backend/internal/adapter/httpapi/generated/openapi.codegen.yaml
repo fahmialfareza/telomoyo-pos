@@ -1274,9 +1274,12 @@ paths:
       tags: [Transactions]
       summary: Mark the current transaction revision payment as successful or failed
       description: |
-        Admins may update their own transactions and superadmins may update any
-        transaction. Repeating the current outcome is idempotent. A successful
-        payment is final until a correction creates a new pending revision.
+        Legacy endpoint retained for older clients; transactions are recorded
+        as payment-successful at creation since the confirmation step was
+        removed. Admins may update their own transactions and superadmins may
+        update any transaction. Repeating the current outcome is idempotent. A
+        successful payment is final until a correction creates a new revision
+        (which is again successful from the start).
       requestBody:
         required: true
         content:
@@ -2497,6 +2500,11 @@ components:
     PaymentStatus:
       type: string
       enum: [pending, success, failed]
+      description: |
+        Transactions are recorded as `success` from creation: there is no
+        confirmation step, so freshly created and corrected revisions are
+        immediately payable/printable. `pending` and `failed` remain only for
+        legacy rows and explicit legacy payment updates.
 
     PaymentOutcome:
       type: string
@@ -3626,6 +3634,9 @@ components:
     CreateTransactionRequest:
       type: object
       additionalProperties: false
+      description: |
+        Creates a transaction whose payment is recorded as `success` for
+        revision 1 immediately; no payment confirmation step exists.
       required: [id, occurredAt, paymentMethod, items]
       properties:
         receiptProfileRevision:
@@ -3677,6 +3688,11 @@ components:
     SetPaymentStatusRequest:
       type: object
       additionalProperties: false
+      description: |
+        Legacy: transactions are payment-confirmed at creation since the
+        confirmation step was removed. Retained so older clients can still
+        apply their queued payment updates (repeating the current outcome is
+        idempotent).
       required: [baseRevision, status, occurredAt]
       properties:
         baseRevision:

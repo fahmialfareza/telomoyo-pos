@@ -326,7 +326,10 @@ func syncedCreatePayment(
 	if err := domain.ValidateSelectablePaymentMethod(value.Value); err != nil {
 		return "", "", nil, err
 	}
-	return value.Value, domain.PaymentStatusPending, nil, nil
+	// Transactions are payment-confirmed at creation; the confirmation step no
+	// longer exists.
+	confirmedRevision := 1
+	return value.Value, domain.PaymentStatusSuccess, &confirmedRevision, nil
 }
 
 func syncedCorrectionPayment(

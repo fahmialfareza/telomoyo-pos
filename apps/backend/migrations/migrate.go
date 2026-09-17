@@ -17,6 +17,7 @@ const (
 	sandboxDataSpacesVersion    = "000004_sandbox_data_spaces"
 	tenantsVersion              = "000005_tenants"
 	internalOrganizationVersion = "000006_internal_organization"
+	autoConfirmedPaymentVersion = "000007_payments_auto_confirmed"
 )
 
 type migration struct {
@@ -31,6 +32,7 @@ var orderedMigrations = []migration{
 	{version: sandboxDataSpacesVersion, up: migrateSandboxDataSpaces},
 	{version: tenantsVersion, up: migrateTenants},
 	{version: internalOrganizationVersion, up: migrateInternalOrganization},
+	{version: autoConfirmedPaymentVersion, up: migratePaymentsAutoConfirmed},
 }
 
 // Apply runs every pending migration through GORM in one PostgreSQL transaction.

@@ -178,8 +178,9 @@ func TestSyncedPaymentCompatibility(t *testing.T) {
 		t.Fatal(err)
 	}
 	if method != domain.PaymentMethodQRIS ||
-		status != domain.PaymentStatusPending ||
-		confirmed != nil {
+		status != domain.PaymentStatusSuccess ||
+		confirmed == nil ||
+		*confirmed != 1 {
 		t.Fatalf("new create payment is wrong: %s %s %v", method, status, confirmed)
 	}
 

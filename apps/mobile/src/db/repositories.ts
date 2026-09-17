@@ -270,8 +270,8 @@ async function createTransactionLocal(
     syncState: "pending",
     printState: "pending",
     paymentMethod,
-    paymentStatus: "pending",
-    paymentConfirmedRevision: null,
+    paymentStatus: "success",
+    paymentConfirmedRevision: 1,
     qrisPayloadHash: boundQrisPayloadHash,
     deletedAt: null,
     items,
@@ -432,8 +432,8 @@ async function correctTransactionLocal(
         ? "needs-reprint"
         : before.printState,
     paymentMethod,
-    paymentStatus: "pending",
-    paymentConfirmedRevision: null,
+    paymentStatus: "success",
+    paymentConfirmedRevision: before.revision + 1,
     qrisPayloadHash: boundQrisPayloadHash,
     items,
   };
@@ -469,8 +469,8 @@ async function correctTransactionLocal(
       `UPDATE transactions SET
          revision = ?, subtotal = ?, total = ?, payment_amount = ?, updated_actor_name = ?,
          terminal_id = ?, sync_state = 'pending', print_state = ?,
-         payment_method = ?, payment_status = 'pending',
-         payment_confirmed_revision = NULL, qris_payload_hash = ?
+         payment_method = ?, payment_status = 'success',
+         payment_confirmed_revision = ?, qris_payload_hash = ?
        WHERE id = ?`,
       corrected.revision,
       corrected.subtotal,
@@ -480,6 +480,7 @@ async function correctTransactionLocal(
       corrected.terminalId,
       corrected.printState,
       corrected.paymentMethod,
+      corrected.paymentConfirmedRevision,
       corrected.qrisPayloadHash,
       corrected.id,
     );

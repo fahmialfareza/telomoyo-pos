@@ -293,14 +293,6 @@ it("allows summary IDs and amounts to wrap without changing receipt paper layout
   );
 });
 
-it("keeps payment gating for stale confirmations", async () => {
-  mockTransaction = { ...transaction, paymentConfirmedRevision: 2 };
-  const screen = render(<PrintTransactionScreen />);
-  expect(await screen.findByText("Pencetakan terkunci")).toBeTruthy();
-  expect(screen.queryByTestId("receipt-preview")).toBeNull();
-  expect(mockBeginAttempt).not.toHaveBeenCalled();
-});
-
 it("describes simulator success and retains the exact document sent, not an accidental copy", async () => {
   const screen = render(<PrintTransactionScreen />);
   await screen.findByTestId("receipt-preview-text");

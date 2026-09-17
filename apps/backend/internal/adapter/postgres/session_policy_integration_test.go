@@ -133,8 +133,9 @@ func TestSandboxPaymentAmountUsesImmutableOriginPolicyNotSubmittingSession(t *te
 	if err != nil {
 		t.Fatal(err)
 	}
-	if corrected.PaymentAmount != 55_000 || corrected.PaymentStatus != domain.PaymentStatusPending || corrected.PaymentConfirmedRevision != nil {
-		t.Fatalf("correction did not adopt its own origin policy/reset payment: %+v", corrected)
+	if corrected.PaymentAmount != 55_000 || corrected.PaymentStatus != domain.PaymentStatusSuccess ||
+		corrected.PaymentConfirmedRevision == nil || *corrected.PaymentConfirmedRevision != corrected.Revision {
+		t.Fatalf("correction did not adopt its own origin policy/confirm payment: %+v", corrected)
 	}
 	var historicAmount int64
 	if err = store.Pool.QueryRow(ctx, `SELECT payment_amount FROM transaction_revisions WHERE transaction_id=$1 AND revision=1 AND data_space_id=$2`, oldTransaction.ID, space.ID).Scan(&historicAmount); err != nil {

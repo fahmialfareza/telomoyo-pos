@@ -367,6 +367,16 @@ const migrations: Migration[] = [
       INSERT OR IGNORE INTO scope_access(singleton) VALUES (1);
     `,
   },
+  {
+    version: 11,
+    name: "payments_auto_confirmed_at_creation",
+    sql: `
+      UPDATE transactions
+      SET payment_status = 'success',
+          payment_confirmed_revision = revision
+      WHERE payment_status <> 'success';
+    `,
+  },
 ];
 
 export async function runMigrations(

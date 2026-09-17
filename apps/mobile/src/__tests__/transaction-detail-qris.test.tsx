@@ -35,7 +35,6 @@ interface DynamicQrisCardProps {
 const mockRouterPush = jest.fn();
 const mockGetTransaction = jest.fn<Promise<Transaction | null>, [string]>();
 const mockHasTerminalTransactionBlock = jest.fn<Promise<boolean>, [string]>();
-const mockSetPaymentStatus = jest.fn();
 const mockReadQrisConfig = jest.fn<Promise<QrisConfig | null>, []>();
 const mockDynamicQrisCard = jest.fn<void, [DynamicQrisCardProps]>();
 const mockSyncRefresh = jest.fn();
@@ -109,7 +108,6 @@ jest.mock("@/db/repositories", () => ({
   getTransaction: (id: string) => mockGetTransaction(id),
   hasTerminalTransactionBlock: (id: string) =>
     mockHasTerminalTransactionBlock(id),
-  setPaymentStatus: (...args: unknown[]) => mockSetPaymentStatus(...args),
 }));
 
 jest.mock("@/security/secure-store", () => ({
@@ -248,8 +246,8 @@ function transaction(overrides: Partial<Transaction> = {}): Transaction {
     syncState: "synced",
     printState: "pending",
     paymentMethod: "qris",
-    paymentStatus: "pending",
-    paymentConfirmedRevision: null,
+    paymentStatus: "success",
+    paymentConfirmedRevision: 3,
     qrisPayloadHash: QRIS_PAYLOAD_HASH,
     deletedAt: null,
     items: [
@@ -285,7 +283,7 @@ describe("Transaction detail dynamic QRIS", () => {
     mockReadQrisConfig.mockResolvedValue({ staticPayload: STATIC_QRIS });
   });
 
-  it("passes the exact amount-specific payload for a pending QRIS payment", async () => {
+  it("passes the exact amount-specific payload for a QRIS transaction", async () => {
     mockGetTransaction.mockResolvedValue(transaction());
     const screen = render(<TransactionDetailScreen />);
 
@@ -300,7 +298,7 @@ describe("Transaction detail dynamic QRIS", () => {
       merchantName: "SEWA MOTOR",
       payload: DYNAMIC_QRIS_70K,
     });
-    expect(screen.queryByRole("button", { name: "Cetak struk" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Cetak struk" })).toBeTruthy();
   });
 
   it("places the QRIS scan card before the transaction summary", async () => {
@@ -318,7 +316,7 @@ describe("Transaction detail dynamic QRIS", () => {
     expect(summaryPosition).toBeGreaterThan(qrisPosition);
   });
 
-  it("hides QRIS and exposes printing after success for the current revision", async () => {
+  it("keeps the QRIS card and exposes printing for a confirmed current revision", async () => {
     mockGetTransaction.mockResolvedValue(
       transaction({
         paymentStatus: "success",
@@ -331,8 +329,7 @@ describe("Transaction detail dynamic QRIS", () => {
       expect(screen.getByRole("button", { name: "Cetak struk" })).toBeTruthy();
     });
 
-    expect(screen.queryByTestId("dynamic-qris-card")).toBeNull();
-    expect(mockDynamicQrisCard).not.toHaveBeenCalled();
+    expect(screen.getByTestId("dynamic-qris-card")).toBeTruthy();
   });
 
   it("offers missing QRIS configuration only to a superadmin", async () => {
@@ -449,75 +446,44 @@ describe("Transaction detail dynamic QRIS", () => {
     );
     const screen = render(<TransactionDetailScreen />);
 
-    await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: "Pembayaran berhasil" }),
-      ).toBeTruthy();
-    });
+    await screen.findByTestId("transaction-summary-card");
 
     expect(screen.queryByTestId("dynamic-qris-card")).toBeNull();
     expect(mockDynamicQrisCard).not.toHaveBeenCalled();
   });
 
-  it("places only permitted unpaid actions in the sticky footer and cancellation never pays", async () => {
+  it("marks a previously printed transaction and offers a copy print", async () => {
+    mockGetTransaction.mockResolvedValue(
+      transaction({ printState: "success" }),
+    );
+    const screen = render(<TransactionDetailScreen />);
+
+    await screen.findByTestId("transaction-summary-card");
+    expect(screen.getByText("Sudah pernah dicetak")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Cetak salinan" }),
+    ).toBeTruthy();
+  });
+
+  it("shows no printed mark before the first print", async () => {
+    mockGetTransaction.mockResolvedValue(transaction());
+    const screen = render(<TransactionDetailScreen />);
+
+    await screen.findByTestId("transaction-summary-card");
+    expect(screen.queryByText("Sudah pernah dicetak")).toBeNull();
+    expect(screen.getByRole("button", { name: "Cetak struk" })).toBeTruthy();
+  });
+
+  it("places only correction and print actions in the sticky footer", async () => {
     mockGetTransaction.mockResolvedValue(
       transaction({ paymentMethod: "cash", qrisPayloadHash: null }),
     );
     const screen = render(<TransactionDetailScreen />);
-    await screen.findByRole("button", { name: "Pembayaran berhasil" });
+    await screen.findByTestId("transaction-summary-card");
     const footer = within(screen.getByTestId("sticky-footer"));
     expect(
       footer.getByRole("button", { name: "Koreksi transaksi" }),
     ).toBeTruthy();
-    expect(
-      footer.getByRole("button", { name: "Pembayaran gagal" }),
-    ).toBeTruthy();
-    expect(
-      within(screen.getByTestId("screen-content")).queryByRole("button", {
-        name: "Pembayaran berhasil",
-      }),
-    ).toBeNull();
-    fireEvent.press(
-      footer.getByRole("button", { name: "Pembayaran berhasil" }),
-    );
-    expect(screen.getByText("Konfirmasi pembayaran berhasil?")).toBeTruthy();
-    expect(mockSetPaymentStatus).not.toHaveBeenCalled();
-    fireEvent.press(screen.getByRole("button", { name: "Batal" }));
-    expect(mockSetPaymentStatus).not.toHaveBeenCalled();
-    expect(footer.queryByRole("button", { name: "Cetak struk" })).toBeNull();
-  });
-
-  it("confirms a payment once and swaps footer actions only after current-revision success", async () => {
-    mockGetTransaction.mockResolvedValue(transaction());
-    let resolvePayment!: (value: Transaction) => void;
-    mockSetPaymentStatus.mockImplementation(
-      () =>
-        new Promise<Transaction>((resolve) => {
-          resolvePayment = resolve;
-        }),
-    );
-    const screen = render(<TransactionDetailScreen />);
-    fireEvent.press(
-      await screen.findByRole("button", { name: "Pembayaran berhasil" }),
-    );
-    fireEvent.press(
-      screen.getByRole("button", { name: "Ya, pembayaran berhasil" }),
-    );
-    fireEvent.press(
-      screen.getByRole("button", { name: "Ya, pembayaran berhasil" }),
-    );
-    expect(mockSetPaymentStatus).toHaveBeenCalledTimes(1);
-    expect(mockSetPaymentStatus).toHaveBeenCalledWith(
-      "TX-QRIS-1",
-      "success",
-      mockAuthState.session,
-    );
-    await act(async () =>
-      resolvePayment(
-        transaction({ paymentStatus: "success", paymentConfirmedRevision: 3 }),
-      ),
-    );
-    const footer = within(screen.getByTestId("sticky-footer"));
     expect(footer.getByRole("button", { name: "Cetak struk" })).toBeTruthy();
     expect(
       footer.queryByRole("button", { name: "Pembayaran berhasil" }),
@@ -525,7 +491,6 @@ describe("Transaction detail dynamic QRIS", () => {
     expect(
       footer.queryByRole("button", { name: "Pembayaran gagal" }),
     ).toBeNull();
-    expect(mockSyncRefresh).toHaveBeenCalledTimes(1);
   });
 
   it.each(["admin", "superadmin"] as const)(
@@ -542,28 +507,12 @@ describe("Transaction detail dynamic QRIS", () => {
         expect(
           footer.queryByRole("button", { name: "Koreksi transaksi" }),
         ).toBeNull();
-        expect(
-          footer.queryByRole("button", { name: "Pembayaran berhasil" }),
-        ).toBeNull();
       } else {
         expect(
           footer.getByRole("button", { name: "Koreksi transaksi" }),
         ).toBeTruthy();
-        expect(
-          footer.getByRole("button", { name: "Pembayaran berhasil" }),
-        ).toBeTruthy();
       }
-      expect(footer.queryByRole("button", { name: "Cetak struk" })).toBeNull();
+      expect(footer.getByRole("button", { name: "Cetak struk" })).toBeTruthy();
     },
   );
-
-  it("does not offer printing for a payment confirmed against an older revision", async () => {
-    mockGetTransaction.mockResolvedValue(
-      transaction({ paymentStatus: "success", paymentConfirmedRevision: 2 }),
-    );
-    const screen = render(<TransactionDetailScreen />);
-    await screen.findByTestId("transaction-summary-card");
-    expect(screen.queryByRole("button", { name: "Cetak struk" })).toBeNull();
-    expect(screen.getByText("Pencetakan terkunci")).toBeTruthy();
-  });
 });
