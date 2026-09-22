@@ -48,6 +48,11 @@ degrade to cache-miss/allow so PostgreSQL stays the source of truth. Configure
 the Railway healthcheck against `/readyz` so traffic only arrives after
 Postgres is reachable.
 
+If PostgreSQL sleeps after startup, protected requests preserve connection and
+timeout failures as `INTERNAL_ERROR` instead of reporting a valid session as
+`UNAUTHORIZED`. Mobile keeps its encrypted session and retries through its
+normal foreground, reconnect, periodic, or manual synchronization paths.
+
 ## Public privacy and account-deletion pages
 
 The API also serves two public Indonesian HTML pages, without login or a
@@ -308,19 +313,24 @@ all incompatible replicas before applying migration `000006`.
    replica from starting.
 
 `GET /sandbox/status` remains usable while the feature is disabled. It returns
-`enabled: false`; `dataSpaceId` and `generation` are `null` only when Sandbox
-has never been activated. A previously activated generation remains identified
-while entry is disabled, so clients can recognize a rollback without assuming
-that retained data disappeared.
+the effective setting for the selected business; `dataSpaceId` and `generation`
+are `null` only when Sandbox has never been activated. A previously activated
+generation remains identified while entry is disabled, so clients can recognize
+the state without assuming that retained data disappeared.
 
 Switching mode is online-only, available to every signed-in staff member, and
 rotates the session into the selected data space. Only a production-mode
 superadmin may reset Sandbox. Reset advances the sandbox generation; the
 retired generation stays append-only until its configured retention boundary
 (30 days by default), after which cleanup removes it without affecting
-production readiness. Set `SANDBOX_ENABLED=false` to stop new sandbox entry
-while preserving production service; retired Sandbox evidence remains subject
-to that retention policy.
+production readiness. A Production-mode Superadmin can use
+`PUT /sandbox/settings` to enable or disable the selected business. Disabling
+blocks new Sandbox operations without revoking sessions or removing local/server
+evidence, and affected clients can still rotate back to Production.
+
+`SANDBOX_ENABLED` is the backward-compatible default for businesses that have
+not yet been explicitly configured. Once a Superadmin saves a business setting,
+that database value takes precedence over the environment variable.
 
 ### Backup and restore boundary
 

@@ -29,7 +29,7 @@ func (s Sandbox) Status(ctx context.Context, principal domain.Principal) (domain
 		return domain.SandboxStatus{}, err
 	}
 	status := domain.SandboxStatus{
-		Enabled:           s.Enabled,
+		Enabled:           s.EnabledFor(principal),
 		DataMode:          domain.DataModeSandbox,
 		RetentionDays:     s.retentionDays(),
 		SandboxQRISPolicy: principal.EffectiveSandboxQRISPolicy(),
@@ -39,14 +39,14 @@ func (s Sandbox) Status(ctx context.Context, principal domain.Principal) (domain
 		status.QrisAmount = &amount
 	}
 	space, err := s.Repo.ActiveDataSpace(ctx, principal.TenantID, domain.DataModeSandbox)
-	if s.Enabled && domain.IsCode(err, domain.CodeNotFound) {
+	if status.Enabled && domain.IsCode(err, domain.CodeNotFound) {
 		space, err = s.Repo.EnsureSandbox(ctx, principal.TenantID)
 	}
 	if err != nil {
 		// A disabled feature may legitimately never have been activated. Once a
 		// generation exists, keep returning its identity so clients can detect a
 		// rollback without pretending the retained Sandbox data disappeared.
-		if !s.Enabled && domain.IsCode(err, domain.CodeNotFound) {
+		if !status.Enabled && domain.IsCode(err, domain.CodeNotFound) {
 			return status, nil
 		}
 		return domain.SandboxStatus{}, err
@@ -54,6 +54,36 @@ func (s Sandbox) Status(ctx context.Context, principal domain.Principal) (domain
 	status.DataSpaceID = &space.ID
 	status.Generation = &space.Generation
 	return status, nil
+}
+
+func (s Sandbox) EnabledFor(principal domain.Principal) bool {
+	if principal.SandboxEnabledOverride != nil {
+		return *principal.SandboxEnabledOverride
+	}
+	return s.Enabled
+}
+
+func (s Sandbox) Configure(
+	ctx context.Context,
+	principal domain.Principal,
+	input domain.ConfigureSandboxInput,
+) (domain.SandboxStatus, error) {
+	defer observability.StartSegment(ctx, "Usecase.Sandbox.Configure")()
+	if err := RequireProduction(principal); err != nil {
+		return domain.SandboxStatus{}, err
+	}
+	if err := RequireSuperadmin(principal); err != nil {
+		return domain.SandboxStatus{}, err
+	}
+	if input.Enabled == nil {
+		return domain.SandboxStatus{}, domain.Validation("Status Mode Uji wajib dipilih", map[string]any{"field": "enabled"})
+	}
+	if err := s.Repo.ConfigureSandbox(ctx, principal, *input.Enabled); err != nil {
+		return domain.SandboxStatus{}, err
+	}
+	configured := *input.Enabled
+	principal.SandboxEnabledOverride = &configured
+	return s.Status(ctx, principal)
 }
 
 // Initialize intentionally performs no tenant work at process startup. Sandbox
@@ -76,9 +106,9 @@ func (s Sandbox) Reset(
 	if err := RequireSuperadmin(principal); err != nil {
 		return domain.SandboxResetResult{}, err
 	}
-	if !s.Enabled {
+	if !s.EnabledFor(principal) {
 		return domain.SandboxResetResult{}, domain.NewError(
-			domain.CodeForbidden,
+			domain.CodeSandboxDisabled,
 			"Mode Sandbox sedang dinonaktifkan",
 		)
 	}

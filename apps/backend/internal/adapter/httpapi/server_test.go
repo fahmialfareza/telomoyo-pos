@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -41,6 +42,12 @@ type retiredRecoveryRepository struct {
 	active    domain.DataSpace
 	recovered domain.Principal
 	called    bool
+}
+
+type unavailableAuthRepository struct{ port.Repository }
+
+func (unavailableAuthRepository) PrincipalByTokenHash(context.Context, []byte) (domain.Principal, error) {
+	return domain.Principal{}, domain.WrapInternal(errors.New("database waking"), "find session token")
 }
 
 func (repository *retiredRecoveryRepository) PrincipalByTokenHash(context.Context, []byte) (domain.Principal, error) {
@@ -291,6 +298,38 @@ func TestRetiredSandboxIdentityCanOnlyReachSwitchModeRecovery(t *testing.T) {
 	}
 	if errorEnvelope.Error.Code != domain.CodeSandboxGenerationRetired {
 		t.Fatalf("retired profile error = %q", errorEnvelope.Error.Code)
+	}
+}
+
+func TestDatabaseWakeFailureIsNotSerializedAsUnauthorized(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repository := unavailableAuthRepository{}
+	router := New(Dependencies{
+		Repo: repository,
+		Auth: usecase.Auth{
+			Repo: repository, Tokens: retiredRecoveryTokens{},
+			Sessions: &retiredRecoverySessionIndex{values: map[string]uuid.UUID{}},
+		},
+	})
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/profile", nil)
+	request.Header.Set("Authorization", "Bearer valid-token")
+	response := httptest.NewRecorder()
+
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusInternalServerError {
+		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	}
+	var envelope struct {
+		Error struct {
+			Code string `json:"code"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if envelope.Error.Code != domain.CodeInternal {
+		t.Fatalf("error code=%q, want %q", envelope.Error.Code, domain.CodeInternal)
 	}
 }
 

@@ -43,7 +43,10 @@ func (a Auth) Login(ctx context.Context, input domain.LoginInput) (domain.LoginR
 
 	user, err := a.Repo.UserForLogin(ctx, input.Username)
 	if err != nil {
-		return domain.LoginResult{}, domain.NewError(domain.CodeInvalidCredentials, "Username atau kata sandi salah")
+		if domain.IsCode(err, domain.CodeNotFound) {
+			return domain.LoginResult{}, domain.NewError(domain.CodeInvalidCredentials, "Username atau kata sandi salah")
+		}
+		return domain.LoginResult{}, err
 	}
 	ok, verifyErr := a.Passwords.Verify(input.Password, user.PasswordHash)
 	if verifyErr != nil || !ok || !user.IsActive || user.DeletedAt != nil {
@@ -123,14 +126,23 @@ func (a Auth) Authenticate(ctx context.Context, rawToken string) (Authentication
 		if tenantAccessError(repoErr) && principal.SessionID != uuid.Nil {
 			return Authentication{Principal: principal, TokenHash: tokenHash, RecoverableTenantAccess: true}, repoErr
 		}
-		a.Sessions.Delete(ctx, tokenHash)
 		if domain.IsCode(repoErr, domain.CodeSandboxGenerationRetired) &&
 			principal.SessionID != uuid.Nil {
+			a.Sessions.Delete(ctx, tokenHash)
 			return Authentication{
 				Principal: principal, TokenHash: tokenHash,
 				RecoverableRetiredSandbox: true,
 			}, repoErr
 		}
+		// Only a confirmed missing mapping is a stale cache entry. Connection
+		// failures must remain retryable and must not evict a valid token index.
+		if !domain.IsCode(repoErr, domain.CodeNotFound) {
+			if domain.IsCode(repoErr, domain.CodeUnauthorized) {
+				a.Sessions.Delete(ctx, tokenHash)
+			}
+			return Authentication{}, repoErr
+		}
+		a.Sessions.Delete(ctx, tokenHash)
 	}
 	principal, err := a.Repo.PrincipalByTokenHash(ctx, tokenHash)
 	if err != nil {
@@ -144,7 +156,10 @@ func (a Auth) Authenticate(ctx context.Context, rawToken string) (Authentication
 				RecoverableRetiredSandbox: true,
 			}, err
 		}
-		return Authentication{}, domain.NewError(domain.CodeUnauthorized, "Sesi tidak valid atau telah dicabut")
+		if domain.IsCode(err, domain.CodeNotFound) || domain.IsCode(err, domain.CodeUnauthorized) {
+			return Authentication{}, domain.NewError(domain.CodeUnauthorized, "Sesi tidak valid atau telah dicabut")
+		}
+		return Authentication{}, err
 	}
 	a.Sessions.Set(ctx, tokenHash, principal.SessionID)
 	return Authentication{Principal: principal, TokenHash: tokenHash}, nil
@@ -159,8 +174,8 @@ func (a Auth) SwitchMode(ctx context.Context, authentication Authentication, mod
 	if !mode.Valid() {
 		return domain.LoginResult{}, domain.Validation("Mode operasi harus production atau sandbox", map[string]any{"field": "mode"})
 	}
-	if mode == domain.DataModeSandbox && !a.SandboxEnabled {
-		return domain.LoginResult{}, domain.NewError(domain.CodeForbidden, "Mode Sandbox sedang dinonaktifkan")
+	if mode == domain.DataModeSandbox && !a.sandboxEnabled(principal) {
+		return domain.LoginResult{}, domain.NewError(domain.CodeSandboxDisabled, "Mode Uji telah dinonaktifkan untuk bisnis ini")
 	}
 	if mode == principal.EffectiveDataMode() && !authentication.RecoverableRetiredSandbox {
 		return domain.LoginResult{}, domain.NewError(domain.CodeConflict, "Sesi sudah menggunakan mode yang dipilih")
@@ -203,6 +218,13 @@ func (a Auth) SwitchMode(ctx context.Context, authentication Authentication, mod
 	a.Sessions.Delete(ctx, authentication.TokenHash)
 	a.Sessions.Set(ctx, tokenHash, switched.SessionID)
 	return domain.LoginResult{Token: raw, Principal: switched}, nil
+}
+
+func (a Auth) sandboxEnabled(principal domain.Principal) bool {
+	if principal.SandboxEnabledOverride != nil {
+		return *principal.SandboxEnabledOverride
+	}
+	return a.SandboxEnabled
 }
 
 func (a Auth) Logout(ctx context.Context, principal domain.Principal) error {

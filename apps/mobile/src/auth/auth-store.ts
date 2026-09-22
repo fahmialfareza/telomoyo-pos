@@ -6,8 +6,11 @@ import { apiRequest, registerAccessFailureHandler } from "@/api/client";
 import type { LoginResponse, AuthContextsResponse } from "@/api/contracts";
 import { sessionFromLoginResponse } from "@/auth/session";
 import {
+  isSandboxDisabledError,
   isSessionReauthenticationError,
   requiresSessionReauthentication,
+  SANDBOX_DISABLED_CODE,
+  SANDBOX_DISABLED_MESSAGE,
   SESSION_INVALID_MESSAGE,
 } from "@/auth/session-errors";
 import { prepareDatabaseForSession } from "@/db/client";
@@ -564,8 +567,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         );
       }
 
-      await runSync(session);
-      if ((await countPendingOutbox(session)) > 0) {
+      let disabledSandboxExit = false;
+      try {
+        await runSync(session);
+      } catch (error) {
+        if (
+          session.dataMode === "sandbox" &&
+          mode === "production" &&
+          isSandboxDisabledError(error)
+        ) {
+          disabledSandboxExit = true;
+        } else {
+          throw error;
+        }
+      }
+      if (!disabledSandboxExit && (await countPendingOutbox(session)) > 0) {
         throw new Error(
           "Masih ada perubahan, konflik, atau operasi ditolak yang belum diselesaikan di Pusat Sinkron.",
         );
@@ -602,6 +618,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       await hydrateSyncStateForSession(nextSession, summary);
       replacementMetadataReady = true;
       exposeSession(nextSession, set);
+      if (disabledSandboxExit) {
+        set({
+          notice:
+            "Kembali ke Mode Produksi. Data dan antrean Mode Uji tetap tersimpan dan dapat disinkronkan jika Mode Uji diaktifkan kembali.",
+        });
+      }
     } catch (error) {
       const affectedSession = nextSession ?? session;
       if (isSessionReauthenticationError(error)) {
@@ -907,6 +929,15 @@ async function handleAccessFailure(token: string, code: string): Promise<void> {
     return invalidation;
   }
   const auth = useAuthStore.getState();
+  if (
+    code === SANDBOX_DISABLED_CODE &&
+    auth.session?.token === token &&
+    auth.session.dataMode === "sandbox"
+  ) {
+    useModeStore.setState({ accessBlocked: true });
+    useAuthStore.setState({ notice: SANDBOX_DISABLED_MESSAGE });
+    return;
+  }
   if (!SCOPE_ACCESS_CODES.has(code) || auth.session?.token !== token) return;
   const session = auth.session;
   if (session.contextKind && session.contextKind !== "tenant") return;

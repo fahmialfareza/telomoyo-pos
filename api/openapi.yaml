@@ -863,6 +863,34 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /sandbox/settings:
+    put:
+      operationId: configureSandbox
+      tags: [Sandbox]
+      summary: Enable or disable Sandbox for the selected business
+      description: |
+        Production-mode, Superadmin-only operation. Enabling creates and seeds
+        the first Sandbox generation when needed. Disabling preserves all
+        Sandbox generations, sessions, and queued evidence.
+      x-required-role: superadmin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfigureSandboxRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/SandboxStatusResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
   /sandbox/reset:
     post:
       operationId: resetSandbox
@@ -3056,6 +3084,14 @@ components:
         confirmation:
           type: string
           const: RESET SANDBOX
+
+    ConfigureSandboxRequest:
+      type: object
+      additionalProperties: false
+      required: [enabled]
+      properties:
+        enabled:
+          type: boolean
 
     SandboxResetResult:
       type: object

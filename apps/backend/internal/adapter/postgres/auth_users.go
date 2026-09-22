@@ -111,6 +111,7 @@ func principalBySessionRow(ctx context.Context, query rowQuerier, sessionID uuid
 		       COALESCE(s.membership_id,'00000000-0000-0000-0000-000000000000'),
 		       false, s.legacy_origin,s.protocol_version,s.sandbox_qris_policy,
 		       COALESCE(t.name,''), COALESCE(t.slug,''), COALESCE(t.status,''), COALESCE(t.profile_revision,0),t.qris_revision,COALESCE(t.management_revision,0),
+		       t.sandbox_enabled_override,
 		       COALESCE(m.status,''),COALESCE(ds.status,''),s.revoked_at IS NOT NULL,
 		       COALESCE(s.revoked_reason,''),u.created_at,u.updated_at,u.is_active AND u.deleted_at IS NULL,
 		       s.terminal_id IS NULL OR EXISTS(SELECT 1 FROM terminals term WHERE term.id=s.terminal_id AND term.tenant_id=s.tenant_id AND term.is_active AND term.revoked_at IS NULL)
@@ -131,6 +132,7 @@ func principalBySessionRow(ctx context.Context, query rowQuerier, sessionID uuid
 		&principal.ContextKind, &principal.TenantID, &principal.MembershipID,
 		&principal.IsPlatformAdmin, &principal.LegacyOrigin, &principal.ProtocolVersion, &principal.SandboxQRISPolicy,
 		&tenant.Name, &tenant.Slug, &tenant.Status, &tenant.ProfileRevision, &tenant.QrisRevision, &tenant.Revision,
+		&principal.SandboxEnabledOverride,
 		&membershipStatus, &spaceStatus, &retired,
 		&revokedReason, &principal.UserCreatedAt, &principal.UserUpdatedAt, &accountActive, &terminalActive,
 	)

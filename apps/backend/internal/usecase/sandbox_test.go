@@ -20,6 +20,7 @@ type sandboxRepository struct {
 	activeCalled    bool
 	ensureCalled    bool
 	activeErr       error
+	configured      *bool
 }
 
 func (repository *sandboxRepository) ActiveDataSpace(
@@ -34,6 +35,11 @@ func (repository *sandboxRepository) ActiveDataSpace(
 func (repository *sandboxRepository) EnsureSandbox(context.Context, uuid.UUID) (domain.DataSpace, error) {
 	repository.ensureCalled = true
 	return repository.active, nil
+}
+
+func (repository *sandboxRepository) ConfigureSandbox(_ context.Context, _ domain.Principal, enabled bool) error {
+	repository.configured = &enabled
+	return nil
 }
 
 func (repository *sandboxRepository) ResetSandbox(
@@ -120,6 +126,75 @@ func TestSandboxDisabledStatusDoesNotRequireAnActivatedGeneration(t *testing.T) 
 	}
 }
 
+func TestSandboxTenantOverrideTakesPrecedenceOverDeploymentDefault(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name        string
+		fallback    bool
+		override    bool
+		wantEnabled bool
+	}{
+		{name: "tenant disables enabled default", fallback: true, override: false, wantEnabled: false},
+		{name: "tenant enables disabled default", fallback: false, override: true, wantEnabled: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			principal := sandboxTestPrincipal(domain.RoleAdmin, domain.DataModeProduction)
+			principal.SandboxEnabledOverride = &test.override
+			repository := &sandboxRepository{active: domain.DataSpace{ID: uuid.New(), Mode: domain.DataModeSandbox, Generation: 2}}
+			status, err := (Sandbox{Repo: repository, Enabled: test.fallback}).Status(context.Background(), principal)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if status.Enabled != test.wantEnabled {
+				t.Fatalf("Enabled = %v, want %v", status.Enabled, test.wantEnabled)
+			}
+		})
+	}
+}
+
+func TestConfigureSandboxPersistsExplicitTenantChoice(t *testing.T) {
+	t.Parallel()
+
+	repository := &sandboxRepository{active: domain.DataSpace{ID: uuid.New(), Mode: domain.DataModeSandbox, Generation: 3}}
+	service := Sandbox{Repo: repository, Enabled: false}
+	status, err := service.Configure(
+		context.Background(),
+		sandboxTestPrincipal(domain.RoleSuperadmin, domain.DataModeProduction),
+		domain.ConfigureSandboxInput{Enabled: boolPointer(true)},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if repository.configured == nil || !*repository.configured || !status.Enabled {
+		t.Fatalf("configured=%v status=%+v", repository.configured, status)
+	}
+}
+
+func boolPointer(value bool) *bool { return &value }
+
+func TestConfigureSandboxRejectsUnsafeRequests(t *testing.T) {
+	t.Parallel()
+	service := Sandbox{Repo: &sandboxRepository{}}
+	for _, test := range []struct {
+		name      string
+		principal domain.Principal
+		input     domain.ConfigureSandboxInput
+		code      string
+	}{
+		{name: "admin", principal: sandboxTestPrincipal(domain.RoleAdmin, domain.DataModeProduction), input: domain.ConfigureSandboxInput{Enabled: boolPointer(true)}, code: domain.CodeForbidden},
+		{name: "sandbox context", principal: sandboxTestPrincipal(domain.RoleSuperadmin, domain.DataModeSandbox), input: domain.ConfigureSandboxInput{Enabled: boolPointer(false)}, code: domain.CodeForbidden},
+		{name: "missing enabled", principal: sandboxTestPrincipal(domain.RoleSuperadmin, domain.DataModeProduction), input: domain.ConfigureSandboxInput{}, code: domain.CodeValidation},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := service.Configure(context.Background(), test.principal, test.input)
+			if !domain.IsCode(err, test.code) {
+				t.Fatalf("error=%v, want code %s", err, test.code)
+			}
+		})
+	}
+}
+
 func TestSandboxStatusFullValueHasNoFixedAmount(t *testing.T) {
 	t.Parallel()
 	principal := sandboxTestPrincipal(domain.RoleAdmin, domain.DataModeSandbox)
@@ -187,7 +262,7 @@ func TestSandboxResetRejectsUnsafeRequests(t *testing.T) {
 			service:   Sandbox{Repo: &sandboxRepository{}, Enabled: false},
 			principal: sandboxTestPrincipal(domain.RoleSuperadmin, domain.DataModeProduction),
 			input:     domain.ResetSandboxInput{ExpectedGeneration: 1, Confirmation: "RESET SANDBOX"},
-			code:      domain.CodeForbidden,
+			code:      domain.CodeSandboxDisabled,
 		},
 		{
 			name:      "sandbox session",

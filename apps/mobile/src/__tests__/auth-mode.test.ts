@@ -447,6 +447,50 @@ describe("authentication mode switching", () => {
     expect(useAuthStore.getState().switchingMode).toBe(false);
   });
 
+  it("returns from a disabled Sandbox without draining or deleting its pending outbox", async () => {
+    const sandboxSession: Session = {
+      ...productionSession,
+      token: "sandbox-token",
+      sessionId: "SANDBOX-SESSION",
+      dataMode: "sandbox",
+      dataSpaceId: sandboxResponse.dataSpaceId,
+      sandboxGeneration: 7,
+    };
+    const productionResponse = {
+      ...sandboxResponse,
+      sessionToken: "production-token-2",
+      sessionId: "PRODUCTION-SESSION-2",
+      dataMode: "production",
+      dataSpaceId: productionSession.dataSpaceId,
+      sandboxGeneration: 0,
+    } as LoginResponse;
+    useAuthStore.setState({ session: sandboxSession });
+    mockRunSync
+      .mockRejectedValueOnce({
+        status: 403,
+        code: "SANDBOX_DISABLED",
+        message: "Mode Uji dinonaktifkan",
+      })
+      .mockResolvedValueOnce(recoverySummary);
+    mockApiRequest.mockResolvedValueOnce(productionResponse);
+
+    await expect(
+      useAuthStore.getState().switchMode("production"),
+    ).resolves.toBeUndefined();
+
+    expect(mockCountPendingOutbox).not.toHaveBeenCalled();
+    expect(mockClearSession).not.toHaveBeenCalled();
+    expect(mockApiRequest).toHaveBeenCalledWith("/auth/switch-mode", {
+      method: "POST",
+      token: sandboxSession.token,
+      body: { mode: "production" },
+    });
+    expect(useAuthStore.getState()).toMatchObject({
+      session: { dataMode: "production", sessionId: "PRODUCTION-SESSION-2" },
+      notice: expect.stringContaining("antrean Mode Uji tetap tersimpan"),
+    });
+  });
+
   it("waits for an active pull before clearing the session even when the outbox is empty", async () => {
     let resolveSync: (value: typeof recoverySummary) => void = () => {
       throw new Error("Sync resolver was not initialized.");

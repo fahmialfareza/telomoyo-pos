@@ -333,6 +333,11 @@ type ChangePasswordRequest struct {
 	NewPassword     string `json:"newPassword"`
 }
 
+// ConfigureSandboxRequest defines model for ConfigureSandboxRequest.
+type ConfigureSandboxRequest struct {
+	Enabled bool `json:"enabled"`
+}
+
 // ContextKind New sessions use account or tenant. The retired platform value is retained solely for historical session decoding.
 type ContextKind string
 
@@ -1904,6 +1909,9 @@ type ChangeOwnPasswordJSONRequestBody = ChangePasswordRequest
 // ResetSandboxJSONRequestBody defines body for ResetSandbox for application/json ContentType.
 type ResetSandboxJSONRequestBody = ResetSandboxRequest
 
+// ConfigureSandboxJSONRequestBody defines body for ConfigureSandbox for application/json ContentType.
+type ConfigureSandboxJSONRequestBody = ConfigureSandboxRequest
+
 // PushSyncMutationsJSONRequestBody defines body for PushSyncMutations for application/json ContentType.
 type PushSyncMutationsJSONRequestBody = SyncPushRequest
 
@@ -2626,6 +2634,9 @@ type ServerInterface interface {
 	// Retire and replace the shared Sandbox generation
 	// (POST /sandbox/reset)
 	ResetSandbox(c *gin.Context)
+	// Enable or disable Sandbox for the selected business
+	// (PUT /sandbox/settings)
+	ConfigureSandbox(c *gin.Context)
 	// Get Sandbox availability and active generation
 	// (GET /sandbox/status)
 	GetSandboxStatus(c *gin.Context)
@@ -3421,6 +3432,21 @@ func (siw *ServerInterfaceWrapper) ResetSandbox(c *gin.Context) {
 	}
 
 	siw.Handler.ResetSandbox(c)
+}
+
+// ConfigureSandbox operation middleware
+func (siw *ServerInterfaceWrapper) ConfigureSandbox(c *gin.Context) {
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ConfigureSandbox(c)
 }
 
 // GetSandboxStatus operation middleware
@@ -4314,6 +4340,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.PATCH(options.BaseURL+"/profile", wrapper.UpdateOwnProfile)
 	router.POST(options.BaseURL+"/profile/password", wrapper.ChangeOwnPassword)
 	router.POST(options.BaseURL+"/sandbox/reset", wrapper.ResetSandbox)
+	router.PUT(options.BaseURL+"/sandbox/settings", wrapper.ConfigureSandbox)
 	router.GET(options.BaseURL+"/sandbox/status", wrapper.GetSandboxStatus)
 	router.GET(options.BaseURL+"/statistics/dashboard", wrapper.GetDashboardStatistics)
 	router.GET(options.BaseURL+"/sync/pull", wrapper.PullSyncChanges)
@@ -6390,6 +6417,68 @@ func (response ResetSandbox409JSONResponse) VisitResetSandboxResponse(w http.Res
 	return json.NewEncoder(w).Encode(response.Body)
 }
 
+type ConfigureSandboxRequestObject struct {
+	Body *ConfigureSandboxJSONRequestBody
+}
+
+type ConfigureSandboxResponseObject interface {
+	VisitConfigureSandboxResponse(w http.ResponseWriter) error
+}
+
+type ConfigureSandbox200JSONResponse struct {
+	SandboxStatusResponseJSONResponse
+}
+
+func (response ConfigureSandbox200JSONResponse) VisitConfigureSandboxResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Request-Id", fmt.Sprint(response.Headers.XRequestId))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ConfigureSandbox400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ConfigureSandbox400JSONResponse) VisitConfigureSandboxResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Request-Id", fmt.Sprint(response.Headers.XRequestId))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ConfigureSandbox401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ConfigureSandbox401JSONResponse) VisitConfigureSandboxResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Request-Id", fmt.Sprint(response.Headers.XRequestId))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ConfigureSandbox403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ConfigureSandbox403JSONResponse) VisitConfigureSandboxResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Request-Id", fmt.Sprint(response.Headers.XRequestId))
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ConfigureSandbox422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response ConfigureSandbox422JSONResponse) VisitConfigureSandboxResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Request-Id", fmt.Sprint(response.Headers.XRequestId))
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
 type GetSandboxStatusRequestObject struct {
 }
 
@@ -8012,6 +8101,9 @@ type StrictServerInterface interface {
 	// Retire and replace the shared Sandbox generation
 	// (POST /sandbox/reset)
 	ResetSandbox(ctx context.Context, request ResetSandboxRequestObject) (ResetSandboxResponseObject, error)
+	// Enable or disable Sandbox for the selected business
+	// (PUT /sandbox/settings)
+	ConfigureSandbox(ctx context.Context, request ConfigureSandboxRequestObject) (ConfigureSandboxResponseObject, error)
 	// Get Sandbox availability and active generation
 	// (GET /sandbox/status)
 	GetSandboxStatus(ctx context.Context, request GetSandboxStatusRequestObject) (GetSandboxStatusResponseObject, error)
@@ -9176,6 +9268,39 @@ func (sh *strictHandler) ResetSandbox(ctx *gin.Context) {
 		ctx.Status(http.StatusInternalServerError)
 	} else if validResponse, ok := response.(ResetSandboxResponseObject); ok {
 		if err := validResponse.VisitResetSandboxResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConfigureSandbox operation middleware
+func (sh *strictHandler) ConfigureSandbox(ctx *gin.Context) {
+	var request ConfigureSandboxRequestObject
+
+	var body ConfigureSandboxJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ConfigureSandbox(ctx, request.(ConfigureSandboxRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConfigureSandbox")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(ConfigureSandboxResponseObject); ok {
+		if err := validResponse.VisitConfigureSandboxResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {

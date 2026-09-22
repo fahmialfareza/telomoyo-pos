@@ -379,6 +379,22 @@ func (s *Store) EnsureSandbox(ctx context.Context, tenantID uuid.UUID) (domain.D
 		return domain.DataSpace{}, dbError(err, "lock sandbox activation")
 	}
 
+	space, err := s.ensureSandboxTx(ctx, tx, tenantID, nil)
+	if err != nil {
+		return domain.DataSpace{}, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return domain.DataSpace{}, dbError(err, "commit sandbox activation")
+	}
+	return space, nil
+}
+
+func (s *Store) ensureSandboxTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	tenantID uuid.UUID,
+	actor *domain.Principal,
+) (domain.DataSpace, error) {
 	space, err := dataSpaceByQuery(
 		ctx,
 		tx,
@@ -386,9 +402,6 @@ func (s *Store) EnsureSandbox(ctx context.Context, tenantID uuid.UUID) (domain.D
 		tenantID, domain.DataModeSandbox,
 	)
 	if err == nil {
-		if err = tx.Commit(ctx); err != nil {
-			return domain.DataSpace{}, dbError(err, "commit existing sandbox activation")
-		}
 		return space, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
@@ -415,7 +428,11 @@ func (s *Store) EnsureSandbox(ctx context.Context, tenantID uuid.UUID) (domain.D
 	); err != nil {
 		return domain.DataSpace{}, dbError(err, "create initial sandbox generation")
 	}
-	cloned, err := cloneProductionPackages(ctx, tx, space.ID, nil, now, "Klon awal Sandbox")
+	var actorID *uuid.UUID
+	if actor != nil {
+		actorID = &actor.UserID
+	}
+	cloned, err := cloneProductionPackages(ctx, tx, space.ID, actorID, now, "Klon awal Sandbox")
 	if err != nil {
 		return domain.DataSpace{}, dbError(err, "clone initial sandbox packages")
 	}
@@ -427,6 +444,9 @@ func (s *Store) EnsureSandbox(ctx context.Context, tenantID uuid.UUID) (domain.D
 		return domain.DataSpace{}, dbError(err, "find Sandbox audit space")
 	}
 	activationIdentity := domain.MutationIdentity{DataSpaceID: production.ID, TenantID: tenantID}
+	if actor != nil {
+		activationIdentity = principalIdentity(*actor)
+	}
 	if err = audit(
 		ctx,
 		tx,
@@ -441,10 +461,54 @@ func (s *Store) EnsureSandbox(ctx context.Context, tenantID uuid.UUID) (domain.D
 	); err != nil {
 		return domain.DataSpace{}, dbError(err, "audit sandbox activation")
 	}
-	if err = tx.Commit(ctx); err != nil {
-		return domain.DataSpace{}, dbError(err, "commit sandbox activation")
-	}
 	return space, nil
+}
+
+func (s *Store) ConfigureSandbox(
+	ctx context.Context,
+	actor domain.Principal,
+	enabled bool,
+) error {
+	defer observability.StartSegment(ctx, "Postgres.ConfigureSandbox")()
+	if !actor.IsSuperadmin() || actor.EffectiveDataMode() != domain.DataModeProduction {
+		return domain.NewError(domain.CodeForbidden, "Pengaturan Mode Uji hanya tersedia untuk Superadmin di Mode Produksi")
+	}
+	tx, err := s.Pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+	if err != nil {
+		return dbError(err, "begin sandbox configuration")
+	}
+	defer tx.Rollback(ctx)
+	role, err := lockTenantLifecycleAccess(ctx, tx, actor)
+	if err != nil {
+		return err
+	}
+	if role != domain.RoleSuperadmin {
+		return domain.NewError(domain.CodeForbidden, "Pengaturan Mode Uji hanya tersedia untuk Superadmin")
+	}
+	if _, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, sandboxGenerationLock+":"+actor.TenantID.String()); err != nil {
+		return dbError(err, "lock sandbox configuration")
+	}
+	if enabled {
+		if _, err = s.ensureSandboxTx(ctx, tx, actor.TenantID, &actor); err != nil {
+			return err
+		}
+	}
+	var before *bool
+	if err = tx.QueryRow(ctx, `SELECT sandbox_enabled_override FROM tenants WHERE id=$1`, actor.TenantID).Scan(&before); err != nil {
+		return dbError(err, "read sandbox configuration")
+	}
+	if before == nil || *before != enabled {
+		if _, err = tx.Exec(ctx, `UPDATE tenants SET sandbox_enabled_override=$2,updated_at=now() WHERE id=$1`, actor.TenantID, enabled); err != nil {
+			return dbError(err, "update sandbox configuration")
+		}
+		if err = controlAudit(ctx, tx, &actor.UserID, &actor.TenantID, "tenant.sandbox_enabled_changed", map[string]any{
+			"before":  before,
+			"enabled": enabled,
+		}); err != nil {
+			return dbError(err, "audit sandbox configuration")
+		}
+	}
+	return dbError(tx.Commit(ctx), "commit sandbox configuration")
 }
 
 func (s *Store) ResetSandbox(

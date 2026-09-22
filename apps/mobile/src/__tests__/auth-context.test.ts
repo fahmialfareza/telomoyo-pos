@@ -820,13 +820,26 @@ describe("authenticated tenant context handoff", () => {
     "NETWORK_ERROR",
     "HTTP_500",
     "SANDBOX_GENERATION_RETIRED",
-    "SANDBOX_DISABLED",
   ])("does not auto-logout for %s", async (code) => {
     await handleAccessFailure(original.token, code);
     expect(useAuthStore.getState().session).toBe(original);
     expect(useAuthStore.getState().scopeLocked).toBe(false);
     expect(mockClearSession).not.toHaveBeenCalled();
     expect(mockQuarantine).not.toHaveBeenCalled();
+  });
+
+  it("blocks new Sandbox writes without clearing the session when Sandbox is disabled", async () => {
+    await handleAccessFailure(original.token, "SANDBOX_DISABLED");
+
+    expect(useAuthStore.getState()).toMatchObject({
+      session: original,
+      scopeLocked: false,
+      notice: expect.stringContaining("dinonaktifkan"),
+    });
+    expect(useModeStore.getState().accessBlocked).toBe(true);
+    expect(mockClearSession).not.toHaveBeenCalled();
+    expect(mockQuarantine).not.toHaveBeenCalled();
+    expect(() => beginLocalMutation(original)).toThrow();
   });
 
   it("keeps invalid access locked with recovery feedback if quarantining evidence fails", async () => {

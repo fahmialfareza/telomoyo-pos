@@ -109,6 +109,9 @@ type Principal struct {
 	SandboxGeneration  int64             `json:"sandboxGeneration"`
 	ProtocolVersion    int               `json:"protocolVersion"`
 	SandboxQRISPolicy  SandboxQRISPolicy `json:"sandboxQrisPolicy"`
+	// SandboxEnabledOverride is internal authorization state. Nil inherits the
+	// deployment default and is never serialized in session responses.
+	SandboxEnabledOverride *bool `json:"-"`
 }
 
 func (p Principal) IsSuperadmin() bool { return p.Role == RoleSuperadmin }

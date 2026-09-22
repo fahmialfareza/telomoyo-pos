@@ -16,11 +16,30 @@ type verifiedLoginRepository struct {
 	input     port.VerifiedLoginSession
 	principal domain.Principal
 	err       error
+	userErr   error
 	called    bool
 }
 
 func (r *verifiedLoginRepository) UserForLogin(context.Context, string) (domain.UserAuth, error) {
-	return r.user, nil
+	return r.user, r.userErr
+}
+
+func TestLoginPreservesDatabaseLookupFailure(t *testing.T) {
+	repo := &verifiedLoginRepository{
+		userErr: domain.WrapInternal(context.DeadlineExceeded, "find login user"),
+	}
+	auth := Auth{
+		Repo: repo, Passwords: loginPasswords{}, Limiter: loginLimiter{},
+		Sessions: &memorySessionIndex{entries: map[string]uuid.UUID{}},
+		Tokens:   fixedAuthTokens{raw: "new-token", replacementHash: []byte("new-hash")},
+	}
+
+	_, err := auth.Login(context.Background(), domain.LoginInput{
+		Username: "user", Password: "valid-password", ClientProtocolVersion: 3,
+	})
+	if !domain.IsCode(err, domain.CodeInternal) {
+		t.Fatalf("Login error = %v, want INTERNAL_ERROR", err)
+	}
 }
 
 func (r *verifiedLoginRepository) ActiveDataSpace(context.Context, uuid.UUID, domain.DataMode) (domain.DataSpace, error) {

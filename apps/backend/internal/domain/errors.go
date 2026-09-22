@@ -22,6 +22,7 @@ const (
 	CodeSignatureInvalid         = "INVALID_TERMINAL_SIGNATURE"
 	CodeRateLimited              = "RATE_LIMITED"
 	CodeSandboxGenerationRetired = "SANDBOX_GENERATION_RETIRED"
+	CodeSandboxDisabled          = "SANDBOX_DISABLED"
 	CodeInternal                 = "INTERNAL_ERROR"
 )
 

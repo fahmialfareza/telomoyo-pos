@@ -38,6 +38,10 @@ type ResetSandboxInput struct {
 	Confirmation       string `json:"confirmation"`
 }
 
+type ConfigureSandboxInput struct {
+	Enabled *bool `json:"enabled"`
+}
+
 type CreateUserInput struct {
 	FullName          string
 	Username          string

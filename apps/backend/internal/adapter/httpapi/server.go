@@ -106,6 +106,7 @@ func New(deps Dependencies) *gin.Engine {
 	protected.POST("/auth/switch-mode", server.switchMode)
 	protected.GET("/profile", server.profile)
 	protected.GET("/sandbox/status", server.sandboxStatus)
+	protected.PUT("/sandbox/settings", server.sandboxSettings)
 
 	operational := protected.Group("")
 	operational.Use(server.requireTenant(), server.requireSandboxEnabled())
@@ -349,9 +350,9 @@ func (s *Server) requireProduction() gin.HandlerFunc {
 func (s *Server) requireSandboxEnabled() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if principal(c).EffectiveDataMode() == domain.DataModeSandbox &&
-			!s.deps.Sandbox.Enabled {
+			!s.deps.Sandbox.EnabledFor(principal(c)) {
 			writeError(c, domain.NewError(
-				domain.CodeForbidden,
+				domain.CodeSandboxDisabled,
 				"Mode Uji telah dinonaktifkan. Kembali ke Mode Produksi untuk melanjutkan",
 			))
 			c.Abort()
@@ -427,7 +428,7 @@ func errorStatus(code string) int {
 		return http.StatusUnauthorized
 	case "INVITATIONS_REMOVED":
 		return http.StatusGone
-	case domain.CodeForbidden, domain.CodePasswordChange, domain.CodeSignatureInvalid, domain.CodeContextRequired, domain.CodeTenantSuspended, domain.CodeMembershipInactive, domain.CodeMembershipRevoked:
+	case domain.CodeForbidden, domain.CodeSandboxDisabled, domain.CodePasswordChange, domain.CodeSignatureInvalid, domain.CodeContextRequired, domain.CodeTenantSuspended, domain.CodeMembershipInactive, domain.CodeMembershipRevoked:
 		return http.StatusForbidden
 	case domain.CodeNotFound:
 		return http.StatusNotFound

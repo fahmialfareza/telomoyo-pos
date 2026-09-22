@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/domain"
@@ -19,6 +20,10 @@ type authRecoveryRepository struct {
 	recovered          domain.Principal
 	currentHash        []byte
 	replacementHash    []byte
+	sessionPrincipal   domain.Principal
+	sessionError       error
+	sessionCalls       int
+	tokenCalls         int
 }
 
 func (repository *authRecoveryRepository) ActiveDataSpace(context.Context, uuid.UUID, domain.DataMode) (domain.DataSpace, error) {
@@ -26,7 +31,13 @@ func (repository *authRecoveryRepository) ActiveDataSpace(context.Context, uuid.
 }
 
 func (repository *authRecoveryRepository) PrincipalByTokenHash(context.Context, []byte) (domain.Principal, error) {
+	repository.tokenCalls++
 	return repository.retiredPrincipal, repository.retiredError
+}
+
+func (repository *authRecoveryRepository) PrincipalBySession(context.Context, uuid.UUID, []byte) (domain.Principal, error) {
+	repository.sessionCalls++
+	return repository.sessionPrincipal, repository.sessionError
 }
 
 func (repository *authRecoveryRepository) RecoverRetiredSandboxSession(
@@ -114,6 +125,66 @@ func TestAuthenticatePreservesNarrowRetiredSandboxRecoveryIdentity(t *testing.T)
 	}
 	if len(index.entries) != 0 {
 		t.Fatalf("retired session was cached: %+v", index.entries)
+	}
+}
+
+func TestAuthenticatePreservesTransientDatabaseFailureAndCachedIndex(t *testing.T) {
+	hash := []byte("valid-token-hash")
+	sessionID := uuid.New()
+	repository := &authRecoveryRepository{
+		sessionError: domain.WrapInternal(errors.New("database waking"), "authorize session"),
+	}
+	index := &memorySessionIndex{entries: map[string]uuid.UUID{string(hash): sessionID}}
+	service := Auth{Repo: repository, Tokens: fixedAuthTokens{hash: hash}, Sessions: index}
+
+	_, err := service.Authenticate(context.Background(), "valid-token")
+	if !domain.IsCode(err, domain.CodeInternal) {
+		t.Fatalf("Authenticate error = %v, want INTERNAL_ERROR", err)
+	}
+	if index.entries[string(hash)] != sessionID {
+		t.Fatal("transient database failure evicted the cached session mapping")
+	}
+	if repository.tokenCalls != 0 {
+		t.Fatalf("authoritative token lookup calls = %d, want 0", repository.tokenCalls)
+	}
+}
+
+func TestAuthenticateFallsBackOnlyForStaleCachedMapping(t *testing.T) {
+	hash := []byte("valid-token-hash")
+	staleSessionID := uuid.New()
+	principal := domain.Principal{SessionID: uuid.New(), UserID: uuid.New()}
+	repository := &authRecoveryRepository{
+		sessionError:     domain.NewError(domain.CodeNotFound, "Data tidak ditemukan"),
+		retiredPrincipal: principal,
+	}
+	index := &memorySessionIndex{entries: map[string]uuid.UUID{string(hash): staleSessionID}}
+	service := Auth{Repo: repository, Tokens: fixedAuthTokens{hash: hash}, Sessions: index}
+
+	authentication, err := service.Authenticate(context.Background(), "valid-token")
+	if err != nil {
+		t.Fatalf("Authenticate error = %v", err)
+	}
+	if authentication.Principal.SessionID != principal.SessionID {
+		t.Fatalf("principal = %+v", authentication.Principal)
+	}
+	if index.entries[string(hash)] != principal.SessionID {
+		t.Fatal("authoritative session mapping was not refreshed")
+	}
+}
+
+func TestAuthenticateCacheMissPreservesDatabaseFailure(t *testing.T) {
+	hash := []byte("valid-token-hash")
+	repository := &authRecoveryRepository{
+		retiredError: domain.WrapInternal(errors.New("database waking"), "find session token"),
+	}
+	service := Auth{
+		Repo: repository, Tokens: fixedAuthTokens{hash: hash},
+		Sessions: &memorySessionIndex{entries: map[string]uuid.UUID{}},
+	}
+
+	_, err := service.Authenticate(context.Background(), "valid-token")
+	if !domain.IsCode(err, domain.CodeInternal) {
+		t.Fatalf("Authenticate error = %v, want INTERNAL_ERROR", err)
 	}
 }
 

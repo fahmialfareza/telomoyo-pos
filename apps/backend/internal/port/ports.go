@@ -84,6 +84,7 @@ type Repository interface {
 	ActiveDataSpace(ctx context.Context, tenantID uuid.UUID, mode domain.DataMode) (domain.DataSpace, error)
 	DataSpaceByID(ctx context.Context, tenantID, id uuid.UUID) (domain.DataSpace, error)
 	EnsureSandbox(ctx context.Context, tenantID uuid.UUID) (domain.DataSpace, error)
+	ConfigureSandbox(ctx context.Context, actor domain.Principal, enabled bool) error
 	ResetSandbox(ctx context.Context, actor domain.Principal, expectedGeneration int64, retention time.Duration) (domain.SandboxResetResult, error)
 	CleanupExpiredSandboxes(ctx context.Context, now time.Time) (domain.SandboxCleanupResult, error)
 }

@@ -81,6 +81,27 @@ func TestSandboxLifecycleClonesProductionRevokesSessionsAndPurgesOnlyAtExpiry(t 
 		t.Fatalf("idempotent Sandbox activation = %+v error=%v", idempotentSandbox, err)
 	}
 	assertInitialSandboxSeeds(t, ctx, store, initialSandbox.ID, len(initialClones))
+	if err = store.ConfigureSandbox(ctx, actor, false); err != nil {
+		t.Fatalf("disable tenant Sandbox: %v", err)
+	}
+	var override *bool
+	if err = store.Pool.QueryRow(ctx, `SELECT sandbox_enabled_override FROM tenants WHERE id=$1`, actor.TenantID).Scan(&override); err != nil || override == nil || *override {
+		t.Fatalf("disabled override=%v error=%v", override, err)
+	}
+	retainedSandbox, err := store.ActiveDataSpace(ctx, actor.TenantID, domain.DataModeSandbox)
+	if err != nil || retainedSandbox.ID != initialSandbox.ID {
+		t.Fatalf("disable removed active Sandbox: %+v error=%v", retainedSandbox, err)
+	}
+	if err = store.ConfigureSandbox(ctx, actor, true); err != nil {
+		t.Fatalf("re-enable tenant Sandbox: %v", err)
+	}
+	if err = store.ConfigureSandbox(ctx, actor, true); err != nil {
+		t.Fatalf("idempotent tenant Sandbox enable: %v", err)
+	}
+	var configurationEvents int
+	if err = store.Pool.QueryRow(ctx, `SELECT count(*) FROM platform_audit_events WHERE tenant_id=$1 AND event_type='tenant.sandbox_enabled_changed'`, actor.TenantID).Scan(&configurationEvents); err != nil || configurationEvents != 2 {
+		t.Fatalf("configuration audit count=%d error=%v", configurationEvents, err)
+	}
 	productionPackage, err := store.CreatePackage(ctx, actor, domain.CreatePackageInput{
 		Code:         "LIFECYCLE",
 		Name:         "Paket Lifecycle",

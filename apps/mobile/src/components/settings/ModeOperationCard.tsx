@@ -28,11 +28,12 @@ export function ModeOperationCard() {
   const [resetExpanded, setResetExpanded] = useState(false);
   const [confirmation, setConfirmation] = useState("");
   const [resetting, setResetting] = useState(false);
+  const [configuring, setConfiguring] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const token = session?.token;
 
   const statusQuery = useQuery({
-    queryKey: ["sandbox-status", session?.user.id],
+    queryKey: ["sandbox-status", session?.tenantId, session?.user.id],
     enabled: Boolean(token) && !token?.startsWith("dev-only-"),
     queryFn: () =>
       apiRequest<SandboxStatusResponse>("/sandbox/status", {
@@ -60,16 +61,20 @@ export function ModeOperationCard() {
 
   if (!session) return null;
 
+  const isSuperadmin = session.user.role === "superadmin";
+  if (!isSuperadmin && status?.enabled === false) return null;
+
   const sandbox = session.dataMode === "sandbox";
   const needsUpgrade =
     (session.protocolVersion ?? 2) < 3 ||
     session.sandboxQrisPolicy !== "transaction_total";
   const targetMode = sandbox ? "production" : "sandbox";
   const canReset =
-    session.user.role === "superadmin" &&
+    isSuperadmin &&
     session.dataMode === "production" &&
     status?.enabled === true &&
     status.generation !== null;
+  const canConfigure = isSuperadmin && session.dataMode === "production";
 
   const changeMode = async () => {
     setActionError(null);
@@ -119,6 +124,42 @@ export function ModeOperationCard() {
     }
   };
 
+  const configureSandbox = async (enabled: boolean) => {
+    if (!canConfigure) return;
+    setConfiguring(true);
+    setActionError(null);
+    setMessage(null);
+    try {
+      const result = await apiRequest<SandboxStatusResponse>(
+        "/sandbox/settings",
+        {
+          method: "PUT",
+          token: session.token,
+          body: { enabled },
+        },
+      );
+      setMessage(
+        enabled
+          ? `Mode Uji diaktifkan${result.generation ? ` pada generasi ${result.generation}` : ""}.`
+          : "Mode Uji dinonaktifkan. Data dan antrean yang sudah ada tetap disimpan.",
+      );
+      if (!enabled) {
+        setResetExpanded(false);
+        setConfirmation("");
+      }
+      await statusQuery.refetch();
+    } catch (reason) {
+      setActionError(
+        toUserFacingErrorMessage(
+          reason,
+          "Pengaturan Mode Uji belum dapat disimpan. Coba lagi.",
+        ),
+      );
+    } finally {
+      setConfiguring(false);
+    }
+  };
+
   return (
     <Card
       style={[responsive.card, ...(sandbox ? [responsive.sandboxCard] : [])]}
@@ -153,7 +194,7 @@ export function ModeOperationCard() {
         <Button
           variant="secondary"
           loading={switchingMode}
-          disabled={resetting}
+          disabled={resetting || configuring}
           onPress={() =>
             void (async () => {
               setActionError(null);
@@ -181,7 +222,10 @@ export function ModeOperationCard() {
 
       <Button
         disabled={
-          loading || (!sandbox && status?.enabled !== true) || sync.syncing
+          loading ||
+          configuring ||
+          (!sandbox && status?.enabled !== true) ||
+          sync.syncing
         }
         loading={switchingMode}
         onPress={() => void changeMode()}
@@ -189,15 +233,32 @@ export function ModeOperationCard() {
       >
         {sandbox ? "Kembali ke Produksi" : "Masuk ke Mode Uji"}
       </Button>
-      {sync.pendingCount > 0 ? (
+      {sync.pendingCount > 0 && !(sandbox && status?.enabled === false) ? (
         <Text style={responsive.hint}>
           {sync.pendingCount} operasi akan disinkronkan sebelum mode diganti.
         </Text>
       ) : null}
       {!loading && !sandbox && status?.enabled === false ? (
         <Text style={responsive.hint}>
-          Mode Uji belum diaktifkan pada server produksi.
+          Mode Uji dinonaktifkan untuk bisnis ini.
         </Text>
+      ) : null}
+      {!loading && sandbox && status?.enabled === false ? (
+        <Text accessibilityRole="alert" style={responsive.error}>
+          Mode Uji telah dinonaktifkan. Kembali ke Produksi; data dan antrean
+          lokal tetap disimpan.
+        </Text>
+      ) : null}
+
+      {canConfigure && status ? (
+        <Button
+          disabled={resetting || switchingMode}
+          loading={configuring}
+          onPress={() => void configureSandbox(!status.enabled)}
+          variant={status.enabled ? "danger" : "primary"}
+        >
+          {status.enabled ? "Nonaktifkan Mode Uji" : "Aktifkan Mode Uji"}
+        </Button>
       ) : null}
 
       {canReset ? (
@@ -221,7 +282,7 @@ export function ModeOperationCard() {
             />
             <View style={responsive.actions}>
               <Button
-                disabled={resetting}
+                disabled={resetting || configuring}
                 onPress={() => {
                   setConfirmation("");
                   setResetExpanded(false);
