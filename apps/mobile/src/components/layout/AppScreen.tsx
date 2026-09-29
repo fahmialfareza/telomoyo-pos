@@ -37,6 +37,7 @@ interface AppScreenProps {
   authenticated?: boolean;
   scroll?: boolean;
   stickyFooter?: React.ReactNode;
+  compactStickyFooter?: boolean;
   contentStyle?: ViewStyle;
   scrollProps?: KeyboardAwareScrollViewProps;
 }
@@ -46,6 +47,7 @@ export function AppScreen({
   authenticated = true,
   scroll = true,
   stickyFooter,
+  compactStickyFooter = false,
   contentStyle,
   scrollProps,
 }: AppScreenProps) {
@@ -167,7 +169,10 @@ export function AppScreen({
                 responsive.footerContent,
                 {
                   padding: sizing.gutter,
-                  paddingBottom: sizing.gutter + bottomInset,
+                  paddingTop: compactStickyFooter ? spacing.sm : sizing.gutter,
+                  paddingBottom:
+                    (compactStickyFooter ? spacing.sm : sizing.gutter) +
+                    bottomInset,
                 },
               ]}
             >

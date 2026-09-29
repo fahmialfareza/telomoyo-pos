@@ -99,7 +99,7 @@ export default function RootLayout() {
             <ContextNavigationLifecycle />
             <SyncProvider>
               <AppQueryProvider>
-                <StatusBar style="light" />
+                <StatusBar style="dark" />
                 <AppRoutes />
               </AppQueryProvider>
             </SyncProvider>

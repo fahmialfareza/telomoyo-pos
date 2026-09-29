@@ -4,6 +4,7 @@ import { memo, useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -36,6 +37,7 @@ import { readQrisConfig } from "@/security/secure-store";
 import { useSyncRuntime } from "@/sync/SyncProvider";
 import {
   colors,
+  minimumTouchTarget,
   radius,
   spacing,
   textStyles,
@@ -197,6 +199,7 @@ export default function SaleComposerScreen() {
 
   return (
     <AppScreen
+      compactStickyFooter
       contentStyle={responsive.screen}
       scroll={false}
       stickyFooter={
@@ -253,15 +256,6 @@ export default function SaleComposerScreen() {
               subtitle={`Kasir • ${session?.user.fullName ?? "-"}`}
               title="Transaksi baru"
             />
-            <View style={responsive.guidance}>
-              <View style={responsive.guidanceIcon}>
-                <Icon color={colors.primary} name="information-outline" />
-              </View>
-              <Text style={responsive.instruction}>
-                Tentukan jumlah pada paket yang dipilih. Harga tersimpan sebagai
-                snapshot transaksi.
-              </Text>
-            </View>
             <View style={responsive.sectionHeader}>
               <View>
                 <Text style={responsive.sectionEyebrow}>KATALOG AKTIF</Text>
@@ -390,8 +384,9 @@ function StickyTransactionSummary({
   quantities: Record<string, number>;
 }) {
   const responsive = useResponsiveStyles(styles);
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
   return (
-    <Card style={responsive.stickySummary}>
+    <Card padded={false} style={responsive.stickySummary}>
       <View style={responsive.stickySummaryHeader}>
         <View>
           <Text style={responsive.sectionEyebrow}>RINGKASAN</Text>
@@ -401,8 +396,26 @@ function StickyTransactionSummary({
               : `${packageCount} paket • ${itemCount} item`}
           </Text>
         </View>
+        <Pressable
+          accessibilityLabel={
+            summaryExpanded ? "Sembunyikan ringkasan" : "Tampilkan ringkasan"
+          }
+          accessibilityRole="button"
+          accessibilityState={{ expanded: summaryExpanded }}
+          onPress={() => setSummaryExpanded((expanded) => !expanded)}
+          style={responsive.summaryToggle}
+        >
+          <Text style={responsive.summaryToggleText}>
+            {summaryExpanded ? "Sembunyikan" : "Tampilkan"}
+          </Text>
+          <Icon
+            color={colors.primary}
+            name={summaryExpanded ? "chevron-up" : "chevron-down"}
+            size={18}
+          />
+        </Pressable>
       </View>
-      {selectedPackages.length > 0 ? (
+      {summaryExpanded && selectedPackages.length > 0 ? (
         <ScrollView
           contentContainerStyle={responsive.summaryLinesContent}
           nestedScrollEnabled
@@ -479,23 +492,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginBottom: spacing.md,
   },
-  guidance: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primarySoft,
-  },
-  guidanceIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.card,
-  },
-  instruction: { ...textStyles.body, color: colors.textMuted, flex: 1 },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -563,8 +559,11 @@ const styles = StyleSheet.create({
   },
   packageSeparator: { height: spacing.sm },
   stickySummary: {
-    gap: spacing.sm,
-    backgroundColor: colors.surfaceBright,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
   },
   stickySummaryHeader: {
     flexDirection: "row",
@@ -574,10 +573,21 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   stickySummaryMeta: {
-    ...textStyles.body,
+    ...textStyles.label,
     color: colors.textMuted,
-    fontFamily: typography.bodyMedium,
-    marginTop: 2,
+    fontSize: 11,
+  },
+  summaryToggle: {
+    minHeight: minimumTouchTarget,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  summaryToggleText: {
+    ...textStyles.label,
+    color: colors.primary,
+    fontFamily: typography.bodySemibold,
   },
   summaryLines: {
     maxHeight: 112,
@@ -616,9 +626,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.outline,
   },
   stickyTotalLabel: {
     ...textStyles.body,

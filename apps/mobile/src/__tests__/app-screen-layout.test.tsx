@@ -83,6 +83,23 @@ describe("screen footer layout", () => {
     ).toBe(12);
   });
 
+  it("uses compact vertical spacing for the sale footer", () => {
+    mockSegments = ["(app)", "(tabs)", "sell"];
+    const screen = render(
+      <AppScreen
+        authenticated={false}
+        compactStickyFooter
+        stickyFooter={<Text>Save</Text>}
+      />,
+    );
+    expect(
+      StyleSheet.flatten(
+        screen.getByTestId("app-screen-footer-scroll").props
+          .contentContainerStyle,
+      ),
+    ).toMatchObject({ padding: 12, paddingTop: 8, paddingBottom: 8 });
+  });
+
   it("bounds oversized footer groups and keeps them scrollable on a short screen", () => {
     mockDimensions = { ...mockDimensions, height: 320, fontScale: 1.5 };
     const screen = render(

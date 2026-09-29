@@ -39,6 +39,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     "expo-router",
+    ["expo-status-bar", { style: "dark" }],
     [
       "expo-splash-screen",
       {
