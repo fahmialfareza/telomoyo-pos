@@ -89,6 +89,9 @@ jest.mock("expo-router", () => {
 jest.mock("@/auth/AuthProvider", () => ({
   useAuth: () => ({ session: mockActiveSession }),
 }));
+jest.mock("@/auth/auth-store", () => ({
+  useAuthStore: { getState: () => ({ session: mockActiveSession }) },
+}));
 jest.mock("@/sync/SyncProvider", () => ({ useSyncRuntime: () => mockSync }));
 jest.mock("@/db/repositories", () => ({
   getTransaction: (...args: unknown[]) => mockGetTransaction(...args),
@@ -377,6 +380,28 @@ it("holds the print barrier until hardware and attempt recording finish", async 
   expect(handleBack?.()).toBe(false);
   expect(screen.getByRole("button", { name: "Kembali" })).toBeTruthy();
   backListener.mockRestore();
+});
+
+it("finishes a durable print without waiting for sync refresh and disconnects once", async () => {
+  let finishRefresh!: () => void;
+  mockSync.refresh.mockReturnValue(
+    new Promise<void>((resolve) => {
+      finishRefresh = resolve;
+    }),
+  );
+  const screen = render(<PrintTransactionScreen />);
+  await screen.findByTestId("receipt-preview-text");
+  fireEvent.press(screen.getByRole("button", { name: "Cetak struk" }));
+  expect(await screen.findByText("Simulasi cetak berhasil")).toBeTruthy();
+  expect(mockCompleteAttempt).toHaveBeenCalledTimes(1);
+  expect(mockDisconnect).toHaveBeenCalledTimes(1);
+  expect(mockRelease).toHaveBeenCalledTimes(1);
+  expect(mockSync.refresh).toHaveBeenCalledTimes(1);
+  expect(mockSync.syncNow).not.toHaveBeenCalled();
+  await act(async () => {
+    finishRefresh();
+  });
+  await waitFor(() => expect(mockSync.syncNow).toHaveBeenCalledTimes(1));
 });
 
 it.each(["failed", "unknown"] as const)(

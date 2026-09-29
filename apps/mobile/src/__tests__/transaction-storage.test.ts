@@ -83,6 +83,70 @@ describe("transaction item storage", () => {
     );
   });
 
+  it("hydrates a history page in two reads without attaching stale-revision items", async () => {
+    const first = {
+      id: "transaction-first",
+      revision: 2,
+      occurred_at: "2026-07-28T00:00:00.000Z",
+      subtotal: 70_000,
+      total: 70_000,
+      payment_amount: 70_000,
+      origin_actor_id: "owner",
+      origin_actor_name: "Owner",
+      updated_actor_name: "Owner",
+      terminal_id: "terminal",
+      sync_state: "synced",
+      print_state: "pending",
+      payment_method: "cash",
+      payment_status: "success",
+      payment_confirmed_revision: 2,
+      qris_payload_hash: null,
+      deleted_at: null,
+      receipt_identity_json: null,
+    };
+    const second = {
+      ...first,
+      id: "transaction-second",
+      revision: 1,
+      payment_confirmed_revision: 1,
+    };
+    const item = {
+      id: "item-current",
+      package_id: "package",
+      package_revision: 1,
+      name: "Paket",
+      description: "",
+      accent: "standard",
+      unit_price: 70_000,
+      quantity: 1,
+      line_total: 70_000,
+    };
+    mockGetAllAsync
+      .mockResolvedValueOnce([first, second])
+      .mockResolvedValueOnce([
+        { ...item, transaction_id: first.id, revision: 2 },
+        { ...item, id: "item-other", transaction_id: second.id, revision: 1 },
+        { ...item, id: "item-stale", transaction_id: first.id, revision: 1 },
+      ]);
+
+    const rows = await listTransactions({ limit: 2 });
+
+    expect(mockGetAllAsync).toHaveBeenCalledTimes(2);
+    expect(String(mockGetAllAsync.mock.calls[1]?.[0])).toContain(
+      "WHERE (transaction_id, revision) IN",
+    );
+    expect(
+      rows.map((row) => [
+        row.id,
+        row.revision,
+        row.items.map((value) => value.id),
+      ]),
+    ).toEqual([
+      [first.id, 2, ["item-current"]],
+      [second.id, 1, ["item-other"]],
+    ]);
+  });
+
   it("replaces the item set for a synced revision before inserting it", async () => {
     await applyRemoteChanges(
       [

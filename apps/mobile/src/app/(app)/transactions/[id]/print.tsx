@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BackHandler, StyleSheet, Text, View } from "react-native";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { useAuthStore } from "@/auth/auth-store";
 import { AppScreen } from "@/components/layout/AppScreen";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ReceiptPreview } from "@/components/transactions/ReceiptPreview";
@@ -77,11 +78,10 @@ export default function PrintTransactionScreen() {
   useEffect(() => {
     let current = true;
     if (id && session) {
-      void Promise.all([getTransaction(id, session), readPrinterConfig()])
-        .then(([value, config]) => {
+      void getTransaction(id, session)
+        .then((value) => {
           if (!current) return;
           setTransaction(value);
-          setPrinterConfig(config);
           if (!value) setError("Transaksi tidak ditemukan pada bisnis ini.");
         })
         .catch((reason) => {
@@ -119,7 +119,21 @@ export default function PrintTransactionScreen() {
 
   const print = async (forceCopy?: boolean) => {
     if (activeAttempt.current) return;
+    const timingEnabled =
+      __DEV__ && process.env.EXPO_PUBLIC_PRINT_TIMING === "true";
+    const startedAt = timingEnabled ? performance.now() : 0;
+    let adapter: PrinterConfig["adapter"] | "unknown" = "unknown";
+    const mark = (stage: string) => {
+      if (timingEnabled) {
+        console.info("[print-timing]", {
+          stage,
+          adapter,
+          elapsedMs: Math.round(performance.now() - startedAt),
+        });
+      }
+    };
     activeAttempt.current = true;
+    mark("tap");
     const printAsCopy = forceCopy ?? isCopy;
     setPrinting(true);
     setError(null);
@@ -127,6 +141,8 @@ export default function PrintTransactionScreen() {
     let mutationLease: (() => void) | undefined;
     let connectedPrinter:
       Awaited<ReturnType<typeof getConfiguredPrinter>>["printer"] | undefined;
+    let disconnected = false;
+    let scheduleSync = false;
     try {
       mutationLease = beginLocalMutation(session);
       const document = receiptFromTransaction(
@@ -142,6 +158,8 @@ export default function PrintTransactionScreen() {
       setPrinterConfig(config);
       setAttemptDocument(document);
       connectedPrinter = printer;
+      adapter = config.adapter;
+      mark("configured");
       attemptId = await beginPrintAttempt({
         transactionId: transaction.id,
         transactionRevision: transaction.revision,
@@ -150,13 +168,22 @@ export default function PrintTransactionScreen() {
         session,
         mutationLease,
       });
+      mark("attempt_recorded");
       await printer.connect(config.address ?? undefined);
+      mark("connected");
       if (useModeStore.getState().accessBlocked)
         throw new Error(
           "Akses bisnis dihentikan. Pencetakan dibatalkan sebelum struk dikirim.",
         );
       const result = await printer.print(document);
-      await printer.disconnect().catch(() => undefined);
+      mark("driver_returned");
+      try {
+        await printer.disconnect();
+        disconnected = true;
+        mark("disconnected");
+      } catch {
+        mark("disconnect_failed");
+      }
       await completePrintAttempt({
         attemptId,
         transactionId: transaction.id,
@@ -165,8 +192,8 @@ export default function PrintTransactionScreen() {
         session,
         mutationLease,
       });
-      await sync.refresh();
-      void sync.syncNow();
+      mark("result_recorded");
+      scheduleSync = true;
       if (result.status === "success") {
         setTransaction((current) =>
           current ? { ...current, printState: "success" } : current,
@@ -184,6 +211,7 @@ export default function PrintTransactionScreen() {
         });
       }
     } catch (reason) {
+      mark("failed");
       const message =
         reason instanceof Error ? reason.message : "Printer gagal digunakan.";
       if (attemptId) {
@@ -198,10 +226,29 @@ export default function PrintTransactionScreen() {
       }
       setError(message);
     } finally {
-      await connectedPrinter?.disconnect().catch(() => undefined);
+      if (!disconnected) {
+        await connectedPrinter?.disconnect().catch(() => undefined);
+      }
       mutationLease?.();
       activeAttempt.current = false;
       setPrinting(false);
+      mark("ui_unblocked");
+      if (
+        scheduleSync &&
+        useAuthStore.getState().session?.sessionId === session.sessionId
+      ) {
+        void sync
+          .refresh()
+          .then(() => {
+            if (
+              useAuthStore.getState().session?.sessionId === session.sessionId
+            ) {
+              return sync.syncNow();
+            }
+            return null;
+          })
+          .catch(() => undefined);
+      }
     }
   };
 

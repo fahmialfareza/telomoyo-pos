@@ -1,3 +1,4 @@
+import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { Keyboard, Pressable, StyleSheet, Text, View } from "react-native";
@@ -69,6 +70,7 @@ export default function HistoryScreen() {
   const [loading, setLoading] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const cursor = useRef<{ occurredAt: string; id: string } | null>(null);
+  const listRef = useRef<FlashListRef<Transaction>>(null);
   const requestId = useRef(0);
   const today = currentJakartaDate();
   const activeFilterCount =
@@ -93,6 +95,7 @@ export default function HistoryScreen() {
       const currentRequestId = ++requestId.current;
       setLoading(true);
       if (!append) {
+        listRef.current?.scrollToOffset({ offset: 0, animated: false });
         cursor.current = null;
         setHasMore(false);
         setTransactions([]);
@@ -177,8 +180,8 @@ export default function HistoryScreen() {
     setSyncState(undefined);
   };
 
-  return (
-    <AppScreen>
+  const listHeader = (
+    <View style={styles.listHeader}>
       <PageHeader
         subtitle="Cari transaksi, cek status, dan buka detailnya."
         title="Riwayat"
@@ -359,18 +362,45 @@ export default function HistoryScreen() {
           </FilterGroup>
         </View>
       ) : null}
+    </View>
+  );
 
-      {transactions.length === 0 && !loading ? (
-        <StateView
-          icon="receipt-text-outline"
-          message="Coba ubah pencarian atau filter, atau buat transaksi baru."
-          title="Belum ada transaksi"
-        />
-      ) : (
-        transactions.map((transaction) => (
+  return (
+    <AppScreen scroll={false}>
+      <FlashList
+        ref={listRef}
+        data={transactions}
+        extraData={session?.dataMode}
+        keyExtractor={(transaction) => transaction.id}
+        keyboardShouldPersistTaps="handled"
+        maintainVisibleContentPosition={{ disabled: true }}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={
+          loading ? null : (
+            <StateView
+              icon="receipt-text-outline"
+              message="Coba ubah pencarian atau filter, atau buat transaksi baru."
+              title="Belum ada transaksi"
+            />
+          )
+        }
+        ListFooterComponent={
+          hasMore ? (
+            <View style={styles.listFooter}>
+              <Button
+                loading={loading}
+                onPress={() => void load(true)}
+                variant="secondary"
+              >
+                Muat transaksi berikutnya
+              </Button>
+            </View>
+          ) : null
+        }
+        ItemSeparatorComponent={HistorySeparator}
+        renderItem={({ item: transaction }) => (
           <HistoryTransactionCard
             dataMode={session?.dataMode ?? "production"}
-            key={transaction.id}
             onPress={() =>
               router.push({
                 pathname: "/transactions/[id]",
@@ -379,17 +409,10 @@ export default function HistoryScreen() {
             }
             transaction={transaction}
           />
-        ))
-      )}
-      {hasMore ? (
-        <Button
-          loading={loading}
-          onPress={() => void load(true)}
-          variant="secondary"
-        >
-          Muat transaksi berikutnya
-        </Button>
-      ) : null}
+        )}
+        showsVerticalScrollIndicator={false}
+        style={styles.list}
+      />
     </AppScreen>
   );
 }
@@ -438,7 +461,14 @@ function FilterChip({
   );
 }
 
+function HistorySeparator() {
+  return <View style={{ height: spacing.md }} />;
+}
+
 const baseStyles = StyleSheet.create({
+  list: { flex: 1 },
+  listHeader: { gap: spacing.md, paddingBottom: spacing.md },
+  listFooter: { paddingTop: spacing.md },
   searchControls: { gap: spacing.sm },
   searchChip: {
     minHeight: minimumTouchTarget,

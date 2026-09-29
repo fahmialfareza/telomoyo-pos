@@ -143,6 +143,18 @@ The Android emulator reaches a host backend through
 `http://10.0.2.2:8080/api/v1`. A physical MPOS must use an address reachable from
 that device.
 
+For a development-build print timing check, start Metro with
+`EXPO_PUBLIC_PRINT_TIMING=true pnpm --filter @sewa-motor/mobile start`.
+The `[print-timing]` messages report elapsed time from tap to configuration,
+durable attempt recording, connection, printer-driver return, disconnect,
+durable result recording, and UI readiness. They contain no receipt or customer
+data. Compare repeated runs on the same device and receipt; note the first
+paper movement separately because a driver return does not prove the paper has
+finished. Do not reduce Bluetooth pacing or settle delays unless the final
+line and cut remain complete on hardware. The checked-in `Printer MPOS` native
+adapter is a placeholder, so an APK built from this checkout must not replace
+a working MPOS installation until its vendor driver is recovered.
+
 ## Common commands
 
 | Command                                            | Purpose                                     |

@@ -1,15 +1,14 @@
 import { useResponsiveStyles } from "@/theme/responsive";
+import { FlashList, type ListRenderItemInfo } from "@shopify/flash-list";
 import { useFocusEffect, useRouter } from "expo-router";
 import { memo, useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
-  type ListRenderItemInfo,
 } from "react-native";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -220,13 +219,14 @@ export default function SaleComposerScreen() {
         />
       }
     >
-      <FlatList
+      <FlashList
         contentContainerStyle={responsive.listContent}
         data={packages}
-        initialNumToRender={6}
+        extraData={quantities}
         ItemSeparatorComponent={PackageSeparator}
         keyExtractor={(item) => item.id}
         keyboardShouldPersistTaps="handled"
+        maintainVisibleContentPosition={{ disabled: true }}
         ListEmptyComponent={
           loadingPackages ? (
             <View style={responsive.loading}>

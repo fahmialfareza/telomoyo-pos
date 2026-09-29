@@ -692,7 +692,38 @@ export async function listTransactions(
      LIMIT ? OFFSET ?`,
     ...params,
   );
-  return Promise.all(rows.map((row) => hydrateTransaction(sqlite, row)));
+  if (rows.length === 0) return [];
+
+  type PageItemRow = TransactionItemRow & {
+    transaction_id: string;
+    revision: number;
+  };
+  const itemsByTransaction = new Map<string, TransactionItemRow[]>();
+  const itemKey = (id: string, revision: number) => `${id}\u0000${revision}`;
+  // Stay below SQLite's 999-parameter limit on older Android/SQLCipher builds.
+  for (let start = 0; start < rows.length; start += 400) {
+    const page = rows.slice(start, start + 400);
+    const itemRows = await sqlite.getAllAsync<PageItemRow>(
+      `SELECT transaction_id, revision, id, package_id, package_revision,
+              name, description, accent, unit_price, quantity, line_total
+       FROM transaction_items
+       WHERE (transaction_id, revision) IN (${page.map(() => "(?, ?)").join(", ")})
+       ORDER BY transaction_id, revision, id`,
+      ...page.flatMap((row) => [row.id, row.revision]),
+    );
+    for (const item of itemRows) {
+      const key = itemKey(item.transaction_id, item.revision);
+      const bucket = itemsByTransaction.get(key) ?? [];
+      bucket.push(item);
+      itemsByTransaction.set(key, bucket);
+    }
+  }
+  return rows.map((row) =>
+    mapTransactionRow(
+      row,
+      itemsByTransaction.get(itemKey(row.id, row.revision)) ?? [],
+    ),
+  );
 }
 
 export async function listHistoryPackageOptions(
@@ -2130,6 +2161,13 @@ async function hydrateTransaction(
     row.id,
     row.revision,
   );
+  return mapTransactionRow(row, items);
+}
+
+function mapTransactionRow(
+  row: TransactionRow,
+  items: TransactionItemRow[],
+): Transaction {
   return {
     id: row.id,
     revision: row.revision,

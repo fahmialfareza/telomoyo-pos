@@ -9,6 +9,7 @@ import {
   getOutboxOperations,
   getTransaction,
   listPackages,
+  listTransactions,
   setPaymentStatus,
   upsertPackage,
 } from "@/db/repositories";
@@ -189,6 +190,45 @@ describe("tenant isolation with real SQLite", () => {
     );
     expect(await listPackages(false, otherTenant)).toEqual([]);
     expect(await listPackages(false, session)).toEqual(legacy);
+  });
+
+  it("hydrates current history items with real SQLite without crossing tenants or revisions", async () => {
+    const older = {
+      ...transaction,
+      id: "01ARZ3NDEKTSV4RRFFQ69G5FB0",
+      revision: 1,
+      paymentConfirmedRevision: 1,
+      items: [{ ...transaction.items[0]!, id: "item-b", name: "Paket B" }],
+    };
+    await applyRemoteChanges(
+      [
+        {
+          cursor: "1",
+          aggregate: "transaction",
+          action: "upsert",
+          aggregateId: transaction.id,
+          payload: transaction,
+          changedAt: transaction.occurredAt,
+        },
+        {
+          cursor: "2",
+          aggregate: "transaction",
+          action: "upsert",
+          aggregateId: older.id,
+          payload: older,
+          changedAt: older.occurredAt,
+        },
+      ],
+      "2",
+      session,
+    );
+    const rows = await listTransactions({ limit: 3 }, session);
+    expect(rows).toHaveLength(2);
+    expect(rows.find((row) => row.id === transaction.id)?.items).toEqual(
+      transaction.items,
+    );
+    expect(rows.find((row) => row.id === older.id)?.items).toEqual(older.items);
+    expect(await listTransactions({ limit: 3 }, otherTenant)).toEqual([]);
   });
 
   it("isolates merchant profiles and exact historical QRIS bindings without falling back to another business", async () => {
