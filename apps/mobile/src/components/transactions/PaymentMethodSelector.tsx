@@ -28,39 +28,50 @@ export function PaymentMethodSelector({
   onChange,
   qrisDisabled = false,
   qrisDisabledReason,
+  disabled = false,
+  label = "METODE PEMBAYARAN",
+  actionHint,
 }: {
   value: SelectablePaymentMethod | null;
   onChange: (method: SelectablePaymentMethod) => void;
   qrisDisabled?: boolean;
   qrisDisabledReason?: string;
+  disabled?: boolean;
+  label?: string;
+  actionHint?: string;
 }) {
   const responsive = useResponsiveStyles(styles);
   return (
     <View accessibilityLabel="Metode pembayaran" style={responsive.container}>
-      <Text style={responsive.label}>METODE PEMBAYARAN</Text>
+      <Text style={responsive.label}>{label}</Text>
       <ActionGroup horizontal>
         {methods.map((method) => {
           const selected = value === method.value;
-          const disabled = method.value === "qris" && qrisDisabled;
+          const optionDisabled =
+            disabled || (method.value === "qris" && qrisDisabled);
 
           return (
             <Pressable
               accessibilityLabel={method.label}
               accessibilityRole="radio"
-              accessibilityState={{ checked: selected, disabled }}
-              disabled={disabled}
+              accessibilityHint={actionHint}
+              accessibilityState={{
+                checked: selected,
+                disabled: optionDisabled,
+              }}
+              disabled={optionDisabled}
               key={method.value}
               onPress={() => onChange(method.value)}
               style={({ pressed }) => [
                 responsive.option,
                 selected && responsive.optionSelected,
-                disabled && responsive.optionDisabled,
+                optionDisabled && responsive.optionDisabled,
                 pressed && responsive.pressed,
               ]}
             >
               <Icon
                 color={
-                  disabled
+                  optionDisabled
                     ? colors.textMuted
                     : selected
                       ? colors.onPrimary
@@ -73,7 +84,7 @@ export function PaymentMethodSelector({
                 style={[
                   responsive.optionText,
                   selected && responsive.selectedText,
-                  disabled && responsive.disabledText,
+                  optionDisabled && responsive.disabledText,
                 ]}
               >
                 {method.label}

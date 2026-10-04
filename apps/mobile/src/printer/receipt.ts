@@ -1,7 +1,7 @@
 import { displayTransactionId } from "@/utils/format";
 import { paymentMethodLabel } from "@/domain/payments";
 
-import type { ReceiptDocument } from "./types";
+import type { QrisPrintDocument, ReceiptDocument } from "./types";
 
 function rupiah(value: number): string {
   return `Rp ${Math.trunc(value).toLocaleString("id-ID")}`;
@@ -181,11 +181,7 @@ export function encodeEscPos(
       document.dataMode === "sandbox" &&
       (trimmed === "TEST - MODE UJI" || trimmed === "BUKAN STRUK RESMI");
     if (warning) {
-      chunks.push(
-        centerAlign,
-        encodePrinterText(`${trimmed}\n`),
-        leftAlign,
-      );
+      chunks.push(centerAlign, encodePrinterText(`${trimmed}\n`), leftAlign);
       continue;
     }
     chunks.push(encodePrinterText(`${line}\n`));
@@ -212,4 +208,93 @@ function encodePrinterText(value: string): Uint8Array {
       return code >= 32 || code === 10 ? Math.min(code, 126) : 63;
     }),
   );
+}
+
+function formatQrisHeader(
+  document: QrisPrintDocument,
+  columns: 32 | 48,
+): string {
+  const rule = "-".repeat(columns);
+  const lines = [
+    ...(document.dataMode === "sandbox"
+      ? [center("TEST - MODE UJI", columns)]
+      : []),
+    center("QRIS PEMBAYARAN", columns),
+    centerLines(document.merchantName, columns).join("\n"),
+    centerLines(document.merchantCity, columns).join("\n"),
+    rule,
+    ...wrapPrinterLine(
+      displayTransactionId(document.transactionId, document.dataMode),
+      columns,
+    ),
+    twoColumns("BAYAR", rupiah(document.paymentAmount), columns),
+    ...(document.orderTotal !== document.paymentAmount
+      ? [twoColumns("TOTAL PAKET", rupiah(document.orderTotal), columns)]
+      : []),
+    rule,
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
+export function formatQrisSlip(
+  document: QrisPrintDocument,
+  columns: 32 | 48,
+): string {
+  return `${formatQrisHeader(document, columns)}[QRIS]\n${qrisFooter(document, columns)}`;
+}
+
+function qrisFooter(document: QrisPrintDocument, columns: 32 | 48): string {
+  return `${[
+    center("PINDAI QRIS UNTUK MEMBAYAR", columns),
+    ...(document.dataMode === "sandbox"
+      ? [center("BUKAN STRUK RESMI", columns)]
+      : []),
+    "",
+    "",
+    "",
+  ].join("\n")}\n`;
+}
+
+export function encodeEscPosQris(
+  document: QrisPrintDocument,
+  columns: 32 | 48,
+): Uint8Array {
+  const data = encodePrinterText(document.payload);
+  if (data.length < 1 || data.length > 2048) {
+    throw new Error("Panjang payload QRIS tidak valid untuk printer.");
+  }
+  const storedLength = data.length + 3;
+  const chunks = [
+    Uint8Array.from([0x1b, 0x40, 0x1b, 0x4d, 0x00, 0x1b, 0x45, 0x01]),
+    encodePrinterText(formatQrisHeader(document, columns)),
+    Uint8Array.from([0x1b, 0x45, 0x00, 0x1b, 0x61, 0x01]),
+    // ESC/POS QR model 2, 5-dot modules, medium error correction.
+    Uint8Array.from([0x1d, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00]),
+    Uint8Array.from([0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, 0x05]),
+    Uint8Array.from([0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x31]),
+    Uint8Array.from([
+      0x1d,
+      0x28,
+      0x6b,
+      storedLength & 0xff,
+      storedLength >> 8,
+      0x31,
+      0x50,
+      0x30,
+    ]),
+    data,
+    Uint8Array.from([0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30]),
+    Uint8Array.from([0x0a, 0x1b, 0x61, 0x00]),
+    encodePrinterText(qrisFooter(document, columns)),
+    Uint8Array.from([0x1d, 0x56, 0x41, 0x00]),
+  ];
+  const result = new Uint8Array(
+    chunks.reduce((sum, chunk) => sum + chunk.length, 0),
+  );
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return result;
 }

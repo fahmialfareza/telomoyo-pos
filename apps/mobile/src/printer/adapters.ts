@@ -1,11 +1,12 @@
 import { bytesToBase64 } from "@/security/secure-store";
 
-import { encodeEscPos } from "./receipt";
+import { encodeEscPos, encodeEscPosQris } from "./receipt";
 import { SewaPrinterNative } from "./native";
 import type {
   PrinterDevice,
   PrinterResult,
   PrinterStatus,
+  QrisPrintDocument,
   ReceiptDocument,
   ReceiptPrinter,
 } from "./types";
@@ -85,6 +86,30 @@ export class BluetoothEscPosPrinter implements ReceiptPrinter {
     }
   }
 
+  async printQris(document: QrisPrintDocument): Promise<PrinterResult> {
+    const status = await this.status();
+    if (!status.ready) return { status: "failed", message: status.message };
+    const bytes = encodeEscPosQris(document, this.columns);
+    try {
+      const written = await writeBluetoothPaced(bytes);
+      return written === bytes.length
+        ? { status: "success" }
+        : {
+            status: "unknown",
+            message:
+              "Jumlah byte QRIS yang diterima printer tidak dapat dipastikan.",
+          };
+    } catch (error) {
+      return {
+        status: "unknown",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Koneksi terputus saat mencetak QRIS.",
+      };
+    }
+  }
+
   async disconnect(): Promise<void> {
     // Small guard so a racing disconnect cannot cut a just-flushed job. The
     // settle delay already lives in writeBluetoothPaced; this covers callers
@@ -128,6 +153,23 @@ export class IntegratedVendorPrinter implements ReceiptPrinter {
           error instanceof Error
             ? error.message
             : "Printer terintegrasi gagal mencetak.",
+      };
+    }
+  }
+
+  async printQris(document: QrisPrintDocument): Promise<PrinterResult> {
+    try {
+      await SewaPrinterNative.printIntegrated(
+        bytesToBase64(encodeEscPosQris(document, this.columns)),
+      );
+      return { status: "success" };
+    } catch (error) {
+      return {
+        status: "failed",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Printer terintegrasi gagal mencetak QRIS.",
       };
     }
   }

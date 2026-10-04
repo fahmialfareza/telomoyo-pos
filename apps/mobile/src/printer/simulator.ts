@@ -2,10 +2,11 @@ import type {
   PrinterDevice,
   PrinterResult,
   PrinterStatus,
+  QrisPrintDocument,
   ReceiptDocument,
   ReceiptPrinter,
 } from "./types";
-import { formatReceipt } from "./receipt";
+import { formatQrisSlip, formatReceipt } from "./receipt";
 
 export type SimulatorOutcome = "success" | "failed" | "unknown";
 
@@ -49,6 +50,23 @@ export class SimulatorPrinter implements ReceiptPrinter {
       return {
         status: "unknown",
         message: "Aliran cetak terputus setelah sebagian data dikirim.",
+      };
+    }
+    return { status: "success" };
+  }
+
+  async printQris(document: QrisPrintDocument): Promise<PrinterResult> {
+    if (!this.connected) {
+      return { status: "failed", message: "Simulator belum tersambung." };
+    }
+    this.lastOutput = formatQrisSlip(document, this.columns);
+    if (this.outcome === "failed") {
+      return { status: "failed", message: "Kegagalan simulator terencana." };
+    }
+    if (this.outcome === "unknown") {
+      return {
+        status: "unknown",
+        message: "Simulasi QRIS belum dapat dipastikan.",
       };
     }
     return { status: "success" };

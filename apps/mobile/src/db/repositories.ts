@@ -46,6 +46,7 @@ import { normalizeUtcTimestamp, type ReportingRange } from "@/utils/time";
 
 import { getDatabase } from "./client";
 import { createUlid } from "./ids";
+import { runLocalTransaction } from "./transaction";
 
 const PAYMENT_CONFLICT_ERROR_PREFIX = "PAYMENT_STATE_CONFLICT: ";
 
@@ -305,7 +306,8 @@ async function createTransactionLocal(
   const auditId = `AUD-${createUlid()}`;
   const { sqlite } = await getDatabase(session);
 
-  await sqlite.withTransactionAsync(async () => {
+  await runLocalTransaction(sqlite, async (txn) => {
+    const sqlite = txn;
     await insertTransaction(sqlite, transaction);
     await insertRevision(sqlite, transaction, null, null, session);
     await sqlite.runAsync(
@@ -464,7 +466,8 @@ async function correctTransactionLocal(
   );
   const { sqlite } = await getDatabase(session);
 
-  await sqlite.withTransactionAsync(async () => {
+  await runLocalTransaction(sqlite, async (txn) => {
+    const sqlite = txn;
     await sqlite.runAsync(
       `UPDATE transactions SET
          revision = ?, subtotal = ?, total = ?, payment_amount = ?, updated_actor_name = ?,
@@ -592,7 +595,8 @@ async function setPaymentStatusLocal(
   );
   const { sqlite } = await getDatabase(session);
 
-  await sqlite.withTransactionAsync(async () => {
+  await runLocalTransaction(sqlite, async (txn) => {
+    const sqlite = txn;
     await sqlite.runAsync(
       `UPDATE transactions SET
          updated_actor_name = ?, terminal_id = ?, sync_state = 'pending',
@@ -983,7 +987,8 @@ async function completePrintAttemptLocal(
     operation,
     input.session.tenantId ?? undefined,
   );
-  await sqlite.withTransactionAsync(async () => {
+  await runLocalTransaction(sqlite, async (txn) => {
+    const sqlite = txn;
     await sqlite.runAsync(
       `UPDATE print_attempts
        SET completed_at = ?, result = ?, error = ?
@@ -1110,7 +1115,8 @@ export async function markOutboxResult(
   mode?: LocalScope,
 ): Promise<void> {
   const { sqlite } = await getDatabase(mode);
-  await sqlite.withTransactionAsync(async () => {
+  await runLocalTransaction(sqlite, async (txn) => {
+    const sqlite = txn;
     const operation = await sqlite.getFirstAsync<{
       dependency_key: string | null;
       aggregate: string;
@@ -1383,7 +1389,8 @@ async function discardRejectedOutboxOperationLocal(
     queue_order: number;
     has_conflict: number;
   };
-  await sqlite.withTransactionAsync(async () => {
+  await runLocalTransaction(sqlite, async (txn) => {
+    const sqlite = txn;
     const selected = await sqlite.getFirstAsync<RecoveryOperation>(
       `SELECT
          candidate.aggregate,
@@ -1717,7 +1724,8 @@ async function resolveConflictLocal(
       ),
     };
   }
-  await sqlite.withTransactionAsync(async () => {
+  await runLocalTransaction(sqlite, async (txn) => {
+    const sqlite = txn;
     const activeOperation = await sqlite.getFirstAsync<{
       operation_json: string;
     }>(
@@ -1876,7 +1884,8 @@ export async function applyRemoteChanges(
   mode?: LocalScope,
 ): Promise<void> {
   const { sqlite } = await getDatabase(mode);
-  await sqlite.withTransactionAsync(async () => {
+  await runLocalTransaction(sqlite, async (txn) => {
+    const sqlite = txn;
     for (const change of changes) {
       if (change.aggregate === "package") {
         if (!change.payload) {

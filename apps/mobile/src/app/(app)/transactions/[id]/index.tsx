@@ -285,17 +285,34 @@ export default function TransactionDetailScreen() {
               </Button>
             ) : null}
             {printable ? (
-              <Button
-                icon="printer-outline"
-                onPress={() =>
-                  router.push({
-                    pathname: "/transactions/[id]/print",
-                    params: { id: transaction.id },
-                  })
-                }
-              >
-                {previouslyPrinted ? "Cetak salinan" : "Cetak struk"}
-              </Button>
+              <>
+                {transaction.paymentMethod === "qris" &&
+                qrisPresentation?.payload ? (
+                  <Button
+                    icon="qrcode-scan"
+                    onPress={() =>
+                      router.push({
+                        pathname: "/transactions/[id]/print-qris",
+                        params: { id: transaction.id },
+                      })
+                    }
+                    variant="secondary"
+                  >
+                    Cetak QRIS lalu struk
+                  </Button>
+                ) : null}
+                <Button
+                  icon="printer-outline"
+                  onPress={() =>
+                    router.push({
+                      pathname: "/transactions/[id]/print",
+                      params: { id: transaction.id },
+                    })
+                  }
+                >
+                  {previouslyPrinted ? "Cetak salinan" : "Cetak struk"}
+                </Button>
+              </>
             ) : null}
           </ActionGroup>
         ) : undefined

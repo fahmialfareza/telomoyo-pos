@@ -1,7 +1,7 @@
 import { useResponsiveStyles } from "@/theme/responsive";
 import { FlashList, type ListRenderItemInfo } from "@shopify/flash-list";
 import { useFocusEffect, useRouter } from "expo-router";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -15,7 +15,6 @@ import { useAuth } from "@/auth/AuthProvider";
 import { AppScreen } from "@/components/layout/AppScreen";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PaymentMethodSelector } from "@/components/transactions/PaymentMethodSelector";
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
@@ -51,11 +50,11 @@ export default function SaleComposerScreen() {
   const sync = useSyncRuntime();
   const [packages, setPackages] = useState<RentalPackage[]>([]);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [paymentMethod, setPaymentMethod] =
-    useState<SelectablePaymentMethod | null>(null);
   const [loadingPackages, setLoadingPackages] = useState(true);
   const [packageError, setPackageError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const completedRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [qrisAvailable, setQrisAvailable] = useState(false);
   const [qrisConfigChecked, setQrisConfigChecked] = useState(false);
@@ -84,12 +83,8 @@ export default function SaleComposerScreen() {
       const available =
         config !== null && Boolean(validateStaticQris(config.staticPayload));
       setQrisAvailable(available);
-      if (!available) {
-        setPaymentMethod((current) => (current === "qris" ? null : current));
-      }
     } catch {
       setQrisAvailable(false);
-      setPaymentMethod((current) => (current === "qris" ? null : current));
     } finally {
       setQrisConfigChecked(true);
     }
@@ -97,6 +92,7 @@ export default function SaleComposerScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      completedRef.current = false;
       void Promise.all([loadPackages(), loadQrisAvailability()]);
     }, [loadPackages, loadQrisAvailability]),
   );
@@ -139,12 +135,10 @@ export default function SaleComposerScreen() {
     [quantities, updateQuantity],
   );
 
-  const save = async () => {
-    if (!session) return;
-    if (!paymentMethod) {
-      setError("Pilih metode pembayaran tunai atau QRIS.");
+  const save = async (paymentMethod: SelectablePaymentMethod) => {
+    if (!session || total === 0 || savingRef.current || completedRef.current)
       return;
-    }
+    savingRef.current = true;
     setSaving(true);
     setError(null);
     try {
@@ -177,14 +171,22 @@ export default function SaleComposerScreen() {
         qrisPayloadHash,
         session,
       );
+      completedRef.current = true;
       setQuantities({});
-      setPaymentMethod(null);
-      await sync.refresh();
-      void sync.syncNow();
       router.push({
-        pathname: "/transactions/[id]",
-        params: { id: transaction.id },
+        pathname:
+          paymentMethod === "qris"
+            ? "/transactions/[id]/print-qris"
+            : "/transactions/[id]/print",
+        params:
+          paymentMethod === "qris"
+            ? { id: transaction.id }
+            : { id: transaction.id, autoPrint: "1" },
       });
+      void sync
+        .refresh()
+        .then(() => sync.syncNow())
+        .catch(() => undefined);
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -192,6 +194,7 @@ export default function SaleComposerScreen() {
           : "Transaksi tidak dapat disimpan.",
       );
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
@@ -203,14 +206,12 @@ export default function SaleComposerScreen() {
       scroll={false}
       stickyFooter={
         <StickyTransactionSummary
-          disabled={total === 0 || !paymentMethod}
+          disabled={total === 0 || loadingPackages}
           error={error}
           itemCount={selectedItemCount}
           loading={saving}
-          onSave={() => void save()}
-          onPaymentMethodChange={setPaymentMethod}
+          onPaymentMethodChange={(method) => void save(method)}
           packageCount={selectedPackages.length}
-          paymentMethod={paymentMethod}
           qrisAvailable={qrisAvailable}
           qrisConfigChecked={qrisConfigChecked}
           quantities={quantities}
@@ -361,8 +362,6 @@ function StickyTransactionSummary({
   disabled,
   loading,
   error,
-  onSave,
-  paymentMethod,
   qrisAvailable,
   qrisConfigChecked,
   onPaymentMethodChange,
@@ -375,8 +374,6 @@ function StickyTransactionSummary({
   disabled: boolean;
   loading: boolean;
   error: string | null;
-  onSave: () => void;
-  paymentMethod: SelectablePaymentMethod | null;
   qrisAvailable: boolean;
   qrisConfigChecked: boolean;
   onPaymentMethodChange: (method: SelectablePaymentMethod) => void;
@@ -385,10 +382,27 @@ function StickyTransactionSummary({
 }) {
   const responsive = useResponsiveStyles(styles);
   const [summaryExpanded, setSummaryExpanded] = useState(false);
+  const summaryToggle = (
+    <Pressable
+      accessibilityLabel={
+        summaryExpanded ? "Sembunyikan ringkasan" : "Tampilkan ringkasan"
+      }
+      accessibilityRole="button"
+      accessibilityState={{ expanded: summaryExpanded }}
+      onPress={() => setSummaryExpanded((expanded) => !expanded)}
+      style={responsive.summaryToggle}
+    >
+      <Icon
+        color={colors.primary}
+        name={summaryExpanded ? "chevron-down" : "chevron-up"}
+        size={20}
+      />
+    </Pressable>
+  );
   return (
     <Card padded={false} style={responsive.stickySummary}>
-      <View style={responsive.stickySummaryHeader}>
-        <View>
+      {summaryExpanded ? (
+        <View style={responsive.stickySummaryHeader}>
           <Text style={responsive.sectionEyebrow}>RINGKASAN</Text>
           <Text style={responsive.stickySummaryMeta}>
             {packageCount === 0
@@ -396,25 +410,7 @@ function StickyTransactionSummary({
               : `${packageCount} paket • ${itemCount} item`}
           </Text>
         </View>
-        <Pressable
-          accessibilityLabel={
-            summaryExpanded ? "Sembunyikan ringkasan" : "Tampilkan ringkasan"
-          }
-          accessibilityRole="button"
-          accessibilityState={{ expanded: summaryExpanded }}
-          onPress={() => setSummaryExpanded((expanded) => !expanded)}
-          style={responsive.summaryToggle}
-        >
-          <Text style={responsive.summaryToggleText}>
-            {summaryExpanded ? "Sembunyikan" : "Tampilkan"}
-          </Text>
-          <Icon
-            color={colors.primary}
-            name={summaryExpanded ? "chevron-up" : "chevron-down"}
-            size={18}
-          />
-        </Pressable>
-      </View>
+      ) : null}
       {summaryExpanded && selectedPackages.length > 0 ? (
         <ScrollView
           contentContainerStyle={responsive.summaryLinesContent}
@@ -444,12 +440,18 @@ function StickyTransactionSummary({
         </ScrollView>
       ) : null}
       <View style={responsive.stickyTotalRow}>
-        <Text style={responsive.stickyTotalLabel}>Total pembayaran</Text>
+        <View style={responsive.stickyTotalLabelGroup}>
+          <Text style={responsive.stickyTotalLabel}>Total pembayaran</Text>
+          {summaryToggle}
+        </View>
         <Text accessibilityLiveRegion="polite" style={responsive.stickyTotal}>
           {formatRupiah(total)}
         </Text>
       </View>
       <PaymentMethodSelector
+        actionHint="Pilihan ini langsung menyimpan transaksi dan memulai pencetakan."
+        disabled={disabled || loading}
+        label="PILIH METODE UNTUK SIMPAN"
         onChange={onPaymentMethodChange}
         qrisDisabled={!qrisConfigChecked || !qrisAvailable}
         qrisDisabledReason={
@@ -457,21 +459,19 @@ function StickyTransactionSummary({
             ? "QRIS belum dikonfigurasi oleh superadmin."
             : "Memeriksa konfigurasi QRIS…"
         }
-        value={paymentMethod}
+        value={null}
       />
+      {loading ? (
+        <View style={responsive.savingRow}>
+          <ActivityIndicator color={colors.primary} />
+          <Text style={responsive.stickySummaryMeta}>Menyimpan transaksi…</Text>
+        </View>
+      ) : null}
       {error ? (
         <Text accessibilityRole="alert" style={responsive.stickyError}>
           {error}
         </Text>
       ) : null}
-      <Button
-        disabled={disabled}
-        icon="content-save-check-outline"
-        loading={loading}
-        onPress={onSave}
-      >
-        Simpan transaksi
-      </Button>
     </Card>
   );
 }
@@ -565,6 +565,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.card,
   },
+  savingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
   stickySummaryHeader: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -579,15 +584,10 @@ const styles = StyleSheet.create({
   },
   summaryToggle: {
     minHeight: minimumTouchTarget,
+    minWidth: minimumTouchTarget,
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-  },
-  summaryToggleText: {
-    ...textStyles.label,
-    color: colors.primary,
-    fontFamily: typography.bodySemibold,
+    justifyContent: "center",
   },
   summaryLines: {
     maxHeight: 112,
@@ -626,6 +626,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: spacing.sm,
+  },
+  stickyTotalLabelGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
   },
   stickyTotalLabel: {
     ...textStyles.body,

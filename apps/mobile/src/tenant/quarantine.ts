@@ -1,6 +1,7 @@
 import { getDatabase } from "@/db/client";
 import { apiRequest } from "@/api/client";
 import type { Session } from "@/domain/types";
+import { runLocalTransaction } from "@/db/transaction";
 
 export const SCOPE_ACCESS_CODES = new Set([
   "TENANT_SUSPENDED",
@@ -15,7 +16,8 @@ export async function quarantineScope(
   reason: string,
 ): Promise<void> {
   const { sqlite } = await getDatabase(session);
-  await sqlite.withTransactionAsync(async () => {
+  await runLocalTransaction(sqlite, async (txn) => {
+    const sqlite = txn;
     await sqlite.runAsync(
       "UPDATE scope_access SET blocked_reason = ?, blocked_actor_id = ?, blocked_at = ? WHERE singleton = 1",
       reason,
@@ -92,7 +94,8 @@ export async function revalidateQuarantinedOperations(
           ]),
         ),
     );
-    await sqlite.withTransactionAsync(async () => {
+    await runLocalTransaction(sqlite, async (txn) => {
+      const sqlite = txn;
       let batchReleased = 0;
       for (const row of rows) {
         const original = JSON.parse(row.operation_json) as Origin;

@@ -13,6 +13,7 @@ import { getOrCreateDatabaseKey } from "@/security/secure-store";
 
 import { runMigrations } from "./migrations";
 import * as schema from "./schema";
+import { runLocalTransaction } from "./transaction";
 
 export interface DatabaseConnection {
   sqlite: SQLite.SQLiteDatabase;
@@ -140,8 +141,8 @@ export async function prepareDatabaseForSession(
 
   await clearLocalDatabase(session);
   connection = await getDatabase(session);
-  await connection.sqlite.withTransactionAsync(async () => {
-    await connection.sqlite.execAsync(`
+  await runLocalTransaction(connection.sqlite, async (transaction) => {
+    await transaction.execAsync(`
       DELETE FROM sync_conflicts;
       DELETE FROM print_attempts;
       DELETE FROM outbox_operations;
@@ -152,7 +153,7 @@ export async function prepareDatabaseForSession(
       DELETE FROM synced_entities;
       DELETE FROM packages_local;
     `);
-    await connection.sqlite.runAsync(
+    await transaction.runAsync(
       `UPDATE sync_metadata
        SET generation = ?, cursor = NULL, status = 'idle',
            last_synced_at = NULL, last_error = NULL

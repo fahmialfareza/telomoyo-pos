@@ -1,5 +1,7 @@
 import type { SQLiteDatabase } from "expo-sqlite";
 
+import { runLocalTransaction } from "./transaction";
+
 interface Migration {
   version: number;
   name: string;
@@ -390,11 +392,11 @@ export async function runMigrations(
 
   for (const migration of migrations) {
     if (migration.version <= currentVersion) continue;
-    await database.withTransactionAsync(async () => {
-      await database.execAsync(migration.sql);
+    await runLocalTransaction(database, async (transaction) => {
+      await transaction.execAsync(migration.sql);
       if (options.seedLegacyCatalog && migration.legacyOnlySql)
-        await database.execAsync(migration.legacyOnlySql);
-      await database.execAsync(`PRAGMA user_version = ${migration.version}`);
+        await transaction.execAsync(migration.legacyOnlySql);
+      await transaction.execAsync(`PRAGMA user_version = ${migration.version}`);
     });
     currentVersion = migration.version;
   }

@@ -7,6 +7,7 @@ import { useAuthStore } from "@/auth/auth-store";
 import { AppScreen } from "@/components/layout/AppScreen";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ReceiptPreview } from "@/components/transactions/ReceiptPreview";
+import { DynamicQrisCard } from "@/components/payments/DynamicQrisCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ActionGroup } from "@/components/ui/ActionGroup";
@@ -19,11 +20,17 @@ import {
 } from "@/db/repositories";
 import type { Transaction } from "@/domain/types";
 import { getConfiguredPrinter } from "@/printer/service";
-import { receiptFromTransaction, type ReceiptDocument } from "@/printer/types";
+import {
+  receiptFromTransaction,
+  type QrisPrintDocument,
+  type ReceiptDocument,
+} from "@/printer/types";
 import { readPrinterConfig, type PrinterConfig } from "@/security/secure-store";
 import { beginLocalMutation } from "@/mode/mutation-barrier";
 import { useModeStore } from "@/mode/mode-store";
 import { useSyncRuntime } from "@/sync/SyncProvider";
+import { isPaymentConfirmedForCurrentRevision } from "@/domain/payments";
+import { qrisDocumentForTransaction } from "@/tenant/transaction-qris";
 import {
   colors,
   radius,
@@ -40,11 +47,19 @@ import {
 export default function PrintTransactionScreen() {
   const styles = useResponsiveStyles(baseStyles);
   const textStyles = useResponsiveTextStyles();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, autoPrint } = useLocalSearchParams<{
+    id: string;
+    autoPrint?: string;
+  }>();
   const router = useRouter();
   const { session } = useAuth();
   const sync = useSyncRuntime();
   const [transaction, setTransaction] = useState<Transaction | null>(null);
+  const [qrisPresentation, setQrisPresentation] = useState<{
+    key: string;
+    document: QrisPrintDocument | null;
+    error: string | null;
+  } | null>(null);
   const [printing, setPrinting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [printerConfig, setPrinterConfig] = useState<PrinterConfig | null>(
@@ -55,6 +70,7 @@ export default function PrintTransactionScreen() {
   const [simulatedSuccess, setSimulatedSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const activeAttempt = useRef(false);
+  const autoPrintStarted = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -98,26 +114,46 @@ export default function PrintTransactionScreen() {
     };
   }, [id, session]);
 
-  if (!transaction || !session) {
-    return (
-      <AppScreen>
-        <PageHeader back title="Cetak struk" />
-        {error ? (
-          <StateView
-            icon="alert-circle-outline"
-            title="Struk belum dapat dibuka"
-            message={error}
-          />
-        ) : null}
-      </AppScreen>
-    );
-  }
+  useEffect(() => {
+    let current = true;
+    if (transaction?.paymentMethod === "qris" && session) {
+      const key = `${session.sessionId}:${transaction.id}:${transaction.revision}:${transaction.paymentAmount}`;
+      void qrisDocumentForTransaction(transaction, session)
+        .then((document) => {
+          if (current) setQrisPresentation({ key, document, error: null });
+        })
+        .catch((reason) => {
+          if (current)
+            setQrisPresentation({
+              key,
+              document: null,
+              error:
+                reason instanceof Error
+                  ? reason.message
+                  : "QRIS transaksi tidak dapat ditampilkan.",
+            });
+        });
+    }
+    return () => {
+      current = false;
+    };
+  }, [transaction, session]);
+
+  const activeQrisPresentation =
+    transaction &&
+    session &&
+    qrisPresentation?.key ===
+      `${session.sessionId}:${transaction.id}:${transaction.revision}:${transaction.paymentAmount}`
+      ? qrisPresentation
+      : null;
+
   const isCopy =
-    transaction.printState === "success" ||
-    transaction.printState === "unknown" ||
-    transaction.printState === "needs-reprint";
+    transaction?.printState === "success" ||
+    transaction?.printState === "unknown" ||
+    transaction?.printState === "needs-reprint";
 
   const print = async (forceCopy?: boolean) => {
+    if (!transaction || !session) return;
     if (activeAttempt.current) return;
     const timingEnabled =
       __DEV__ && process.env.EXPO_PUBLIC_PRINT_TIMING === "true";
@@ -252,6 +288,37 @@ export default function PrintTransactionScreen() {
     }
   };
 
+  useEffect(() => {
+    if (
+      autoPrint !== "1" ||
+      autoPrintStarted.current ||
+      !session ||
+      !transaction ||
+      !printerConfig ||
+      transaction.deletedAt !== null ||
+      transaction.syncState === "conflict" ||
+      !isPaymentConfirmedForCurrentRevision(transaction)
+    )
+      return;
+    autoPrintStarted.current = true;
+    void print();
+  });
+
+  if (!transaction || !session) {
+    return (
+      <AppScreen>
+        <PageHeader back title="Cetak struk" />
+        {error ? (
+          <StateView
+            icon="alert-circle-outline"
+            title="Struk belum dapat dibuka"
+            message={error}
+          />
+        ) : null}
+      </AppScreen>
+    );
+  }
+
   return (
     <AppScreen
       stickyFooter={
@@ -265,13 +332,13 @@ export default function PrintTransactionScreen() {
             <ActionGroup>
               <Button
                 disabled={printing}
-                icon="home-outline"
+                icon="receipt-text-plus-outline"
                 onPress={() => {
                   if (!activeAttempt.current)
-                    router.replace("/(app)/(tabs)/home");
+                    router.replace("/(app)/(tabs)/sell");
                 }}
               >
-                Kembali ke Beranda
+                Kembali ke Tambah Transaksi
               </Button>
               <Button
                 icon="printer-outline"
@@ -380,6 +447,17 @@ export default function PrintTransactionScreen() {
           </View>
         ) : null}
       </Card>
+      {transaction.paymentMethod === "qris" ? (
+        <DynamicQrisCard
+          amount={transaction.paymentAmount}
+          merchantCity={activeQrisPresentation?.document?.merchantCity ?? null}
+          merchantName={activeQrisPresentation?.document?.merchantName ?? null}
+          orderTotal={transaction.total}
+          payload={activeQrisPresentation?.document?.payload ?? null}
+          sandbox={session.dataMode === "sandbox"}
+          error={activeQrisPresentation?.error ?? "Menyiapkan QRIS transaksi…"}
+        />
+      ) : null}
       {printerConfig ? (
         <ReceiptPreview
           columns={printerConfig.paperColumns}

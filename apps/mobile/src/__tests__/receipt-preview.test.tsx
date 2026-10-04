@@ -65,8 +65,10 @@ const transaction: Transaction = {
   ],
 };
 let mockTransaction = transaction;
+let mockAutoPrint: string | undefined;
 let mockConfig: PrinterConfig;
 const mockGetTransaction = jest.fn();
+const mockQrisDocument = jest.fn();
 const mockBeginAttempt = jest.fn();
 const mockCompleteAttempt = jest.fn();
 const mockConnect = jest.fn();
@@ -82,7 +84,10 @@ jest.mock("expo-router", () => {
   return {
     useFocusEffect: (effect: () => void | (() => void)) =>
       React.useEffect(effect, [effect]),
-    useLocalSearchParams: () => ({ id: "01ARZ3NDEKTSV4RRFFQ69G5FAV" }),
+    useLocalSearchParams: () => ({
+      id: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      autoPrint: mockAutoPrint,
+    }),
     useRouter: () => ({ replace: mockReplace }),
   };
 });
@@ -98,6 +103,26 @@ jest.mock("@/db/repositories", () => ({
   beginPrintAttempt: (...args: unknown[]) => mockBeginAttempt(...args),
   completePrintAttempt: (...args: unknown[]) => mockCompleteAttempt(...args),
 }));
+jest.mock("@/tenant/transaction-qris", () => ({
+  qrisDocumentForTransaction: (...args: unknown[]) => mockQrisDocument(...args),
+}));
+jest.mock("@/components/payments/DynamicQrisCard", () => {
+  const { Text, View } =
+    jest.requireActual<typeof import("react-native")>("react-native");
+  return {
+    DynamicQrisCard: ({
+      payload,
+      error,
+    }: {
+      payload: string | null;
+      error: string | null;
+    }) => (
+      <View testID="print-qris-card">
+        <Text>{payload ?? error}</Text>
+      </View>
+    ),
+  };
+});
 jest.mock("@/security/secure-store", () => ({
   readPrinterConfig: async () => mockConfig,
 }));
@@ -163,6 +188,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockActiveSession = mockSession;
   mockTransaction = transaction;
+  mockAutoPrint = undefined;
   mockConfig = {
     adapter: "simulator",
     address: null,
@@ -170,6 +196,7 @@ beforeEach(() => {
     paperColumns: 32,
   };
   mockGetTransaction.mockImplementation(async () => mockTransaction);
+  mockQrisDocument.mockImplementation(() => new Promise(() => undefined));
   mockBeginAttempt.mockResolvedValue("attempt-1");
   mockCompleteAttempt.mockResolvedValue(undefined);
   mockConnect.mockResolvedValue(undefined);
@@ -178,6 +205,78 @@ beforeEach(() => {
   mockBeginMutation.mockReturnValue(mockRelease);
   mockSync.refresh.mockResolvedValue(undefined);
   mockSync.syncNow.mockResolvedValue(undefined);
+});
+
+it("shows the bound QRIS above the receipt preview without printing it again", async () => {
+  mockQrisDocument.mockResolvedValue({
+    transactionId: transaction.id,
+    paymentAmount: transaction.paymentAmount,
+    orderTotal: transaction.total,
+    merchantName: "Merchant Telomoyo",
+    merchantCity: "Magelang",
+    payload: "bound-dynamic-qris",
+    dataMode: "sandbox",
+  });
+  const screen = render(<PrintTransactionScreen />);
+  await screen.findByText("bound-dynamic-qris");
+  const content = JSON.stringify(screen.toJSON());
+  expect(content.indexOf("print-qris-card")).toBeLessThan(
+    content.indexOf("receipt-preview"),
+  );
+  expect(mockQrisDocument).toHaveBeenCalledWith(transaction, mockSession);
+  expect(mockBeginAttempt).not.toHaveBeenCalled();
+  expect(mockPrint).not.toHaveBeenCalled();
+});
+
+it("does not show a QRIS card for cash payments", async () => {
+  mockTransaction = {
+    ...transaction,
+    paymentMethod: "cash",
+    qrisPayloadHash: null,
+  };
+  const screen = render(<PrintTransactionScreen />);
+  await screen.findByTestId("receipt-preview-text");
+  expect(screen.queryByTestId("print-qris-card")).toBeNull();
+  expect(mockQrisDocument).not.toHaveBeenCalled();
+});
+
+it("automatically prints a newly created, paid transaction only once", async () => {
+  mockAutoPrint = "1";
+  const screen = render(<PrintTransactionScreen />);
+  await waitFor(() => expect(mockPrint).toHaveBeenCalledTimes(1));
+  await screen.findByText("Simulasi cetak berhasil");
+  expect(mockBeginAttempt).toHaveBeenCalledTimes(1);
+  expect(mockBeginAttempt.mock.calls[0]?.[0]).toEqual(
+    expect.objectContaining({ isCopy: false }),
+  );
+  fireEvent.press(screen.getByRole("button", { name: "Cetak salinan" }));
+  await waitFor(() => expect(mockPrint).toHaveBeenCalledTimes(2));
+  expect(mockBeginAttempt.mock.calls[1]?.[0]).toEqual(
+    expect.objectContaining({ isCopy: true }),
+  );
+});
+
+it("marks automatic printing as a copy when a receipt was printed before", async () => {
+  mockAutoPrint = "1";
+  mockTransaction = { ...transaction, printState: "success" };
+  render(<PrintTransactionScreen />);
+  await waitFor(() => expect(mockBeginAttempt).toHaveBeenCalledTimes(1));
+  expect(mockBeginAttempt.mock.calls[0]?.[0]).toEqual(
+    expect.objectContaining({ isCopy: true }),
+  );
+});
+
+it("does not auto-print a transaction without successful current-revision payment", async () => {
+  mockAutoPrint = "1";
+  mockTransaction = {
+    ...transaction,
+    paymentStatus: "pending",
+    paymentConfirmedRevision: null,
+  };
+  render(<PrintTransactionScreen />);
+  await waitFor(() => expect(mockGetTransaction).toHaveBeenCalled());
+  expect(mockBeginAttempt).not.toHaveBeenCalled();
+  expect(mockPrint).not.toHaveBeenCalled();
 });
 
 it.each([32, 48] as const)(
@@ -316,13 +415,15 @@ it("describes simulator success and retains the exact document sent, not an acci
   await waitFor(() => expect(mockRelease).toHaveBeenCalledTimes(1));
   const footer = within(screen.getByTestId("sticky-footer"));
   expect(
-    footer.getByRole("button", { name: "Kembali ke Beranda" }),
+    footer.getByRole("button", { name: "Kembali ke Tambah Transaksi" }),
   ).toHaveStyle({ backgroundColor: colors.primary });
   expect(footer.getByRole("button", { name: "Cetak salinan" })).toHaveStyle({
     borderColor: colors.primary,
   });
-  fireEvent.press(footer.getByRole("button", { name: "Kembali ke Beranda" }));
-  expect(mockReplace).toHaveBeenCalledWith("/(app)/(tabs)/home");
+  fireEvent.press(
+    footer.getByRole("button", { name: "Kembali ke Tambah Transaksi" }),
+  );
+  expect(mockReplace).toHaveBeenCalledWith("/(app)/(tabs)/sell");
   fireEvent.press(screen.getByRole("button", { name: "Cetak salinan" }));
   await waitFor(() => expect(mockPrint).toHaveBeenCalledTimes(2));
   expect(mockPrint.mock.calls[1]?.[0].isCopy).toBe(true);

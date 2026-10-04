@@ -27,6 +27,16 @@ export interface ReceiptDocument {
   receiptIdentity?: BusinessProfile;
 }
 
+export interface QrisPrintDocument {
+  transactionId: string;
+  paymentAmount: number;
+  orderTotal: number;
+  merchantName: string;
+  merchantCity: string;
+  payload: string;
+  dataMode: DataMode;
+}
+
 export interface PrinterDevice {
   id: string;
   name: string;
@@ -50,6 +60,7 @@ export interface ReceiptPrinter {
   connect(deviceId?: string): Promise<void>;
   status(): Promise<PrinterStatus>;
   print(document: ReceiptDocument): Promise<PrinterResult>;
+  printQris(document: QrisPrintDocument): Promise<PrinterResult>;
   disconnect(): Promise<void>;
 }
 

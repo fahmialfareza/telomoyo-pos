@@ -1,5 +1,10 @@
-import { encodeEscPos, formatReceipt } from "@/printer/receipt";
-import type { ReceiptDocument } from "@/printer/types";
+import {
+  encodeEscPos,
+  encodeEscPosQris,
+  formatQrisSlip,
+  formatReceipt,
+} from "@/printer/receipt";
+import type { QrisPrintDocument, ReceiptDocument } from "@/printer/types";
 
 const receipt: ReceiptDocument = {
   transactionId: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
@@ -21,6 +26,63 @@ const receipt: ReceiptDocument = {
   dataMode: "production",
   isCopy: false,
 };
+
+const qrisSlip: QrisPrintDocument = {
+  transactionId: receipt.transactionId,
+  paymentAmount: 70_000,
+  orderTotal: 70_000,
+  merchantName: "Telomoyo Merchant",
+  merchantCity: "Magelang",
+  payload: "00020101021253033605405700005802ID6304ABCD",
+  dataMode: "production",
+};
+
+describe("QRIS payment slip", () => {
+  it.each([32, 48] as const)(
+    "embeds the exact dynamic payload in ESC/POS QR at %s columns",
+    (columns) => {
+      const bytes = Array.from(encodeEscPosQris(qrisSlip, columns));
+      const storedCommand = [
+        0x1d,
+        0x28,
+        0x6b,
+        (qrisSlip.payload.length + 3) & 0xff,
+        (qrisSlip.payload.length + 3) >> 8,
+        0x31,
+        0x50,
+        0x30,
+      ];
+      const offset = bytes.findIndex((value, index) =>
+        storedCommand.every(
+          (commandByte, relative) => bytes[index + relative] === commandByte,
+        ),
+      );
+      expect(offset).toBeGreaterThanOrEqual(0);
+      expect(
+        String.fromCharCode(
+          ...bytes.slice(
+            offset + storedCommand.length,
+            offset + storedCommand.length + qrisSlip.payload.length,
+          ),
+        ),
+      ).toBe(qrisSlip.payload);
+      expect(formatQrisSlip(qrisSlip, columns)).toContain("Rp 70.000");
+      expect(formatQrisSlip(qrisSlip, columns)).not.toContain("LUNAS");
+      expect(bytes.slice(-4)).toEqual([0x1d, 0x56, 0x41, 0x00]);
+    },
+  );
+
+  it("watermarks Sandbox QRIS and distinguishes actual charge from order total", () => {
+    const output = formatQrisSlip(
+      { ...qrisSlip, dataMode: "sandbox", paymentAmount: 1_000 },
+      32,
+    );
+    expect(output).toContain("TEST - MODE UJI");
+    expect(output).toContain("BUKAN STRUK RESMI");
+    expect(output).toContain("Rp 1.000");
+    expect(output).toContain("Rp 70.000");
+  });
+});
 
 describe("thermal receipt", () => {
   it("uses the snapshotted business identity for tenant reprints and keeps the app credit", () => {
@@ -112,15 +174,29 @@ describe("thermal receipt", () => {
       const document = { ...receipt, dataMode, isCopy: true };
       const bytes = Array.from(encodeEscPos(document, columns));
       expect(bytes.slice(0, 11)).toEqual([
-        0x1b, 0x40, // initialize: reset a prior interrupted job
-        0x1b, 0x4d, 0x00, // Font A so 32/48 columns match 58/80 mm
-        0x1b, 0x61, 0x00, // left alignment
-        0x1b, 0x45, 0x01, // emphasis on before the first printed character
+        0x1b,
+        0x40, // initialize: reset a prior interrupted job
+        0x1b,
+        0x4d,
+        0x00, // Font A so 32/48 columns match 58/80 mm
+        0x1b,
+        0x61,
+        0x00, // left alignment
+        0x1b,
+        0x45,
+        0x01, // emphasis on before the first printed character
       ]);
       expect(bytes.slice(-10)).toEqual([
-        0x1b, 0x45, 0x00, // emphasis off after all receipt content
-        0x1b, 0x61, 0x00, // left alignment
-        0x1d, 0x56, 0x41, 0x00, // cut
+        0x1b,
+        0x45,
+        0x00, // emphasis off after all receipt content
+        0x1b,
+        0x61,
+        0x00, // left alignment
+        0x1d,
+        0x56,
+        0x41,
+        0x00, // cut
       ]);
       expect(countByteSequence(bytes, [0x1b, 0x45, 0x01])).toBe(1);
       expect(countByteSequence(bytes, [0x1b, 0x45, 0x00])).toBe(1);
