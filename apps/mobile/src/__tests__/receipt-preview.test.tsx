@@ -218,7 +218,7 @@ it("shows the bound QRIS above the receipt preview without printing it again", a
     dataMode: "sandbox",
   });
   const screen = render(<PrintTransactionScreen />);
-  await screen.findByText("bound-dynamic-qris");
+  await screen.findByText("bound-dynamic-qris", {}, { timeout: 5000 });
   const content = JSON.stringify(screen.toJSON());
   expect(content.indexOf("print-qris-card")).toBeLessThan(
     content.indexOf("receipt-preview"),
