@@ -1,5 +1,6 @@
 import { displayTransactionId } from "@/utils/format";
 import { paymentMethodLabel } from "@/domain/payments";
+import QRCode from "qrcode";
 
 import type { QrisPrintDocument, ReceiptDocument } from "./types";
 
@@ -259,31 +260,55 @@ export function encodeEscPosQris(
   document: QrisPrintDocument,
   columns: 32 | 48,
 ): Uint8Array {
-  const data = encodePrinterText(document.payload);
-  if (data.length < 1 || data.length > 2048) {
+  if (!document.payload || document.payload.length > 2048) {
     throw new Error("Panjang payload QRIS tidak valid untuk printer.");
   }
-  const storedLength = data.length + 3;
+  const qr = QRCode.create(document.payload, { errorCorrectionLevel: "M" });
+  const quietModules = 4;
+  // 32-column paper is normally 384 dots wide; 48-column paper is 576.
+  // Scale whole modules only, retaining the four-module quiet zone required
+  // for reliable scanning. Never clip a QR to fit the paper.
+  const paperDots = columns === 32 ? 384 : 576;
+  const modules = qr.modules.size + quietModules * 2;
+  const moduleDots = Math.min(4, Math.floor(paperDots / modules));
+  if (moduleDots < 2) {
+    throw new Error("QRIS terlalu besar untuk lebar kertas printer.");
+  }
+  const width = modules * moduleDots;
+  const height = width;
+  const rowBytes = Math.ceil(width / 8);
+  const pixels = new Uint8Array(rowBytes * height);
+  for (let row = 0; row < qr.modules.size; row += 1) {
+    for (let col = 0; col < qr.modules.size; col += 1) {
+      if (!qr.modules.get(row, col)) continue;
+      const top = (row + quietModules) * moduleDots;
+      const left = (col + quietModules) * moduleDots;
+      for (let dy = 0; dy < moduleDots; dy += 1) {
+        for (let dx = 0; dx < moduleDots; dx += 1) {
+          const x = left + dx;
+          const index = (top + dy) * rowBytes + (x >> 3);
+          pixels[index] = (pixels[index] ?? 0) | (0x80 >> (x & 7));
+        }
+      }
+    }
+  }
   const chunks = [
     Uint8Array.from([0x1b, 0x40, 0x1b, 0x4d, 0x00, 0x1b, 0x45, 0x01]),
     encodePrinterText(formatQrisHeader(document, columns)),
     Uint8Array.from([0x1b, 0x45, 0x00, 0x1b, 0x61, 0x01]),
-    // ESC/POS QR model 2, 5-dot modules, medium error correction.
-    Uint8Array.from([0x1d, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00]),
-    Uint8Array.from([0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, 0x05]),
-    Uint8Array.from([0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x31]),
+    // GS v 0 raster image. The MPOS ignored GS ( k native QR commands,
+    // leaving a blank area despite accepting the print job.
     Uint8Array.from([
       0x1d,
-      0x28,
-      0x6b,
-      storedLength & 0xff,
-      storedLength >> 8,
-      0x31,
-      0x50,
+      0x76,
       0x30,
+      0x00,
+      rowBytes & 0xff,
+      rowBytes >> 8,
+      height & 0xff,
+      height >> 8,
     ]),
-    data,
-    Uint8Array.from([0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30]),
+    pixels,
     Uint8Array.from([0x0a, 0x1b, 0x61, 0x00]),
     encodePrinterText(qrisFooter(document, columns)),
     Uint8Array.from([0x1d, 0x56, 0x41, 0x00]),

@@ -5,6 +5,7 @@ import {
   formatReceipt,
 } from "@/printer/receipt";
 import type { QrisPrintDocument, ReceiptDocument } from "@/printer/types";
+import QRCode from "qrcode";
 
 const receipt: ReceiptDocument = {
   transactionId: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
@@ -39,33 +40,41 @@ const qrisSlip: QrisPrintDocument = {
 
 describe("QRIS payment slip", () => {
   it.each([32, 48] as const)(
-    "embeds the exact dynamic payload in ESC/POS QR at %s columns",
+    "rasterizes the exact dynamic payload within %s-column paper",
     (columns) => {
       const bytes = Array.from(encodeEscPosQris(qrisSlip, columns));
-      const storedCommand = [
-        0x1d,
-        0x28,
-        0x6b,
-        (qrisSlip.payload.length + 3) & 0xff,
-        (qrisSlip.payload.length + 3) >> 8,
-        0x31,
-        0x50,
-        0x30,
-      ];
+      const storedCommand = [0x1d, 0x76, 0x30, 0x00];
       const offset = bytes.findIndex((value, index) =>
         storedCommand.every(
           (commandByte, relative) => bytes[index + relative] === commandByte,
         ),
       );
       expect(offset).toBeGreaterThanOrEqual(0);
-      expect(
-        String.fromCharCode(
-          ...bytes.slice(
-            offset + storedCommand.length,
-            offset + storedCommand.length + qrisSlip.payload.length,
-          ),
-        ),
-      ).toBe(qrisSlip.payload);
+      const rowBytes =
+        (bytes[offset + 4] ?? 0) + (bytes[offset + 5] ?? 0) * 256;
+      const height = (bytes[offset + 6] ?? 0) + (bytes[offset + 7] ?? 0) * 256;
+      expect(rowBytes * 8).toBeLessThanOrEqual(columns === 32 ? 384 : 576);
+      expect(height).toBeGreaterThan(100);
+      const raster = bytes.slice(offset + 8, offset + 8 + rowBytes * height);
+      expect(raster).toHaveLength(rowBytes * height);
+      expect(raster.some((pixel) => pixel !== 0)).toBe(true);
+      // White quiet-zone rows separate the payment text from the QR symbol.
+      expect(raster.slice(0, rowBytes * 8).every((pixel) => pixel === 0)).toBe(
+        true,
+      );
+      const matrix = QRCode.create(qrisSlip.payload, {
+        errorCorrectionLevel: "M",
+      });
+      const scale = height / (matrix.modules.size + 8);
+      for (let row = 0; row < matrix.modules.size; row += 1) {
+        for (let col = 0; col < matrix.modules.size; col += 1) {
+          const x = (col + 4) * scale;
+          const y = (row + 4) * scale;
+          const printed =
+            ((raster[y * rowBytes + (x >> 3)] ?? 0) & (0x80 >> (x & 7))) !== 0;
+          expect(printed).toBe(matrix.modules.get(row, col) !== 0);
+        }
+      }
       expect(formatQrisSlip(qrisSlip, columns)).toContain("Rp 70.000");
       expect(formatQrisSlip(qrisSlip, columns)).not.toContain("LUNAS");
       expect(bytes.slice(-4)).toEqual([0x1d, 0x56, 0x41, 0x00]);
