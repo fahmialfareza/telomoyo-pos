@@ -12,6 +12,9 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// keyPrefix namespaces every key this service writes to Redis.
+const keyPrefix = "telomoyo-pos:"
+
 type Cache struct {
 	client *redis.Client
 	ttl    time.Duration
@@ -89,12 +92,12 @@ func (c *Cache) Delete(ctx context.Context, tokenHash []byte) {
 }
 
 func (c *Cache) key(tokenHash []byte) string {
-	return "sewa-motor:session-index:" + hex.EncodeToString(tokenHash)
+	return keyPrefix + "session-index:" + hex.EncodeToString(tokenHash)
 }
 
 func (c *Cache) Allow(ctx context.Context, key string, limit int, window time.Duration) (bool, error) {
 	defer observability.StartSegment(ctx, "Redis.AllowRateLimit")()
-	redisKey := "sewa-motor:rate:" + key
+	redisKey := keyPrefix + "rate:" + key
 	count, err := c.client.Incr(ctx, redisKey).Result()
 	if err != nil {
 		observability.NoticeError(ctx, err, "increment Redis rate limit")

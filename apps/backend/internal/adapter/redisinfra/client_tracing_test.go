@@ -61,7 +61,7 @@ func TestClientTracingProcessHookRunsWithoutTransaction(t *testing.T) {
 		called = true
 		return nil
 	})
-	cmd := redis.NewCmd(context.Background(), "get", "sewa-motor:session-index:private-value-must-not-enter-telemetry")
+	cmd := redis.NewCmd(context.Background(), "get", "telomoyo-pos:session-index:private-value-must-not-enter-telemetry")
 	if err := process(context.Background(), cmd); err != nil {
 		t.Fatal(err)
 	}
