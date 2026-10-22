@@ -3,15 +3,15 @@ FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build-base
 WORKDIR /src
 ENV CGO_ENABLED=0
 COPY go.mod go.sum ./
-RUN --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/go/pkg/mod,target=/go/pkg/mod \
+RUN --mount=type=cache,id=s/6b0c4e6a-a94d-42a5-9ad8-14a04e79c14d-/go/pkg/mod,target=/go/pkg/mod \
     go mod download
 COPY . .
 
 FROM build-base AS build-api
 ARG TARGETOS=linux
 ARG TARGETARCH
-RUN --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/go/pkg/mod,target=/go/pkg/mod \
-    --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/root/.cache/go-build,target=/root/.cache/go-build \
+RUN --mount=type=cache,id=s/6b0c4e6a-a94d-42a5-9ad8-14a04e79c14d-/go/pkg/mod,target=/go/pkg/mod \
+    --mount=type=cache,id=s/6b0c4e6a-a94d-42a5-9ad8-14a04e79c14d-/root/.cache/go-build,target=/root/.cache/go-build \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build \
         -mod=readonly \
@@ -23,8 +23,8 @@ RUN --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/go/pkg/mod,tar
 FROM build-base AS build-migrate
 ARG TARGETOS=linux
 ARG TARGETARCH
-RUN --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/go/pkg/mod,target=/go/pkg/mod \
-    --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/root/.cache/go-build,target=/root/.cache/go-build \
+RUN --mount=type=cache,id=s/6b0c4e6a-a94d-42a5-9ad8-14a04e79c14d-/go/pkg/mod,target=/go/pkg/mod \
+    --mount=type=cache,id=s/6b0c4e6a-a94d-42a5-9ad8-14a04e79c14d-/root/.cache/go-build,target=/root/.cache/go-build \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build \
         -mod=readonly \
@@ -36,8 +36,8 @@ RUN --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/go/pkg/mod,tar
 FROM build-base AS build-bootstrap
 ARG TARGETOS=linux
 ARG TARGETARCH
-RUN --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/go/pkg/mod,target=/go/pkg/mod \
-    --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/root/.cache/go-build,target=/root/.cache/go-build \
+RUN --mount=type=cache,id=s/6b0c4e6a-a94d-42a5-9ad8-14a04e79c14d-/go/pkg/mod,target=/go/pkg/mod \
+    --mount=type=cache,id=s/6b0c4e6a-a94d-42a5-9ad8-14a04e79c14d-/root/.cache/go-build,target=/root/.cache/go-build \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build \
         -mod=readonly \
@@ -49,8 +49,8 @@ RUN --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/go/pkg/mod,tar
 FROM build-base AS build-bootstrap-superadmin
 ARG TARGETOS=linux
 ARG TARGETARCH
-RUN --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/go/pkg/mod,target=/go/pkg/mod \
-    --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/root/.cache/go-build,target=/root/.cache/go-build \
+RUN --mount=type=cache,id=s/6b0c4e6a-a94d-42a5-9ad8-14a04e79c14d-/go/pkg/mod,target=/go/pkg/mod \
+    --mount=type=cache,id=s/6b0c4e6a-a94d-42a5-9ad8-14a04e79c14d-/root/.cache/go-build,target=/root/.cache/go-build \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build \
         -mod=readonly \
@@ -62,8 +62,8 @@ RUN --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/go/pkg/mod,tar
 FROM build-base AS build-account-admin
 ARG TARGETOS=linux
 ARG TARGETARCH
-RUN --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/go/pkg/mod,target=/go/pkg/mod \
-    --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/root/.cache/go-build,target=/root/.cache/go-build \
+RUN --mount=type=cache,id=s/6b0c4e6a-a94d-42a5-9ad8-14a04e79c14d-/go/pkg/mod,target=/go/pkg/mod \
+    --mount=type=cache,id=s/6b0c4e6a-a94d-42a5-9ad8-14a04e79c14d-/root/.cache/go-build,target=/root/.cache/go-build \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build \
         -mod=readonly \
@@ -75,8 +75,8 @@ RUN --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/go/pkg/mod,tar
 FROM build-base AS build-seed-superadmin
 ARG TARGETOS=linux
 ARG TARGETARCH
-RUN --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/go/pkg/mod,target=/go/pkg/mod \
-    --mount=type=cache,id=s/331944f1-96e7-4f7e-8ef0-2a436edf861a-/root/.cache/go-build,target=/root/.cache/go-build \
+RUN --mount=type=cache,id=s/6b0c4e6a-a94d-42a5-9ad8-14a04e79c14d-/go/pkg/mod,target=/go/pkg/mod \
+    --mount=type=cache,id=s/6b0c4e6a-a94d-42a5-9ad8-14a04e79c14d-/root/.cache/go-build,target=/root/.cache/go-build \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build \
         -mod=readonly \
