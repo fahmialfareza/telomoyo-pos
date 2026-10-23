@@ -1,0 +1,106 @@
+name: PostgreSQL Weekly Backup
+
+on:
+  schedule:
+    - cron: "0 17 * * 6"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    name: Dump and upload to R2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y curl ca-certificates
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | sudo gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
+          echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client-18
+          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
+
+      - name: Wake up database
+        env:
+          DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+        run: |
+          MAX_ATTEMPTS=10
+          DELAY=5
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "Attempt ${attempt}/${MAX_ATTEMPTS}: checking database readiness..."
+            if pg_isready --dbname="$DATABASE_URL" --timeout=5 --quiet; then
+              echo "Database is ready."
+              exit 0
+            fi
+            echo "Not ready yet. Waiting ${DELAY}s..."
+            sleep $DELAY
+            DELAY=$(( DELAY * 2 ))
+          done
+          echo "Database did not become ready after ${MAX_ATTEMPTS} attempts." >&2
+          exit 1
+
+      - name: Dump database
+        env:
+          DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+        run: |
+          TIMESTAMP=$(date -u +"%Y%m%dT%H%M%SZ")
+          FILENAME="backup-${TIMESTAMP}.dump"
+          MAX_ATTEMPTS=3
+          DELAY=10
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "pg_dump attempt ${attempt}/${MAX_ATTEMPTS}..."
+            if pg_dump "$DATABASE_URL" \
+                --format=custom \
+                --no-owner \
+                --no-privileges \
+                --file="${FILENAME}"; then
+              gzip "${FILENAME}"
+              echo "BACKUP_FILE=${FILENAME}.gz" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            echo "pg_dump failed. Waiting ${DELAY}s before retry..."
+            sleep $DELAY
+            DELAY=$(( DELAY * 2 ))
+          done
+          echo "pg_dump failed after ${MAX_ATTEMPTS} attempts." >&2
+          exit 1
+
+      - name: Upload to Cloudflare R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          aws s3 cp "$BACKUP_FILE" \
+            "s3://${R2_BUCKET}/postgres/weekly/${BACKUP_FILE}" \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+      - name: Delete backups older than 28 days
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          CUTOFF=$(date -u -d "28 days ago" +"%Y-%m-%dT%H:%M:%SZ")
+          aws s3api list-objects-v2 \
+            --bucket "$R2_BUCKET" \
+            --prefix "postgres/weekly/" \
+            --endpoint-url "$ENDPOINT" \
+            --query "Contents[?LastModified<='${CUTOFF}'].Key" \
+            --output text | tr '\t' '\n' | while read -r key; do
+              [ -z "$key" ] && continue
+              echo "Deleting old backup: ${key}"
+              aws s3 rm "s3://${R2_BUCKET}/${key}" --endpoint-url "$ENDPOINT"
+          done
+
+      - name: Clean up local backup
+        if: always()
+        run: rm -f "$BACKUP_FILE"

@@ -226,6 +226,9 @@ command arguments, and distinguishes initial provisioning from recovery of an
 existing account. Do not run the development `pnpm seed:superadmin` command or
 change `APP_ENV` to `development` against production.
 
+Production PostgreSQL is backed up weekly to Cloudflare R2; see
+[PostgreSQL Backup](docs/postgres-backup.md) for setup and restore.
+
 The Android application ID is configured as
 `com.fahmialfareza.sewamotorpos`. The following release inputs remain
 intentionally unset:
