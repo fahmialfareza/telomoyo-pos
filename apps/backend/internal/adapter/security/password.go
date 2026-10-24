@@ -13,7 +13,7 @@ import (
 // argon2Slots bounds how many Argon2id derivations run at once. Each one
 // allocates its full memory cost (19 MiB by default, 64 MiB for older
 // hashes), so unbounded login bursts become container memory spikes.
-var argon2Slots = make(chan struct{}, 4)
+var argon2Slots = make(chan struct{}, 1)
 
 // SetArgon2Concurrency resizes the derivation limit. Call it once at startup,
 // before any Hash or Verify runs.

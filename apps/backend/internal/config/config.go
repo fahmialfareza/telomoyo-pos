@@ -55,7 +55,7 @@ func Load() (Config, error) {
 		SessionCacheTTL:         15 * time.Minute,
 		LoginRateLimit:          10,
 		LoginRateWindow:         time.Minute,
-		PasswordHashConcurrency: 4,
+		PasswordHashConcurrency: 1,
 		NewRelicAppName:         env("NEW_RELIC_APP_NAME", "sewa-motor-backend"),
 		NewRelicLicenseKey: strings.TrimSpace(
 			os.Getenv("NEW_RELIC_LICENSE_KEY"),
@@ -112,7 +112,7 @@ func Load() (Config, error) {
 	if cfg.LoginRateWindow, err = time.ParseDuration(env("LOGIN_RATE_WINDOW", "1m")); err != nil {
 		return Config{}, fmt.Errorf("LOGIN_RATE_WINDOW: %w", err)
 	}
-	if cfg.PasswordHashConcurrency, err = strconv.Atoi(env("PASSWORD_HASH_CONCURRENCY", "4")); err != nil || cfg.PasswordHashConcurrency < 1 || cfg.PasswordHashConcurrency > 64 {
+	if cfg.PasswordHashConcurrency, err = strconv.Atoi(env("PASSWORD_HASH_CONCURRENCY", "1")); err != nil || cfg.PasswordHashConcurrency < 1 || cfg.PasswordHashConcurrency > 64 {
 		return Config{}, fmt.Errorf("PASSWORD_HASH_CONCURRENCY must be an integer between 1 and 64")
 	}
 	newRelicDefault := strconv.FormatBool(cfg.NewRelicLicenseKey != "")
