@@ -57,7 +57,7 @@ func Open(ctx context.Context, databaseURL string, options ...Option) (*Store, e
 		return nil, fmt.Errorf("parse DATABASE_URL: %w", err)
 	}
 	configureConnectionTracing(config)
-	config.MaxConns = 20
+	config.MaxConns = 10
 	config.MinConns = 2
 	config.MaxConnLifetime = time.Hour
 	config.MaxConnIdleTime = 15 * time.Minute
@@ -88,7 +88,7 @@ func Open(ctx context.Context, databaseURL string, options ...Option) (*Store, e
 		pool.Close()
 		return nil, fmt.Errorf("resolve GORM SQL pool: %w", err)
 	}
-	ormSQL.SetMaxOpenConns(12)
+	ormSQL.SetMaxOpenConns(6)
 	ormSQL.SetMaxIdleConns(2)
 	ormSQL.SetConnMaxLifetime(time.Hour)
 	ormSQL.SetConnMaxIdleTime(15 * time.Minute)

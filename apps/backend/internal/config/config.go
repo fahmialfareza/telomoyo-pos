@@ -29,6 +29,7 @@ type Config struct {
 	SessionCacheTTL             time.Duration
 	LoginRateLimit              int
 	LoginRateWindow             time.Duration
+	PasswordHashConcurrency     int
 	TrustedProxies              []string
 	NewRelicEnabled             bool
 	NewRelicAppName             string
@@ -39,22 +40,23 @@ type Config struct {
 
 func Load() (Config, error) {
 	cfg := Config{
-		HTTPAddr:               env("HTTP_ADDR", ":8080"),
-		PrivacyOperatorName:    env("PRIVACY_OPERATOR_NAME", "Pengelola Wisata Telomoyo"),
-		PrivacyContactEmail:    strings.TrimSpace(os.Getenv("PRIVACY_CONTACT_EMAIL")),
-		DatabaseURL:            strings.TrimSpace(os.Getenv("DATABASE_URL")),
-		RedisURL:               strings.TrimSpace(os.Getenv("REDIS_URL")),
-		DBConnectMaxAttempts:   10,
-		DBConnectMaxBackoff:    time.Minute,
-		SandboxRetentionDays:   30,
-		SandboxQRISAmount:      1_000,
-		SandboxCleanupInterval: 24 * time.Hour,
-		LogLevel:               env("LOG_LEVEL", "info"),
-		ShutdownTimeout:        10 * time.Second,
-		SessionCacheTTL:        15 * time.Minute,
-		LoginRateLimit:         10,
-		LoginRateWindow:        time.Minute,
-		NewRelicAppName:        env("NEW_RELIC_APP_NAME", "sewa-motor-backend"),
+		HTTPAddr:                env("HTTP_ADDR", ":8080"),
+		PrivacyOperatorName:     env("PRIVACY_OPERATOR_NAME", "Pengelola Wisata Telomoyo"),
+		PrivacyContactEmail:     strings.TrimSpace(os.Getenv("PRIVACY_CONTACT_EMAIL")),
+		DatabaseURL:             strings.TrimSpace(os.Getenv("DATABASE_URL")),
+		RedisURL:                strings.TrimSpace(os.Getenv("REDIS_URL")),
+		DBConnectMaxAttempts:    10,
+		DBConnectMaxBackoff:     time.Minute,
+		SandboxRetentionDays:    30,
+		SandboxQRISAmount:       1_000,
+		SandboxCleanupInterval:  24 * time.Hour,
+		LogLevel:                env("LOG_LEVEL", "info"),
+		ShutdownTimeout:         10 * time.Second,
+		SessionCacheTTL:         15 * time.Minute,
+		LoginRateLimit:          10,
+		LoginRateWindow:         time.Minute,
+		PasswordHashConcurrency: 4,
+		NewRelicAppName:         env("NEW_RELIC_APP_NAME", "sewa-motor-backend"),
 		NewRelicLicenseKey: strings.TrimSpace(
 			os.Getenv("NEW_RELIC_LICENSE_KEY"),
 		),
@@ -109,6 +111,9 @@ func Load() (Config, error) {
 	}
 	if cfg.LoginRateWindow, err = time.ParseDuration(env("LOGIN_RATE_WINDOW", "1m")); err != nil {
 		return Config{}, fmt.Errorf("LOGIN_RATE_WINDOW: %w", err)
+	}
+	if cfg.PasswordHashConcurrency, err = strconv.Atoi(env("PASSWORD_HASH_CONCURRENCY", "4")); err != nil || cfg.PasswordHashConcurrency < 1 || cfg.PasswordHashConcurrency > 64 {
+		return Config{}, fmt.Errorf("PASSWORD_HASH_CONCURRENCY must be an integer between 1 and 64")
 	}
 	newRelicDefault := strconv.FormatBool(cfg.NewRelicLicenseKey != "")
 	if cfg.NewRelicEnabled, err = strconv.ParseBool(env("NEW_RELIC_ENABLED", newRelicDefault)); err != nil {

@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	_ "time/tzdata"
 
 	exportadapter "github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/adapter/export"
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/adapter/httpapi"
@@ -102,6 +103,7 @@ func run() error {
 		pingCancel()
 	}
 
+	security.SetArgon2Concurrency(cfg.PasswordHashConcurrency)
 	passwords := security.DefaultArgon2id()
 	auth := usecase.Auth{
 		Repo: store, Passwords: passwords, Tokens: security.OpaqueTokenManager{},
