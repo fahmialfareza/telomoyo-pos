@@ -31,3 +31,16 @@ type VerifiedLoginSession struct {
 type VerifiedLoginSessionRepository interface {
 	CreateVerifiedLoginSession(context.Context, VerifiedLoginSession) (domain.Principal, error)
 }
+
+// PasswordRehashPolicy is optionally implemented by a PasswordHasher to flag
+// hashes encoded with outdated cost parameters.
+type PasswordRehashPolicy interface {
+	NeedsRehash(encoded string) bool
+}
+
+// PasswordHashUpgradeRepository re-encodes an unchanged password. It must only
+// replace the exact verified hash and must not revoke sessions, because the
+// credential itself is the same.
+type PasswordHashUpgradeRepository interface {
+	UpgradePasswordHash(ctx context.Context, userID uuid.UUID, verifiedHash, upgradedHash string) error
+}

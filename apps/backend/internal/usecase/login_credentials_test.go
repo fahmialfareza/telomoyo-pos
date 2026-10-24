@@ -104,3 +104,92 @@ func TestLoginNeverCachesSessionRejectedAfterCredentialVerification(t *testing.T
 		t.Fatalf("credential race returned/cached an invalid session: %v", err)
 	}
 }
+
+type upgradingLoginRepository struct {
+	verifiedLoginRepository
+	upgradedFrom, upgradedTo string
+}
+
+func (r *upgradingLoginRepository) UpgradePasswordHash(_ context.Context, _ uuid.UUID, verifiedHash, upgradedHash string) error {
+	r.upgradedFrom, r.upgradedTo = verifiedHash, upgradedHash
+	return nil
+}
+
+type rehashingPasswords struct{ loginPasswords }
+
+func (rehashingPasswords) Hash(password string) (string, error) { return "upgraded:" + password, nil }
+func (rehashingPasswords) NeedsRehash(hash string) bool         { return hash == "verified-encoded-hash" }
+
+func TestLoginUpgradesOutdatedPasswordHashAfterSessionCommits(t *testing.T) {
+	repo := &upgradingLoginRepository{verifiedLoginRepository: verifiedLoginRepository{
+		user:      domain.UserAuth{User: domain.User{ID: uuid.New(), IsActive: true}, PasswordHash: "verified-encoded-hash"},
+		principal: domain.Principal{SessionID: uuid.New()},
+	}}
+	auth := Auth{Repo: repo, Passwords: rehashingPasswords{}, Limiter: loginLimiter{},
+		Sessions: &memorySessionIndex{entries: map[string]uuid.UUID{}},
+		Tokens:   fixedAuthTokens{raw: "new-token", replacementHash: []byte("new-hash")}}
+	if _, err := auth.Login(context.Background(), domain.LoginInput{Username: "user", Password: "valid-password", ClientProtocolVersion: 3}); err != nil {
+		t.Fatal(err)
+	}
+	if repo.upgradedFrom != "verified-encoded-hash" || repo.upgradedTo != "upgraded:valid-password" {
+		t.Fatalf("hash upgrade = %q -> %q", repo.upgradedFrom, repo.upgradedTo)
+	}
+}
+
+type racingUpgradeRepository struct {
+	verifiedLoginRepository
+	lookups int
+}
+
+func (r *racingUpgradeRepository) UserForLogin(context.Context, string) (domain.UserAuth, error) {
+	r.lookups++
+	if r.lookups > 1 {
+		user := r.user
+		user.PasswordHash = "upgraded-encoded-hash"
+		return user, nil
+	}
+	return r.user, nil
+}
+
+func (r *racingUpgradeRepository) CreateVerifiedLoginSession(_ context.Context, input port.VerifiedLoginSession) (domain.Principal, error) {
+	r.called, r.input = true, input
+	if input.VerifiedPasswordHash != "upgraded-encoded-hash" {
+		return domain.Principal{}, domain.NewError(domain.CodeInvalidCredentials, "Username atau kata sandi salah")
+	}
+	return r.principal, nil
+}
+
+type upgradeAwarePasswords struct{}
+
+func (upgradeAwarePasswords) Hash(string) (string, error) { panic("login must not hash passwords") }
+func (upgradeAwarePasswords) Verify(password, hash string) (bool, error) {
+	return password == "valid-password" && (hash == "verified-encoded-hash" || hash == "upgraded-encoded-hash"), nil
+}
+
+func TestLoginRetriesWhenConcurrentLoginUpgradedHash(t *testing.T) {
+	repo := &racingUpgradeRepository{verifiedLoginRepository: verifiedLoginRepository{
+		user:      domain.UserAuth{User: domain.User{ID: uuid.New(), IsActive: true}, PasswordHash: "verified-encoded-hash"},
+		principal: domain.Principal{SessionID: uuid.New()},
+	}}
+	auth := Auth{Repo: repo, Passwords: upgradeAwarePasswords{}, Limiter: loginLimiter{},
+		Sessions: &memorySessionIndex{entries: map[string]uuid.UUID{}},
+		Tokens:   fixedAuthTokens{raw: "new-token", replacementHash: []byte("new-hash")}}
+	result, err := auth.Login(context.Background(), domain.LoginInput{Username: "user", Password: "valid-password", ClientProtocolVersion: 3})
+	if err != nil || result.Token != "new-token" || repo.input.VerifiedPasswordHash != "upgraded-encoded-hash" {
+		t.Fatalf("login lost the hash-upgrade race: %v", err)
+	}
+}
+
+func TestLoginRejectsOldPasswordAfterConcurrentPasswordChange(t *testing.T) {
+	repo := &racingUpgradeRepository{verifiedLoginRepository: verifiedLoginRepository{
+		user:      domain.UserAuth{User: domain.User{ID: uuid.New(), IsActive: true}, PasswordHash: "verified-encoded-hash"},
+		principal: domain.Principal{SessionID: uuid.New()},
+	}}
+	// loginPasswords does not accept the changed hash, like a new password.
+	auth := Auth{Repo: repo, Passwords: loginPasswords{}, Limiter: loginLimiter{},
+		Sessions: &memorySessionIndex{entries: map[string]uuid.UUID{}},
+		Tokens:   fixedAuthTokens{raw: "new-token", replacementHash: []byte("new-hash")}}
+	if _, err := auth.Login(context.Background(), domain.LoginInput{Username: "user", Password: "valid-password", ClientProtocolVersion: 3}); !domain.IsCode(err, domain.CodeInvalidCredentials) {
+		t.Fatalf("Login error = %v, want INVALID_CREDENTIALS", err)
+	}
+}

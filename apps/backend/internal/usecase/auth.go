@@ -79,11 +79,44 @@ func (a Auth) Login(ctx context.Context, input domain.LoginInput) (domain.LoginR
 		session.DataSpaceID = production.ID
 	}
 	principal, err := repo.CreateVerifiedLoginSession(ctx, session)
+	if domain.IsCode(err, domain.CodeInvalidCredentials) {
+		// A concurrent login may have upgraded the hash encoding after we
+		// verified it. Re-verify once against the stored hash; a real password
+		// change still fails here because the old password no longer matches.
+		if fresh, freshErr := a.Repo.UserForLogin(ctx, input.Username); freshErr == nil && fresh.ID == user.ID && fresh.PasswordHash != user.PasswordHash {
+			if ok, verifyErr := a.Passwords.Verify(input.Password, fresh.PasswordHash); verifyErr == nil && ok {
+				user.PasswordHash = fresh.PasswordHash
+				session.VerifiedPasswordHash = fresh.PasswordHash
+				principal, err = repo.CreateVerifiedLoginSession(ctx, session)
+			}
+		}
+	}
 	if err != nil {
 		return domain.LoginResult{}, err
 	}
 	a.Sessions.Set(ctx, tokenHash, principal.SessionID)
+	a.upgradePasswordHash(ctx, user, input.Password)
 	return domain.LoginResult{Token: raw, Principal: principal}, nil
+}
+
+// upgradePasswordHash re-encodes a just-verified password whose hash uses
+// outdated cost parameters. It is best effort: login has already succeeded.
+func (a Auth) upgradePasswordHash(ctx context.Context, user domain.UserAuth, password string) {
+	policy, ok := a.Passwords.(port.PasswordRehashPolicy)
+	if !ok || !policy.NeedsRehash(user.PasswordHash) {
+		return
+	}
+	repo, ok := a.Repo.(port.PasswordHashUpgradeRepository)
+	if !ok {
+		return
+	}
+	upgraded, err := a.Passwords.Hash(password)
+	if err == nil {
+		err = repo.UpgradePasswordHash(ctx, user.ID, user.PasswordHash, upgraded)
+	}
+	if err != nil {
+		observability.Logger().WithError(err).Warn("password hash upgrade skipped")
+	}
 }
 
 // UpgradeSession exchanges a token, never mutates its historical scope or policy.

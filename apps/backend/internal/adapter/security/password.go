@@ -89,3 +89,18 @@ func (a Argon2id) Verify(password, encoded string) (bool, error) {
 	actual := idKey([]byte(password), salt, iterations, memory, parallelism, uint32(len(expected)))
 	return subtle.ConstantTimeCompare(actual, expected) == 1, nil
 }
+
+// NeedsRehash reports whether encoded uses different cost parameters than a,
+// such as the former 64 MiB default.
+func (a Argon2id) NeedsRehash(encoded string) bool {
+	parts := strings.Split(encoded, "$")
+	if len(parts) != 6 || parts[1] != "argon2id" {
+		return false
+	}
+	var memory, iterations uint32
+	var parallelism uint8
+	if _, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &memory, &iterations, &parallelism); err != nil {
+		return false
+	}
+	return memory != a.Memory || iterations != a.Iterations || parallelism != a.Parallelism
+}

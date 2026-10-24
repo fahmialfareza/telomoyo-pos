@@ -97,3 +97,22 @@ func TestCanonicalMutationGoldenVector(t *testing.T) {
 		t.Fatalf("golden signature did not verify: %v", err)
 	}
 }
+
+func TestArgon2idNeedsRehashOnlyForOutdatedParameters(t *testing.T) {
+	legacy := Argon2id{Memory: 16 * 1024, Iterations: 3, Parallelism: 1, SaltLength: 16, KeyLength: 32}
+	current := Argon2id{Memory: 8 * 1024, Iterations: 2, Parallelism: 1, SaltLength: 16, KeyLength: 32}
+	legacyHash, err := legacy.Hash("correct horse battery staple")
+	if err != nil {
+		t.Fatal(err)
+	}
+	currentHash, err := current.Hash("correct horse battery staple")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !current.NeedsRehash(legacyHash) {
+		t.Fatal("legacy hash was not flagged for rehash")
+	}
+	if current.NeedsRehash(currentHash) || current.NeedsRehash("not-an-argon2id-hash") {
+		t.Fatal("current or unparseable hash was flagged for rehash")
+	}
+}

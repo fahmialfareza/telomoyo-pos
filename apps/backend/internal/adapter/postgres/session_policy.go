@@ -13,6 +13,17 @@ import (
 
 var _ port.SessionPolicyRepository = (*Store)(nil)
 var _ port.VerifiedLoginSessionRepository = (*Store)(nil)
+var _ port.PasswordHashUpgradeRepository = (*Store)(nil)
+
+// UpgradePasswordHash swaps only the exact hash that was verified, so a
+// concurrent password change or recovery always wins. Sessions, updated_at and
+// sync state are left alone because the credential itself is unchanged.
+func (s *Store) UpgradePasswordHash(ctx context.Context, userID uuid.UUID, verifiedHash, upgradedHash string) error {
+	defer observability.StartSegment(ctx, "Postgres.UpgradePasswordHash")()
+	_, err := s.Pool.Exec(ctx, `UPDATE users SET password_hash=$3 WHERE id=$1 AND password_hash=$2 AND is_active AND deleted_at IS NULL`,
+		userID, verifiedHash, upgradedHash)
+	return dbError(err, "upgrade password hash")
+}
 
 // CreateVerifiedLoginSession serializes credential verification with password
 // changes/recovery and account deactivation. Expensive password hashing is done
