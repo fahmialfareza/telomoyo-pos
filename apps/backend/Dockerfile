@@ -89,6 +89,7 @@ RUN --mount=type=cache,id=s/6b0c4e6a-a94d-42a5-9ad8-14a04e79c14d-/go/pkg/mod,tar
 FROM gcr.io/distroless/static-debian13:nonroot@sha256:f7f8f729987ad0fdf6b05eeeae94b26e6a0f613bdf46feea7fc40f7bd72953e6 AS runtime
 WORKDIR /app
 ENV TZ=Asia/Jakarta
+ENV GIN_MODE=release
 # Soft heap ceiling for the Go GC; keep it ~85% of the container memory limit
 # and above PASSWORD_HASH_CONCURRENCY x 64 MiB (legacy) Argon2id working memory.
 ENV GOMEMLIMIT=400MiB
