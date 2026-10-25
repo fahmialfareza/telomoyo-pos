@@ -24,6 +24,16 @@ const selectSyncRuntime = (state: SyncStore): SyncRuntime => ({
   syncNow: state.syncNow,
 });
 
+// RN 0.88 types currentState as a plain nullable string.
+function toAppStateStatus(value: string | null | undefined): AppStateStatus {
+  return value === "active" ||
+    value === "background" ||
+    value === "inactive" ||
+    value === "extension"
+    ? value
+    : "unknown";
+}
+
 function runForegroundSync(appState: AppStateStatus) {
   if (
     appState !== "active" ||
@@ -47,7 +57,7 @@ function ensureBackgroundSyncRegistered() {
 export function SyncProvider({ children }: { children: ReactNode }) {
   const sessionId = useAuthStore((state) => state.session?.sessionId);
   const refresh = useSyncStore((state) => state.refresh);
-  const appState = useRef(AppState.currentState);
+  const appState = useRef(toAppStateStatus(AppState.currentState));
 
   useEffect(() => {
     ensureBackgroundSyncRegistered();

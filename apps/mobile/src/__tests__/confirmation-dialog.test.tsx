@@ -131,11 +131,12 @@ describe("app confirmation dialogs", () => {
         expect.objectContaining({ busy: false, disabled: false }),
       );
     });
-    fireEvent.press(screen.getByRole("button", { name: "Lanjutkan" }));
-    await waitFor(
-      () => expect(screen.queryByText("Periksa kembali")).toBeNull(),
-      { timeout: 5000 },
-    );
+    // Flush the async confirm result; RNTL 13's waitFor does not reliably do
+    // so under React 19.3.
+    await act(async () => {
+      fireEvent.press(screen.getByRole("button", { name: "Lanjutkan" }));
+    });
+    expect(screen.queryByText("Periksa kembali")).toBeNull();
     expect(onConfirm).toHaveBeenCalledTimes(2);
   });
 });

@@ -28,7 +28,12 @@ export default function TabsLayout() {
   return (
     <Tabs
       key={session?.sessionId}
-      initialRouteName={session?.contextKind === "account" ? "users" : "home"}
+      // Account sessions always deep-link straight to Pengguna. expo-router 58
+      // no longer accepts a per-session initialRouteName, so make Back follow
+      // visited tabs only instead of falling back to the unused Beranda tab.
+      backBehavior={
+        session?.contextKind === "account" ? "history" : "firstRoute"
+      }
       screenOptions={{
         headerShown: false,
         lazy: true,

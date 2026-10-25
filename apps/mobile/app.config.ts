@@ -84,6 +84,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-background-task",
     "expo-sharing",
     "expo-font",
+    "@react-native-community/datetimepicker",
   ],
   experiments: {
     typedRoutes: false,

@@ -6,6 +6,7 @@ import {
   Text,
   TextInput,
   View,
+  type TextInputInstance,
   type TextInputProps,
 } from "react-native";
 
@@ -26,7 +27,7 @@ interface FieldProps extends TextInputProps {
   hint?: string;
 }
 
-export const Field = forwardRef<TextInput, FieldProps>(function Field(
+export const Field = forwardRef<TextInputInstance, FieldProps>(function Field(
   { label, error, hint, secureTextEntry, style, ...props },
   ref,
 ) {

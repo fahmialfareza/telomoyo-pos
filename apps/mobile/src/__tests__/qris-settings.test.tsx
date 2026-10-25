@@ -308,11 +308,12 @@ describe("QRIS settings image flow", () => {
     fireEvent.press(screen.getByRole("button", { name: "Ganti QRIS statis" }));
 
     expect(screen.getByText("Ganti QRIS statis?")).toBeTruthy();
-    fireEvent.press(screen.getByRole("button", { name: "Lanjutkan" }));
-    await waitFor(
-      () => expect(screen.queryByText("Ganti QRIS statis?")).toBeNull(),
-      { timeout: 5000 },
-    );
+    // Flush the async confirm result; RNTL 13's waitFor does not reliably do
+    // so under React 19.3.
+    await act(async () => {
+      fireEvent.press(screen.getByRole("button", { name: "Lanjutkan" }));
+    });
+    expect(screen.queryByText("Ganti QRIS statis?")).toBeNull();
     fireEvent.press(screen.getByRole("button", { name: "Pilih gambar QRIS" }));
 
     await waitFor(() => {

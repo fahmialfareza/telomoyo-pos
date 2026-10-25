@@ -16,6 +16,7 @@ import {
   StyleSheet,
   Text,
   View,
+  type TextInstance,
   findNodeHandle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -54,7 +55,7 @@ export function ConfirmationProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const running = useRef(false);
   const sequence = useRef(0);
-  const titleRef = useRef<Text>(null);
+  const titleRef = useRef<TextInstance>(null);
   const insets = useSafeAreaInsets();
   const sizing = useResponsiveSizing();
   const textStyles = useResponsiveTextStyles();
