@@ -17,6 +17,8 @@ android {
 
 dependencies {
   // Drop the approved vendor AAR/JAR into android/libs and add it here only
-  // after the target MPOS SDK and license are supplied.
+  // after the target MPOS SDK and license are supplied. Release builds run R8,
+  // so a reflection-based vendor SDK will also need keep rules
+  // (expo-build-properties android.extraProguardRules in app.config.ts).
   implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
 }

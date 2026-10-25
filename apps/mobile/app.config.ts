@@ -85,6 +85,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-sharing",
     "expo-font",
     "@react-native-community/datetimepicker",
+    [
+      "expo-build-properties",
+      {
+        android: {
+          // R8 is on by default since SDK 58; keep it explicit alongside
+          // resource shrinking, which is not.
+          enableMinifyInReleaseBuilds: true,
+          enableShrinkResourcesInReleaseBuilds: true,
+        },
+      },
+    ],
   ],
   experiments: {
     typedRoutes: false,
