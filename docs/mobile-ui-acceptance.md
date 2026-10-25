@@ -106,9 +106,8 @@ automated checks above.
 ## SDK 58, release shrinking, dark mode, and selling features — pending
 
 Branch `feat/sdk-58`: Expo SDK 58 / React Native 0.88, R8 minification and
-resource shrinking in release builds, dark mode, a cash change calculator, an
-end-of-day recap with print and CSV export, and selling haptics. Type-check,
-lint, 544 Jest tests, `expo-doctor` (20/20) and an ARM64 `assembleRelease`
+resource shrinking in release builds, dark mode, an end-of-day recap with print and CSV export, and selling haptics. Type-check,
+lint, 538 Jest tests, `expo-doctor` (20/20) and an ARM64 `assembleRelease`
 passed locally. None of these checks run the app on a device.
 
 Release build (R8 + shrunk resources) — install the release APK, not a dev
@@ -130,7 +129,7 @@ Dark mode:
 
 - [ ] Pengaturan → Tampilan: Ikuti sistem / Terang / Gelap apply immediately
       and survive an app restart. Flip the Android theme while the app is open.
-- [ ] Walk every tab plus sell → cash sheet → print, QRIS settings, recap,
+- [ ] Walk every tab plus sell → print, QRIS settings, recap,
       history, transaction detail, and dialogs in Gelap. Look for unreadable
       text, invisible icons, or white flashes on launch and navigation.
 - [ ] QRIS codes stay black-on-white and scan; the receipt preview stays on
@@ -139,10 +138,7 @@ Dark mode:
 Selling:
 
 - [ ] Tap a package row to add one; − / + still work; Kosongkan clears.
-- [ ] Bayar Tunai opens the cash sheet. Uang pas saves in one tap; a quick
-      amount or typed amount shows Kembalian; a short amount shows Kurang and
-      blocks Simpan & cetak; Batal and Android Back close without saving.
-- [ ] The first cash receipt prints Tunai and Kembalian; copies do not.
+- [ ] Bayar Tunai saves and starts printing in one tap, exactly as before.
 - [ ] Bayar QRIS still goes straight to the QRIS print flow.
 - [ ] Haptics: a tick on add/remove and a pulse when the sale saves.
 

@@ -150,16 +150,6 @@ export function formatReceipt(
     document.paymentAmount !== document.total
       ? [twoColumns("QRIS NYATA", rupiah(document.paymentAmount), columns)]
       : []),
-    ...(document.cashReceived !== undefined && !document.isCopy
-      ? [
-          twoColumns("Tunai", rupiah(document.cashReceived), columns),
-          twoColumns(
-            "Kembalian",
-            rupiah(document.cashReceived - document.total),
-            columns,
-          ),
-        ]
-      : []),
     rule,
     ...(sandbox ? [center("BUKAN STRUK RESMI", columns), rule] : []),
     center("Terima kasih", columns),

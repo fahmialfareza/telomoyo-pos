@@ -26,8 +26,6 @@ export interface ReceiptDocument {
   dataMode: DataMode;
   isCopy: boolean;
   receiptIdentity?: BusinessProfile;
-  /** Cash handed over at the counter; printed on the original only. */
-  cashReceived?: number;
 }
 
 export interface QrisPrintDocument {
@@ -83,7 +81,6 @@ export function receiptFromTransaction(
   transaction: Transaction,
   isCopy: boolean,
   dataMode: DataMode = "production",
-  cashReceived?: number,
 ): ReceiptDocument {
   return {
     transactionId: transaction.id,
@@ -104,12 +101,6 @@ export function receiptFromTransaction(
     isCopy,
     ...(transaction.receiptIdentity
       ? { receiptIdentity: { ...transaction.receiptIdentity } }
-      : {}),
-    ...(!isCopy &&
-    transaction.paymentMethod === "cash" &&
-    cashReceived !== undefined &&
-    cashReceived >= transaction.total
-      ? { cashReceived }
       : {}),
   };
 }

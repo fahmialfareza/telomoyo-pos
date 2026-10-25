@@ -42,24 +42,12 @@ import {
 export default function PrintTransactionScreen() {
   const styles = useResponsiveStyles(baseStyles);
   const textStyles = useResponsiveTextStyles();
-  const {
-    id,
-    autoPrint,
-    cashReceived: cashReceivedParam,
-  } = useLocalSearchParams<{
+  const { id, autoPrint } = useLocalSearchParams<{
     id: string;
     autoPrint?: string;
-    cashReceived?: string;
   }>();
   const router = useRouter();
   const { session } = useAuth();
-  // Display-only: the amount handed over is printed on the original receipt
-  // but never stored or synced.
-  const parsedCash = Number(cashReceivedParam);
-  const cashReceived =
-    cashReceivedParam && Number.isSafeInteger(parsedCash) && parsedCash > 0
-      ? parsedCash
-      : undefined;
   const sync = useSyncRuntime();
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [qrisPresentation, setQrisPresentation] = useState<{
@@ -192,7 +180,6 @@ export default function PrintTransactionScreen() {
         transaction,
         printAsCopy,
         session.dataMode,
-        cashReceived,
       );
       for (const line of document.lines) Object.freeze(line);
       if (document.receiptIdentity) Object.freeze(document.receiptIdentity);
@@ -471,12 +458,7 @@ export default function PrintTransactionScreen() {
           columns={printerConfig.paperColumns}
           document={
             attemptDocument ??
-            receiptFromTransaction(
-              transaction,
-              isCopy,
-              session.dataMode,
-              cashReceived,
-            )
+            receiptFromTransaction(transaction, isCopy, session.dataMode)
           }
         />
       ) : null}
