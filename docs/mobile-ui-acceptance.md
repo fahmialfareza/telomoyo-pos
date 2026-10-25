@@ -102,3 +102,55 @@ authorized. Payment confirmation remains manual.
 Record device/MPOS model, Android version, paper width, font scale, and results
 before release. No physical-device or printer acceptance is claimed by the
 automated checks above.
+
+## SDK 58, release shrinking, dark mode, and selling features — pending
+
+Branch `feat/sdk-58`: Expo SDK 58 / React Native 0.88, R8 minification and
+resource shrinking in release builds, dark mode, a cash change calculator, an
+end-of-day recap with print and CSV export, and selling haptics. Type-check,
+lint, 544 Jest tests, `expo-doctor` (20/20) and an ARM64 `assembleRelease`
+passed locally. None of these checks run the app on a device.
+
+Release build (R8 + shrunk resources) — install the release APK, not a dev
+client, because these only take effect in release:
+
+- [ ] Login, restart, and stay logged in (SecureStore); encrypted SQLite opens.
+- [ ] Bluetooth and integrated printing for receipts, QRIS slips, and the recap.
+- [ ] Camera QR scan and gallery import in QRIS dinamis.
+- [ ] Background sync still runs after the app is backgrounded.
+- [ ] Fonts, icons, splash, and branding images all render (resource shrinking).
+
+SDK 58 navigation:
+
+- [ ] Superadmin account session opens straight to Pengguna; Back from
+      Pengguna leaves the tabs rather than landing on an empty Beranda.
+- [ ] Re-run the tab/Back items above for tenant sessions.
+
+Dark mode:
+
+- [ ] Pengaturan → Tampilan: Ikuti sistem / Terang / Gelap apply immediately
+      and survive an app restart. Flip the Android theme while the app is open.
+- [ ] Walk every tab plus sell → cash sheet → print, QRIS settings, recap,
+      history, transaction detail, and dialogs in Gelap. Look for unreadable
+      text, invisible icons, or white flashes on launch and navigation.
+- [ ] QRIS codes stay black-on-white and scan; the receipt preview stays on
+      light paper.
+
+Selling:
+
+- [ ] Tap a package row to add one; − / + still work; Kosongkan clears.
+- [ ] Bayar Tunai opens the cash sheet. Uang pas saves in one tap; a quick
+      amount or typed amount shows Kembalian; a short amount shows Kurang and
+      blocks Simpan & cetak; Batal and Android Back close without saving.
+- [ ] The first cash receipt prints Tunai and Kembalian; copies do not.
+- [ ] Bayar QRIS still goes straight to the QRIS print flow.
+- [ ] Haptics: a tick on add/remove and a pulse when the sale saves.
+
+Recap and export:
+
+- [ ] Dasbor → Rekap & serah terima kas: totals, transaction count, Tunai vs
+      QRIS, and per-package quantity/revenue match Riwayat for a day and a month.
+- [ ] Unsynced changes show the warning on screen and on the printed recap.
+- [ ] Cetak rekap at 32 and 48 columns; Sandbox shows TEST/BUKAN LAPORAN RESMI.
+- [ ] Ekspor CSV appears for Superadmin only; share to WhatsApp/Drive; open in
+      Google Sheets/Excel and check names, WIB times, and amounts.
