@@ -65,22 +65,24 @@ else
   
   # Try to update the variable App Version
   if eas env:update \
+    --environment "$EXPO_ENV" \
     --variable-name EXPO_APP_VERSION \
     --value "$SEMVER" \
     --non-interactive 2>&1 | grep -q "Updated"; then
     echo "✅ Expo environment variables updated!"
   else
-    echo "✅ Expo environment configured"
+    echo "⚠️  Could not update the Expo variable; check: eas env:list --environment $EXPO_ENV"
   fi
 
   # Try to update the variable App Version Code
   if eas env:update \
+    --environment "$EXPO_ENV" \
     --variable-name EXPO_APP_VERSION_CODE \
     --value "$VERSION_CODE" \
     --non-interactive 2>&1 | grep -q "Updated"; then
     echo "✅ Expo environment variables updated!"
   else
-    echo "✅ Expo environment configured"
+    echo "⚠️  Could not update the Expo variable; check: eas env:list --environment $EXPO_ENV"
   fi
 
   echo "   EXPO_APP_VERSION=$SEMVER"
