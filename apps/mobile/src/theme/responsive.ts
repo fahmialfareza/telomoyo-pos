@@ -12,7 +12,7 @@ export function getResponsiveSizing(width: number) {
   const compact = width < 414;
   return {
     compact,
-    caption: compact ? 11 : 12,
+    caption: 12,
     small: compact ? 13 : 14,
     body: compact ? 15 : 16,
     section: compact ? 19 : 20,

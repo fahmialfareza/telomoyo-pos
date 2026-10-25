@@ -171,7 +171,7 @@ it("saves once when a payment method is tapped twice and opens automatic printin
   const screen = render(<SaleComposerScreen />);
   await screen.findByText("Paket A");
   fireEvent.press(screen.getAllByRole("button", { name: "Tambah jumlah" })[0]!);
-  const cash = screen.getByRole("radio", { name: "Tunai" });
+  const cash = screen.getByRole("button", { name: "Bayar Tunai" });
   fireEvent.press(cash);
   fireEvent.press(cash);
   expect(mockCreateTransaction).toHaveBeenCalledTimes(1);
@@ -188,7 +188,7 @@ it("saves once when a payment method is tapped twice and opens automatic printin
 it("does not create a transaction without selected packages", async () => {
   const screen = render(<SaleComposerScreen />);
   await screen.findByText("Paket A");
-  const cash = screen.getByRole("radio", { name: "Tunai" });
+  const cash = screen.getByRole("button", { name: "Bayar Tunai" });
   expect(cash.props.accessibilityState.disabled).toBe(true);
   fireEvent.press(cash);
   expect(mockCreateTransaction).not.toHaveBeenCalled();
@@ -199,7 +199,7 @@ it("opens QRIS printing before receipt printing after QRIS selection", async () 
   const screen = render(<SaleComposerScreen />);
   await screen.findByText("Paket A");
   fireEvent.press(screen.getAllByRole("button", { name: "Tambah jumlah" })[0]!);
-  const qris = screen.getByRole("radio", { name: "QRIS" });
+  const qris = screen.getByRole("button", { name: "Bayar QRIS" });
   await waitFor(() =>
     expect(qris.props.accessibilityState.disabled).toBe(false),
   );
@@ -212,4 +212,15 @@ it("opens QRIS printing before receipt printing after QRIS selection", async () 
       params: { id: "transaction-1" },
     }),
   );
+});
+
+it("adds a unit when the package row is tapped and clears the cart", async () => {
+  const screen = render(<SaleComposerScreen />);
+  fireEvent.press(await screen.findByText("Paket B"));
+  fireEvent.press(screen.getByText("Paket B"));
+  const summary = screen.getByTestId("sale-summary");
+  expect(within(summary).getByText("Rp 200.000")).toBeTruthy();
+  fireEvent.press(screen.getByRole("button", { name: "Kosongkan" }));
+  expect(within(summary).getByText("Rp 0")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Kosongkan" })).toBeNull();
 });

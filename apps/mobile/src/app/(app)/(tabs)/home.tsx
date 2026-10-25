@@ -122,12 +122,6 @@ export default function HomeScreen() {
         onModeChange={setMode}
         onMonthChange={setSelectedMonth}
       />
-      <Button
-        icon="plus-circle-outline"
-        onPress={() => router.push("/(app)/(tabs)/sell")}
-      >
-        Mulai transaksi baru
-      </Button>
 
       {loadError ? (
         <Card style={responsive.loadError}>

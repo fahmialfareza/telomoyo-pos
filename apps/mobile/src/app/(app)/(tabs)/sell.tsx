@@ -14,7 +14,8 @@ import {
 import { useAuth } from "@/auth/AuthProvider";
 import { AppScreen } from "@/components/layout/AppScreen";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { PaymentMethodSelector } from "@/components/transactions/PaymentMethodSelector";
+import { ActionGroup } from "@/components/ui/ActionGroup";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
@@ -258,15 +259,18 @@ export default function SaleComposerScreen() {
               title="Transaksi baru"
             />
             <View style={responsive.sectionHeader}>
-              <View>
-                <Text style={responsive.sectionEyebrow}>KATALOG AKTIF</Text>
-                <Text style={responsive.sectionTitle}>Pilih paket</Text>
-              </View>
-              <View style={responsive.packageCount}>
-                <Text style={responsive.packageCountText}>
-                  {packages.length}
-                </Text>
-              </View>
+              <Text style={responsive.sectionTitle}>Pilih paket</Text>
+              {selectedItemCount > 0 ? (
+                <Button
+                  compact
+                  disabled={saving}
+                  icon="close-circle-outline"
+                  onPress={() => setQuantities({})}
+                  variant="ghost"
+                >
+                  Kosongkan
+                </Button>
+              ) : null}
             </View>
             {packageError && packages.length > 0 ? (
               <Text accessibilityRole="alert" style={responsive.error}>
@@ -301,52 +305,46 @@ const PackageSelectorCard = memo(function PackageSelectorCard({
       : item.accent === "standard"
         ? colors.standard
         : colors.primary;
-  const label =
-    item.accent === "sunrise"
-      ? "SUNRISE"
-      : item.accent === "standard"
-        ? "STANDAR"
-        : "PAKET";
 
   return (
-    <Card
-      style={[
-        responsive.packageCard,
-        {
-          borderColor: quantity > 0 ? accent : colors.outline,
-          borderLeftColor: accent,
-        },
-      ]}
+    // Tapping anywhere on the row adds one unit. Not exposed as its own
+    // accessibility element so TalkBack still reaches the stepper buttons.
+    <Pressable
+      accessible={false}
+      onPress={() => onChange(item.id, Math.min(999, quantity + 1))}
     >
-      <View style={responsive.packageTop}>
-        <View style={responsive.packageCopy}>
-          <Text style={[responsive.packageLabel, { color: accent }]}>
-            {label}
-          </Text>
-          <Text style={responsive.packageName}>{item.name}</Text>
-        </View>
-        {quantity > 0 ? (
-          <View style={[responsive.selectedBadge, { backgroundColor: accent }]}>
-            <Icon color={colors.onPrimary} name="check" size={16} />
+      {({ pressed }) => (
+        <Card
+          style={[
+            responsive.packageCard,
+            {
+              borderColor: quantity > 0 ? accent : colors.outline,
+              borderLeftColor: accent,
+            },
+            ...(quantity > 0 ? [responsive.packageCardSelected] : []),
+            ...(pressed ? [responsive.packageCardPressed] : []),
+          ]}
+        >
+          <View style={responsive.packageCopy}>
+            <Text numberOfLines={2} style={responsive.packageName}>
+              {item.name}
+            </Text>
+            {item.description ? (
+              <Text numberOfLines={1} style={responsive.description}>
+                {item.description}
+              </Text>
+            ) : null}
+            <Text style={[responsive.packagePrice, { color: accent }]}>
+              {formatRupiah(item.unitPrice)}
+            </Text>
           </View>
-        ) : null}
-      </View>
-      <Text numberOfLines={2} style={responsive.description}>
-        {item.description}
-      </Text>
-      <View style={responsive.packageBottom}>
-        <View>
-          <Text style={responsive.priceLabel}>HARGA SATUAN</Text>
-          <Text style={[responsive.packagePrice, { color: accent }]}>
-            {formatRupiah(item.unitPrice)}
-          </Text>
-        </View>
-        <QuantityStepper
-          onChange={(nextQuantity) => onChange(item.id, nextQuantity)}
-          value={quantity}
-        />
-      </View>
-    </Card>
+          <QuantityStepper
+            onChange={(nextQuantity) => onChange(item.id, nextQuantity)}
+            value={quantity}
+          />
+        </Card>
+      )}
+    </Pressable>
   );
 });
 
@@ -403,7 +401,7 @@ function StickyTransactionSummary({
     <Card padded={false} style={responsive.stickySummary}>
       {summaryExpanded ? (
         <View style={responsive.stickySummaryHeader}>
-          <Text style={responsive.sectionEyebrow}>RINGKASAN</Text>
+          <Text style={responsive.stickyTotalLabel}>Ringkasan</Text>
           <Text style={responsive.stickySummaryMeta}>
             {packageCount === 0
               ? "Belum ada paket dipilih"
@@ -448,24 +446,32 @@ function StickyTransactionSummary({
           {formatRupiah(total)}
         </Text>
       </View>
-      <PaymentMethodSelector
-        actionHint="Pilihan ini langsung menyimpan transaksi dan memulai pencetakan."
-        disabled={disabled || loading}
-        label="PILIH METODE UNTUK SIMPAN"
-        onChange={onPaymentMethodChange}
-        qrisDisabled={!qrisConfigChecked || !qrisAvailable}
-        qrisDisabledReason={
-          qrisConfigChecked
+      <ActionGroup horizontal>
+        <Button
+          accessibilityHint="Menyimpan transaksi tunai dan mencetak struk."
+          disabled={disabled}
+          icon="cash"
+          loading={loading}
+          onPress={() => onPaymentMethodChange("cash")}
+        >
+          Bayar Tunai
+        </Button>
+        <Button
+          accessibilityHint="Menyimpan transaksi dan menampilkan QRIS untuk dibayar."
+          disabled={disabled || !qrisConfigChecked || !qrisAvailable}
+          icon="qrcode-scan"
+          loading={loading}
+          onPress={() => onPaymentMethodChange("qris")}
+        >
+          Bayar QRIS
+        </Button>
+      </ActionGroup>
+      {!qrisConfigChecked || !qrisAvailable ? (
+        <Text style={responsive.stickySummaryMeta}>
+          {qrisConfigChecked
             ? "QRIS belum dikonfigurasi oleh superadmin."
-            : "Memeriksa konfigurasi QRIS…"
-        }
-        value={null}
-      />
-      {loading ? (
-        <View style={responsive.savingRow}>
-          <ActivityIndicator color={colors.primary} />
-          <Text style={responsive.stickySummaryMeta}>Menyimpan transaksi…</Text>
-        </View>
+            : "Memeriksa konfigurasi QRIS…"}
+        </Text>
       ) : null}
       {error ? (
         <Text accessibilityRole="alert" style={responsive.stickyError}>
@@ -497,65 +503,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  sectionEyebrow: {
-    ...textStyles.label,
-    color: colors.primary,
-    fontSize: 10,
-  },
-  sectionTitle: { ...textStyles.heading, marginTop: 2 },
-  packageCount: {
-    minWidth: 36,
-    height: 36,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.container,
-  },
-  packageCountText: {
-    ...textStyles.body,
-    fontFamily: typography.bodySemibold,
-    color: colors.primary,
-  },
+  sectionTitle: { ...textStyles.heading },
   packageCard: {
     borderLeftWidth: 5,
-    gap: spacing.sm,
-  },
-  packageTop: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: spacing.sm,
+    paddingVertical: spacing.sm,
   },
+  packageCardSelected: { backgroundColor: colors.surfaceBright },
+  packageCardPressed: { opacity: 0.85 },
   packageCopy: { flex: 1, gap: 2 },
-  packageLabel: { ...textStyles.label, fontSize: 10 },
   packageName: {
     fontFamily: typography.heading,
     fontSize: 18,
     color: colors.text,
   },
   description: { ...textStyles.body, color: colors.textMuted, fontSize: 13 },
-  selectedBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  packageBottom: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.outline,
-  },
-  priceLabel: { ...textStyles.label, fontSize: 9 },
   packagePrice: {
     fontFamily: typography.heading,
-    fontSize: 18,
-    marginTop: 2,
+    fontSize: 16,
   },
   packageSeparator: { height: spacing.sm },
   stickySummary: {
@@ -564,11 +531,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radius.md,
     backgroundColor: colors.card,
-  },
-  savingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
   },
   stickySummaryHeader: {
     flexDirection: "row",
