@@ -151,6 +151,7 @@ jest.mock("@/components/ui/Button", () => {
 const emptyStats: DashboardStats = {
   gross: 0,
   actualQrisAmount: 0,
+  cashAmount: 0,
   transactionCount: 0,
   quantities: [],
   buckets: Array(24).fill(0),
@@ -159,8 +160,16 @@ const emptyStats: DashboardStats = {
 const populatedStats: DashboardStats = {
   gross: 170_000,
   actualQrisAmount: 0,
+  cashAmount: 170_000,
   transactionCount: 2,
-  quantities: [{ name: "Paket Standar", quantity: 3, accent: "standard" }],
+  quantities: [
+    {
+      name: "Paket Standar",
+      quantity: 3,
+      accent: "standard",
+      revenue: 170_000,
+    },
+  ],
   buckets: [...Array(23).fill(0), 170_000],
 };
 

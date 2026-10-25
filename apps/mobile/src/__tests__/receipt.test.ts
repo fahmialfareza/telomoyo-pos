@@ -3,8 +3,13 @@ import {
   encodeEscPosQris,
   formatQrisSlip,
   formatReceipt,
+  formatRecap,
 } from "@/printer/receipt";
-import type { QrisPrintDocument, ReceiptDocument } from "@/printer/types";
+import type {
+  QrisPrintDocument,
+  ReceiptDocument,
+  RecapPrintDocument,
+} from "@/printer/types";
 import QRCode from "qrcode";
 
 const receipt: ReceiptDocument = {
@@ -361,5 +366,67 @@ describe("cash received on receipts", () => {
     expect(
       formatReceipt({ ...receipt, paymentMethod: "cash" }, 32),
     ).not.toContain("Kembalian");
+  });
+});
+
+describe("recap print", () => {
+  const recap: RecapPrintDocument = {
+    title: "REKAP HARIAN",
+    periodLabel: "Minggu, 25 Oktober 2026",
+    printedAt: "2026-10-25T10:00:00.000Z",
+    businessName: "Sewa Motor Telomoyo",
+    stats: {
+      gross: 340_000,
+      actualQrisAmount: 200_000,
+      cashAmount: 140_000,
+      transactionCount: 3,
+      quantities: [
+        {
+          name: "Paket Sunrise Telomoyo Sampai Puncak",
+          quantity: 2,
+          accent: "sunrise",
+          revenue: 200_000,
+        },
+        {
+          name: "Paket Standar",
+          quantity: 7,
+          accent: "standard",
+          revenue: 140_000,
+        },
+      ],
+      buckets: [],
+    },
+    pendingCount: 2,
+    dataMode: "production",
+  };
+
+  it.each([32, 48] as const)(
+    "fits totals, method split and packages in %i columns",
+    (columns) => {
+      const output = formatRecap(recap, columns);
+      expect(output).toContain("REKAP HARIAN");
+      expect(output).toMatch(/Transaksi lunas\s+3/);
+      expect(output).toMatch(/PENDAPATAN\s+Rp 340\.000/);
+      expect(output).toMatch(/Tunai\s+Rp 140\.000/);
+      expect(output).toMatch(/QRIS\s+Rp 200\.000/);
+      expect(output).toMatch(/7 unit\s+Rp 140\.000/);
+      expect(output.replace(/\s+/g, " ")).toContain(
+        "2 perubahan belum sinkron",
+      );
+      for (const line of output.split("\n")) {
+        expect(line.length).toBeLessThanOrEqual(columns);
+      }
+    },
+  );
+
+  it("marks sandbox recaps and omits the sync warning when clean", () => {
+    const output = formatRecap(
+      { ...recap, pendingCount: 0, dataMode: "sandbox" },
+      32,
+    );
+    expect(output).toContain("TEST - MODE UJI");
+    expect(output).toContain("BUKAN LAPORAN RESMI");
+    expect(output).toMatch(/QRIS nyata\s+Rp 200\.000/);
+    expect(output).not.toContain("belum sinkron");
   });
 });

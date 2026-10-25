@@ -78,6 +78,11 @@ function formatMonth(month: CalendarMonthKey): string {
   return monthFormatter.format(monthInstant(year, monthNumber));
 }
 
+export {
+  formatDate as formatReportingDate,
+  formatMonth as formatReportingMonth,
+};
+
 export function DateMonthFilter({
   mode,
   date,

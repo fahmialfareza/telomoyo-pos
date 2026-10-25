@@ -1,6 +1,6 @@
 import { bytesToBase64 } from "@/security/secure-store";
 
-import { encodeEscPos, encodeEscPosQris } from "./receipt";
+import { encodeEscPos, encodeEscPosQris, encodeEscPosRecap } from "./receipt";
 import { SewaPrinterNative } from "./native";
 import type {
   PrinterDevice,
@@ -9,6 +9,7 @@ import type {
   QrisPrintDocument,
   ReceiptDocument,
   ReceiptPrinter,
+  RecapPrintDocument,
 } from "./types";
 
 // Cheap SPP printers have small RX buffers (~512B), so the job is still
@@ -110,6 +111,30 @@ export class BluetoothEscPosPrinter implements ReceiptPrinter {
     }
   }
 
+  async printRecap(document: RecapPrintDocument): Promise<PrinterResult> {
+    const status = await this.status();
+    if (!status.ready) return { status: "failed", message: status.message };
+    const bytes = encodeEscPosRecap(document, this.columns);
+    try {
+      const written = await writeBluetoothPaced(bytes);
+      return written === bytes.length
+        ? { status: "success" }
+        : {
+            status: "unknown",
+            message:
+              "Jumlah byte rekap yang diterima printer tidak dapat dipastikan.",
+          };
+    } catch (error) {
+      return {
+        status: "unknown",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Koneksi terputus saat mencetak rekap.",
+      };
+    }
+  }
+
   async disconnect(): Promise<void> {
     // Small guard so a racing disconnect cannot cut a just-flushed job. The
     // settle delay already lives in writeBluetoothPaced; this covers callers
@@ -170,6 +195,23 @@ export class IntegratedVendorPrinter implements ReceiptPrinter {
           error instanceof Error
             ? error.message
             : "Printer terintegrasi gagal mencetak QRIS.",
+      };
+    }
+  }
+
+  async printRecap(document: RecapPrintDocument): Promise<PrinterResult> {
+    try {
+      await SewaPrinterNative.printIntegrated(
+        bytesToBase64(encodeEscPosRecap(document, this.columns)),
+      );
+      return { status: "success" };
+    } catch (error) {
+      return {
+        status: "failed",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Printer terintegrasi gagal mencetak rekap.",
       };
     }
   }

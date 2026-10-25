@@ -767,11 +767,14 @@ export async function getDashboardStats(
   const total = await sqlite.getFirstAsync<{
     gross: number | null;
     actual_qris_amount: number | null;
+    cash_amount: number | null;
     transaction_count: number;
   }>(
     `SELECT COALESCE(SUM(total), 0) AS gross,
             COALESCE(SUM(CASE WHEN payment_method = 'qris' THEN payment_amount ELSE 0 END), 0)
               AS actual_qris_amount,
+            COALESCE(SUM(CASE WHEN payment_method = 'cash' THEN payment_amount ELSE 0 END), 0)
+              AS cash_amount,
             COUNT(*) AS transaction_count
      FROM transactions
      WHERE deleted_at IS NULL
@@ -785,9 +788,10 @@ export async function getDashboardStats(
     name: string;
     quantity: number;
     accent: string;
+    revenue: number;
   }>(
     `SELECT i.name, SUM(i.quantity) AS quantity,
-            i.accent
+            i.accent, SUM(i.line_total) AS revenue
      FROM transaction_items i
      JOIN transactions t ON t.id = i.transaction_id AND t.revision = i.revision
      WHERE t.deleted_at IS NULL
@@ -839,6 +843,7 @@ export async function getDashboardStats(
   return {
     gross: total?.gross ?? 0,
     actualQrisAmount: total?.actual_qris_amount ?? 0,
+    cashAmount: total?.cash_amount ?? 0,
     transactionCount: total?.transaction_count ?? 0,
     quantities,
     buckets,

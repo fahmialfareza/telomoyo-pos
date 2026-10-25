@@ -5,8 +5,9 @@ import type {
   QrisPrintDocument,
   ReceiptDocument,
   ReceiptPrinter,
+  RecapPrintDocument,
 } from "./types";
-import { formatQrisSlip, formatReceipt } from "./receipt";
+import { formatQrisSlip, formatReceipt, formatRecap } from "./receipt";
 
 export type SimulatorOutcome = "success" | "failed" | "unknown";
 
@@ -67,6 +68,23 @@ export class SimulatorPrinter implements ReceiptPrinter {
       return {
         status: "unknown",
         message: "Simulasi QRIS belum dapat dipastikan.",
+      };
+    }
+    return { status: "success" };
+  }
+
+  async printRecap(document: RecapPrintDocument): Promise<PrinterResult> {
+    if (!this.connected) {
+      return { status: "failed", message: "Simulator belum tersambung." };
+    }
+    this.lastOutput = formatRecap(document, this.columns);
+    if (this.outcome === "failed") {
+      return { status: "failed", message: "Kegagalan simulator terencana." };
+    }
+    if (this.outcome === "unknown") {
+      return {
+        status: "unknown",
+        message: "Simulasi rekap belum dapat dipastikan.",
       };
     }
     return { status: "success" };

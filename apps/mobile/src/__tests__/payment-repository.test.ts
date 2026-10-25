@@ -1256,11 +1256,18 @@ describe("payment-aware transaction repository", () => {
   it("counts only payments confirmed for their current revision in dashboard SQL", async () => {
     mockGetFirstAsync.mockResolvedValueOnce({
       gross: 170_000,
+      actual_qris_amount: 100_000,
+      cash_amount: 70_000,
       transaction_count: 2,
     });
     mockGetAllAsync
       .mockResolvedValueOnce([
-        { name: "Paket Standar", quantity: 3, accent: "standard" },
+        {
+          name: "Paket Standar",
+          quantity: 3,
+          accent: "standard",
+          revenue: 170_000,
+        },
       ])
       .mockResolvedValueOnce([
         { bucket: 0, amount: 70_000 },
@@ -1300,10 +1307,23 @@ describe("payment-aware transaction repository", () => {
       requestedRange.from,
       requestedRange.to,
     );
+    expect(sql).toContain(
+      "CASE WHEN payment_method = 'cash' THEN payment_amount ELSE 0 END",
+    );
+    expect(sql).toContain("SUM(i.line_total) AS revenue");
     expect(stats).toMatchObject({
       gross: 170_000,
+      actualQrisAmount: 100_000,
+      cashAmount: 70_000,
       transactionCount: 2,
-      quantities: [{ name: "Paket Standar", quantity: 3, accent: "standard" }],
+      quantities: [
+        {
+          name: "Paket Standar",
+          quantity: 3,
+          accent: "standard",
+          revenue: 170_000,
+        },
+      ],
     });
     expect(stats.buckets).toHaveLength(24);
     expect(stats.buckets[0]).toBe(70_000);

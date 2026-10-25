@@ -1,5 +1,6 @@
 import type {
   BusinessProfile,
+  DashboardStats,
   DataMode,
   PaymentMethod,
   Transaction,
@@ -39,6 +40,17 @@ export interface QrisPrintDocument {
   dataMode: DataMode;
 }
 
+/** End-of-day (or month) summary for handing over the cash drawer. */
+export interface RecapPrintDocument {
+  title: "REKAP HARIAN" | "REKAP BULANAN";
+  periodLabel: string;
+  printedAt: string;
+  businessName?: string;
+  stats: DashboardStats;
+  pendingCount: number;
+  dataMode: DataMode;
+}
+
 export interface PrinterDevice {
   id: string;
   name: string;
@@ -63,6 +75,7 @@ export interface ReceiptPrinter {
   status(): Promise<PrinterStatus>;
   print(document: ReceiptDocument): Promise<PrinterResult>;
   printQris(document: QrisPrintDocument): Promise<PrinterResult>;
+  printRecap(document: RecapPrintDocument): Promise<PrinterResult>;
   disconnect(): Promise<void>;
 }
 

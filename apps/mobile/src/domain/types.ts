@@ -122,7 +122,14 @@ export interface SyncConflict {
 export interface DashboardStats {
   gross: number;
   actualQrisAmount: number;
+  /** Cash collected (payment amount of paid cash transactions). */
+  cashAmount: number;
   transactionCount: number;
-  quantities: { name: string; quantity: number; accent: string }[];
+  quantities: {
+    name: string;
+    quantity: number;
+    accent: string;
+    revenue: number;
+  }[];
   buckets: number[];
 }

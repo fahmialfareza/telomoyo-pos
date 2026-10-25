@@ -30,6 +30,7 @@ import {
 const emptyStats: DashboardStats = {
   gross: 0,
   actualQrisAmount: 0,
+  cashAmount: 0,
   transactionCount: 0,
   quantities: [],
   buckets: Array(24).fill(0),
@@ -230,6 +231,14 @@ export default function HomeScreen() {
           </Text>
         </Card>
       </View>
+
+      <Button
+        icon="file-chart-outline"
+        onPress={() => router.push("/reports/recap")}
+        variant="secondary"
+      >
+        Rekap & serah terima kas
+      </Button>
 
       <View style={responsive.sectionHeader}>
         <Text style={responsiveText.heading}>Transaksi terkini</Text>

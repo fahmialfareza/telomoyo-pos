@@ -1,8 +1,12 @@
-import { displayTransactionId } from "@/utils/format";
+import { displayTransactionId, formatJakartaDateTime } from "@/utils/format";
 import { paymentMethodLabel } from "@/domain/payments";
 import QRCode from "qrcode";
 
-import type { QrisPrintDocument, ReceiptDocument } from "./types";
+import type {
+  QrisPrintDocument,
+  ReceiptDocument,
+  RecapPrintDocument,
+} from "./types";
 
 function rupiah(value: number): string {
   return `Rp ${Math.trunc(value).toLocaleString("id-ID")}`;
@@ -167,9 +171,88 @@ export function formatReceipt(
   return `${fitReceiptLines(output, columns).join("\n")}\n`;
 }
 
+export function formatRecap(
+  document: RecapPrintDocument,
+  columns: 32 | 48,
+): string {
+  const rule = "-".repeat(columns);
+  const sandbox = document.dataMode === "sandbox";
+  const { stats } = document;
+  const output = [
+    sandbox ? center("TEST - MODE UJI", columns) : "",
+    sandbox ? rule : "",
+    ...centerLines(document.businessName ?? "TELOMOYO POS", columns),
+    center(document.title, columns),
+    ...centerLines(document.periodLabel, columns),
+    rule,
+    twoColumns("Transaksi lunas", String(stats.transactionCount), columns),
+    twoColumns("PENDAPATAN", rupiah(stats.gross), columns),
+    rule,
+    twoColumns("Tunai", rupiah(stats.cashAmount), columns),
+    twoColumns(
+      sandbox ? "QRIS nyata" : "QRIS",
+      rupiah(stats.actualQrisAmount),
+      columns,
+    ),
+    rule,
+  ].filter((line) => line !== "");
+
+  if (stats.quantities.length === 0) {
+    output.push("Belum ada paket terjual");
+  }
+  for (const item of stats.quantities) {
+    output.push(...wrapPrinterLine(item.name, columns));
+    output.push(
+      twoColumns(`${item.quantity} unit`, rupiah(item.revenue), columns),
+    );
+  }
+  output.push(
+    rule,
+    ...(document.pendingCount > 0
+      ? [
+          ...wrapPrinterLine(
+            `PERHATIAN: ${document.pendingCount} perubahan belum sinkron`,
+            columns,
+          ),
+          rule,
+        ]
+      : []),
+    ...wrapPrinterLine(
+      `Dicetak ${formatJakartaDateTime(document.printedAt)}`,
+      columns,
+    ),
+    ...(sandbox ? [rule, center("BUKAN LAPORAN RESMI", columns)] : []),
+    "",
+    "",
+    "",
+  );
+  return `${fitReceiptLines(output, columns).join("\n")}\n`;
+}
+
+export function encodeEscPosRecap(
+  document: RecapPrintDocument,
+  columns: 32 | 48,
+): Uint8Array {
+  return encodeTextJob(formatRecap(document, columns), document.dataMode, [
+    "TEST - MODE UJI",
+    "BUKAN LAPORAN RESMI",
+  ]);
+}
+
 export function encodeEscPos(
   document: ReceiptDocument,
   columns: 32 | 48,
+): Uint8Array {
+  return encodeTextJob(formatReceipt(document, columns), document.dataMode, [
+    "TEST - MODE UJI",
+    "BUKAN STRUK RESMI",
+  ]);
+}
+
+function encodeTextJob(
+  text: string,
+  dataMode: ReceiptDocument["dataMode"],
+  centeredWarnings: string[],
 ): Uint8Array {
   const initialize = Uint8Array.from([0x1b, 0x40]);
   const fontA = Uint8Array.from([0x1b, 0x4d, 0x00]);
@@ -186,11 +269,10 @@ export function encodeEscPos(
   // settle delay, so the full-bold job (slower, hotter head) is not truncated
   // by buffer overrun or early disconnect.
   const chunks: Uint8Array[] = [initialize, fontA, leftAlign, boldOn];
-  for (const line of formatReceipt(document, columns).split("\n")) {
+  for (const line of text.split("\n")) {
     const trimmed = line.trim();
     const warning =
-      document.dataMode === "sandbox" &&
-      (trimmed === "TEST - MODE UJI" || trimmed === "BUKAN STRUK RESMI");
+      dataMode === "sandbox" && centeredWarnings.includes(trimmed);
     if (warning) {
       chunks.push(centerAlign, encodePrinterText(`${trimmed}\n`), leftAlign);
       continue;
