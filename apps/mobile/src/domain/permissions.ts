@@ -19,6 +19,12 @@ export function canCorrectTransaction(
 
 export const canManageTransactionPayment = canCorrectTransaction;
 
+/** Exporting a period's sales leaves the device, so it is limited to the
+ * business owner role, like other organization-wide data. */
+export function canExportReports(session: Session | null | undefined): boolean {
+  return session?.user.role === "superadmin";
+}
+
 /**
  * Organization-wide administration (Pengguna, Kelola tenant, audit) belongs to an
  * active Superadmin session. The account context and a selected-business context

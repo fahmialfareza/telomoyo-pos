@@ -14,9 +14,11 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StateView } from "@/components/ui/StateView";
 import { getDashboardStats } from "@/db/repositories";
+import { canExportReports } from "@/domain/permissions";
 import type { DashboardStats } from "@/domain/types";
 import { getConfiguredPrinter } from "@/printer/service";
 import type { RecapPrintDocument } from "@/printer/types";
+import { shareTransactionsCsv } from "@/reports/transactions-csv";
 import { useSyncRuntime } from "@/sync/SyncProvider";
 import { themed, useResponsiveStyles } from "@/theme/responsive";
 import { useThemeColors } from "@/theme/ThemeContext";
@@ -41,6 +43,7 @@ export default function RecapScreen() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [printing, setPrinting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [printMessage, setPrintMessage] = useState<{
     tone: "success" | "error";
     text: string;
@@ -115,6 +118,36 @@ export default function RecapScreen() {
     } finally {
       await printer?.disconnect().catch(() => undefined);
       setPrinting(false);
+    }
+  };
+
+  const exportCsv = async () => {
+    if (!session || exporting) return;
+    setExporting(true);
+    setPrintMessage(null);
+    try {
+      const shared = await shareTransactionsCsv({
+        range:
+          mode === "date"
+            ? reportingRange("date", selectedDate)
+            : reportingRange("month", selectedMonth),
+        fileLabel: mode === "date" ? selectedDate : selectedMonth,
+        scope: session,
+        dataMode: session.dataMode,
+      });
+      if (!shared) {
+        setPrintMessage({
+          tone: "error",
+          text: "Tidak ada transaksi lunas untuk diekspor pada periode ini.",
+        });
+      }
+    } catch (reason) {
+      setPrintMessage({
+        tone: "error",
+        text: toUserFacingErrorMessage(reason, "Laporan tidak dapat diekspor."),
+      });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -221,6 +254,17 @@ export default function RecapScreen() {
           >
             Cetak rekap
           </Button>
+          {canExportReports(session) ? (
+            <Button
+              disabled={!stats || stats.transactionCount === 0}
+              icon="file-delimited-outline"
+              loading={exporting}
+              onPress={() => void exportCsv()}
+              variant="secondary"
+            >
+              Ekspor CSV
+            </Button>
+          ) : null}
           {printMessage ? (
             <Text
               accessibilityRole={

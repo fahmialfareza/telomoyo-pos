@@ -11,8 +11,9 @@ let mockPendingCount = 0;
 const mockSession = {
   dataMode: "production",
   tenant: { name: "Sewa Motor Telomoyo" },
-  user: { fullName: "Andi" },
+  user: { fullName: "Andi", role: "admin" },
 };
+const mockShareTransactionsCsv = jest.fn();
 
 jest.mock("expo-router", () => {
   const React = jest.requireActual<typeof import("react")>("react");
@@ -33,6 +34,10 @@ jest.mock("@/printer/service", () => ({
     config: { address: null, paperColumns: 32 },
     printer: mockPrinter,
   }),
+}));
+jest.mock("@/reports/transactions-csv", () => ({
+  shareTransactionsCsv: (...args: unknown[]) =>
+    mockShareTransactionsCsv(...args),
 }));
 jest.mock("@/sync/SyncProvider", () => ({
   useSyncRuntime: () => ({ pendingCount: mockPendingCount }),
@@ -77,6 +82,8 @@ beforeEach(() => {
   mockGetDashboardStats.mockReset().mockResolvedValue(stats);
   mockPrinter.lastOutput = null;
   mockPendingCount = 0;
+  mockSession.user.role = "admin";
+  mockShareTransactionsCsv.mockReset().mockResolvedValue(true);
 });
 
 it("shows totals, the cash/QRIS split and per-package revenue", async () => {
@@ -103,5 +110,26 @@ it("warns about unsynced changes and prints the recap", async () => {
   expect(mockPrinter.lastOutput).toContain("Sewa Motor Telomoyo");
   expect(mockPrinter.lastOutput?.replace(/\s+/g, " ")).toContain(
     "2 perubahan belum sinkron",
+  );
+});
+
+it("offers CSV export to superadmins only and shares the selected period", async () => {
+  const admin = render(<RecapScreen />);
+  await admin.findByText("Rp 340.000");
+  expect(admin.queryByRole("button", { name: "Ekspor CSV" })).toBeNull();
+  admin.unmount();
+
+  mockSession.user.role = "superadmin";
+  const screen = render(<RecapScreen />);
+  await screen.findByText("Rp 340.000");
+  await act(async () => {
+    fireEvent.press(screen.getByRole("button", { name: "Ekspor CSV" }));
+  });
+  expect(mockShareTransactionsCsv).toHaveBeenCalledWith(
+    expect.objectContaining({
+      dataMode: "production",
+      fileLabel: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      range: expect.objectContaining({ mode: "date" }),
+    }),
   );
 });

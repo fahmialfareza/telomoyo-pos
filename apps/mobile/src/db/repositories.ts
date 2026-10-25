@@ -759,6 +759,51 @@ export async function listHistoryCreatorOptions(
   );
 }
 
+export interface ExportTransactionLine {
+  transactionId: string;
+  occurredAt: string;
+  cashierName: string;
+  paymentMethod: PaymentMethod;
+  syncState: SyncState;
+  transactionTotal: number;
+  paymentAmount: number;
+  itemName: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
+/** One row per item of each paid current-revision transaction in the range,
+ * using the same paid filters as the dashboard so totals reconcile. */
+export async function listTransactionsForExport(
+  range: ReportingRange,
+  scope?: LocalScope,
+): Promise<ExportTransactionLine[]> {
+  const { sqlite } = await getDatabase(scope);
+  return sqlite.getAllAsync<ExportTransactionLine>(
+    `SELECT t.id AS transactionId,
+            t.occurred_at AS occurredAt,
+            t.origin_actor_name AS cashierName,
+            t.payment_method AS paymentMethod,
+            t.sync_state AS syncState,
+            t.total AS transactionTotal,
+            t.payment_amount AS paymentAmount,
+            i.name AS itemName,
+            i.quantity AS quantity,
+            i.unit_price AS unitPrice,
+            i.line_total AS lineTotal
+     FROM transactions t
+     JOIN transaction_items i ON i.transaction_id = t.id AND i.revision = t.revision
+     WHERE t.deleted_at IS NULL
+       AND t.payment_status = 'success'
+       AND t.payment_confirmed_revision = t.revision
+       AND t.occurred_at >= ? AND t.occurred_at < ?
+     ORDER BY t.occurred_at, t.id, i.name`,
+    range.from,
+    range.to,
+  );
+}
+
 export async function getDashboardStats(
   range: ReportingRange,
   scope?: LocalScope,
