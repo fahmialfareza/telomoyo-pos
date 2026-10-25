@@ -45,6 +45,10 @@ jest.mock("@/mode/mode-store", () => ({
   setModeFromSession: (...args: unknown[]) => mockSetModeFromSession(...args),
 }));
 
+jest.mock("@/security/terminal-identity", () => ({
+  // The device holds the key of the terminal returned by switch-mode.
+  bindServerTerminal: jest.fn(async () => true),
+}));
 jest.mock("@/sync/engine", () => ({
   runSync: (...args: unknown[]) => mockRunSync(...args),
 }));

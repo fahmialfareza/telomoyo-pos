@@ -12,6 +12,7 @@ import {
   writeTerminalIdentity,
   getOrCreateInstallationId,
   preserveTerminalIdentity,
+  readRetiredTerminalIdentity,
   type TerminalIdentityRecord,
 } from "./secure-store";
 
@@ -68,6 +69,54 @@ export async function markTerminalRevoked(
     },
     tenantId,
   );
+}
+
+function sameBase64Key(publicKeyHex: string, serverPublicKey: string): boolean {
+  const strip = (value: string) => value.replace(/=+$/, "");
+  return (
+    strip(bytesToBase64(hexToBytes(publicKeyHex))) === strip(serverPublicKey)
+  );
+}
+
+/**
+ * Adopts a terminal the server matched by installation ID only when this
+ * device holds that terminal's private key. Login does not check keys, so
+ * after a key rotation (e.g. a login that briefly found no terminal) blindly
+ * adopting the server ID would sign every operation with the wrong key and the
+ * server would reject them all with INVALID_TERMINAL_SIGNATURE.
+ *
+ * Returns true when the device is enrolled with a matching key, restoring the
+ * retired key for that terminal if it was rotated away.
+ */
+export async function bindServerTerminal(
+  terminal: { id: string; publicKey: string },
+  tenantId: string = activeTenantId(),
+): Promise<boolean> {
+  const current = await getOrCreateTerminalIdentity(tenantId);
+  if (sameBase64Key(current.publicKeyHex, terminal.publicKey)) {
+    await markTerminalEnrolled(terminal.id, tenantId);
+    return true;
+  }
+  const retired = await readRetiredTerminalIdentity(tenantId, terminal.id);
+  if (retired && sameBase64Key(retired.publicKeyHex, terminal.publicKey)) {
+    await writeTerminalIdentity(
+      {
+        ...retired,
+        serverTerminalId: terminal.id,
+        enrolledAt: retired.enrolledAt ?? new Date().toISOString(),
+      },
+      tenantId,
+    );
+    return true;
+  }
+  // No local key matches: never sign under this terminal ID.
+  if (current.serverTerminalId === terminal.id) {
+    await writeTerminalIdentity(
+      { ...current, serverTerminalId: null, enrolledAt: null },
+      tenantId,
+    );
+  }
+  return false;
 }
 
 export async function signCanonicalPayload(

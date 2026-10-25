@@ -51,6 +51,7 @@ import {
 import {
   getOrCreateTerminalIdentity,
   getTerminalPublicKeyBase64,
+  bindServerTerminal,
   markTerminalEnrolled,
   markTerminalRevoked,
 } from "@/security/terminal-identity";
@@ -65,6 +66,9 @@ import {
   quarantineScope,
   SCOPE_ACCESS_CODES,
 } from "@/tenant/quarantine";
+
+export const TERMINAL_KEY_MISMATCH_MESSAGE =
+  "Kunci keamanan perangkat ini tidak cocok dengan terminal yang terdaftar di server, jadi transaksi baru tidak akan dikirim. Hubungi pengelola untuk mendaftarkan ulang terminal ini.";
 
 export interface AuthStore {
   session: Session | null;
@@ -349,11 +353,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       session.tenantId ?? INITIAL_TENANT_ID,
     );
     if (result.terminal) {
-      await markTerminalEnrolled(
-        result.terminal.id,
+      const bound = await bindServerTerminal(
+        result.terminal,
         session.tenantId ?? INITIAL_TENANT_ID,
       );
-      set({ terminalEnrolled: true });
+      set(
+        bound
+          ? { terminalEnrolled: true }
+          : { terminalEnrolled: false, notice: TERMINAL_KEY_MISMATCH_MESSAGE },
+      );
       return;
     }
     if (terminal.serverTerminalId) {
@@ -466,14 +474,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({ scopeLocked: false, terminalEnrolled: false });
       if (!replacement.contextKind || replacement.contextKind === "tenant") {
         await markScopeRevalidated(replacement);
-        if (result.terminal) {
-          await markTerminalEnrolled(
-            result.terminal.id,
-            replacement.tenantId ?? INITIAL_TENANT_ID,
-          );
+        const bound = result.terminal
+          ? await bindServerTerminal(
+              result.terminal,
+              replacement.tenantId ?? INITIAL_TENANT_ID,
+            )
+          : false;
+        if (bound) {
           set({ terminalEnrolled: true });
           const summary = await runSync(replacement);
           await hydrateSyncStateForSession(replacement, summary);
+        } else if (result.terminal) {
+          set({ notice: TERMINAL_KEY_MISMATCH_MESSAGE });
         } else {
           const terminal = await getOrCreateTerminalIdentity(
             replacement.tenantId ?? INITIAL_TENANT_ID,

@@ -227,6 +227,15 @@ export async function preserveTerminalIdentity(
     );
 }
 
+export async function readRetiredTerminalIdentity(
+  tenantId: string,
+  serverTerminalId: string,
+): Promise<TerminalIdentityRecord | null> {
+  return readJson<TerminalIdentityRecord>(
+    `${keys.terminal}.${tenantId}.retired.${serverTerminalId}`,
+  );
+}
+
 export async function getOrCreateInstallationId(): Promise<string> {
   const legacy = await readTerminalIdentity(INITIAL_TENANT_ID);
   if (legacy) return legacy.installationId;

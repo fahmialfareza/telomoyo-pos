@@ -2,7 +2,8 @@ import { ApiError, apiRequest } from "@/api/client";
 import type { LoginResponse } from "@/api/contracts";
 import { sessionFromLoginResponse } from "@/auth/session";
 import { clearLocalDatabase, prepareDatabaseForSession } from "@/db/client";
-import type { DataMode, Session } from "@/domain/types";
+import { INITIAL_TENANT_ID, type DataMode, type Session } from "@/domain/types";
+import { bindServerTerminal } from "@/security/terminal-identity";
 import {
   clearSession,
   writeAuthNotice,
@@ -210,6 +211,14 @@ async function performRetiredSandboxRecovery(
     await writeSession(session);
     await prepareDatabaseForSession(session);
     setModeFromSession(session);
+    // Verify the device still holds this terminal's key before syncing, so a
+    // stale binding cannot push operations the server will reject.
+    const terminalEnrolled = response.terminal
+      ? await bindServerTerminal(
+          response.terminal,
+          session.tenantId ?? INITIAL_TENANT_ID,
+        )
+      : false;
     const summary = await runSync(session);
     const notice =
       targetMode === "sandbox"
@@ -218,7 +227,7 @@ async function performRetiredSandboxRecovery(
     const result: SandboxRecoveryResult = {
       session,
       summary,
-      terminalEnrolled: Boolean(response.terminal),
+      terminalEnrolled,
       notice,
     };
     entry.phase = "callbacks";

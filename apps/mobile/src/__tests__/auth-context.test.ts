@@ -52,6 +52,11 @@ jest.mock("@/security/secure-store", () => ({
 jest.mock("@/security/terminal-identity", () => ({
   getOrCreateTerminalIdentity: (...args: unknown[]) => mockGetIdentity(...args),
   markTerminalEnrolled: (...args: unknown[]) => mockMarkEnrolled(...args),
+  // These scenarios model a device that holds the server terminal's key.
+  bindServerTerminal: async (terminal: { id: string }, tenantId: string) => {
+    await mockMarkEnrolled(terminal.id, tenantId);
+    return true;
+  },
   markTerminalRevoked: jest.fn(),
 }));
 jest.mock("@/sync/engine", () => ({
