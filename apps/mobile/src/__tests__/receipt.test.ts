@@ -334,3 +334,32 @@ function countByteSequence(bytes: number[], sequence: number[]): number {
   }
   return count;
 }
+
+describe("cash received on receipts", () => {
+  const cashReceipt: ReceiptDocument = {
+    ...receipt,
+    paymentMethod: "cash",
+    cashReceived: 250_000,
+  };
+
+  it.each([32, 48] as const)(
+    "prints cash received and change on the original at %i columns",
+    (columns) => {
+      const output = formatReceipt(cashReceipt, columns);
+      expect(output).toMatch(/Tunai\s+Rp 250\.000/);
+      expect(output).toMatch(/Kembalian\s+Rp 50\.000/);
+      for (const line of output.split("\n")) {
+        expect(line.length).toBeLessThanOrEqual(columns);
+      }
+    },
+  );
+
+  it("leaves change off copies and receipts without a cash amount", () => {
+    expect(formatReceipt({ ...cashReceipt, isCopy: true }, 32)).not.toContain(
+      "Kembalian",
+    );
+    expect(
+      formatReceipt({ ...receipt, paymentMethod: "cash" }, 32),
+    ).not.toContain("Kembalian");
+  });
+});

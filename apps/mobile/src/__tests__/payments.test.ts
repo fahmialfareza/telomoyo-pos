@@ -1,8 +1,10 @@
 import {
+  cashChange,
   isPaymentConfirmedForCurrentRevision,
   paymentMethodLabel,
   resolvePaymentAmount,
   SANDBOX_QRIS_PAYMENT_AMOUNT,
+  suggestCashAmounts,
 } from "@/domain/payments";
 
 describe("payment domain", () => {
@@ -49,4 +51,23 @@ describe("payment domain", () => {
       ).toBe(total);
     },
   );
+});
+
+describe("cash change", () => {
+  it("suggests the exact total, then larger amounts at note steps", () => {
+    expect(suggestCashAmounts(140_000)).toEqual([140_000, 150_000, 200_000]);
+    expect(suggestCashAmounts(100_000)).toEqual([
+      100_000, 110_000, 150_000, 200_000,
+    ]);
+    expect(suggestCashAmounts(20_000)).toEqual([
+      20_000, 30_000, 50_000, 100_000,
+    ]);
+    expect(suggestCashAmounts(0)).toEqual([]);
+  });
+
+  it("computes change only when the cash covers the total", () => {
+    expect(cashChange(140_000, 150_000)).toBe(10_000);
+    expect(cashChange(140_000, 140_000)).toBe(0);
+    expect(cashChange(140_000, 100_000)).toBeNull();
+  });
 });

@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/auth/AuthProvider";
 import { AppScreen } from "@/components/layout/AppScreen";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { CashPaymentSheet } from "@/components/payments/CashPaymentSheet";
 import { ActionGroup } from "@/components/ui/ActionGroup";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -57,6 +58,7 @@ export default function SaleComposerScreen() {
   const savingRef = useRef(false);
   const completedRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const [cashSheetOpen, setCashSheetOpen] = useState(false);
   const [qrisAvailable, setQrisAvailable] = useState(false);
   const [qrisConfigChecked, setQrisConfigChecked] = useState(false);
 
@@ -136,7 +138,10 @@ export default function SaleComposerScreen() {
     [quantities, updateQuantity],
   );
 
-  const save = async (paymentMethod: SelectablePaymentMethod) => {
+  const save = async (
+    paymentMethod: SelectablePaymentMethod,
+    cashReceived?: number,
+  ) => {
     if (!session || total === 0 || savingRef.current || completedRef.current)
       return;
     savingRef.current = true;
@@ -174,6 +179,7 @@ export default function SaleComposerScreen() {
       );
       completedRef.current = true;
       setQuantities({});
+      setCashSheetOpen(false);
       router.push({
         pathname:
           paymentMethod === "qris"
@@ -182,7 +188,13 @@ export default function SaleComposerScreen() {
         params:
           paymentMethod === "qris"
             ? { id: transaction.id }
-            : { id: transaction.id, autoPrint: "1" },
+            : {
+                id: transaction.id,
+                autoPrint: "1",
+                ...(cashReceived !== undefined
+                  ? { cashReceived: String(cashReceived) }
+                  : {}),
+              },
       });
       void sync
         .refresh()
@@ -211,7 +223,14 @@ export default function SaleComposerScreen() {
           error={error}
           itemCount={selectedItemCount}
           loading={saving}
-          onPaymentMethodChange={(method) => void save(method)}
+          onPaymentMethodChange={(method) => {
+            if (method === "cash") {
+              setError(null);
+              setCashSheetOpen(true);
+            } else {
+              void save(method);
+            }
+          }}
           packageCount={selectedPackages.length}
           qrisAvailable={qrisAvailable}
           qrisConfigChecked={qrisConfigChecked}
@@ -221,6 +240,14 @@ export default function SaleComposerScreen() {
         />
       }
     >
+      <CashPaymentSheet
+        error={cashSheetOpen ? error : null}
+        onCancel={() => setCashSheetOpen(false)}
+        onConfirm={(cashReceived) => void save("cash", cashReceived)}
+        saving={saving}
+        total={total}
+        visible={cashSheetOpen}
+      />
       <FlashList
         contentContainerStyle={responsive.listContent}
         data={packages}
@@ -450,7 +477,7 @@ function StickyTransactionSummary({
       </View>
       <ActionGroup horizontal>
         <Button
-          accessibilityHint="Menyimpan transaksi tunai dan mencetak struk."
+          accessibilityHint="Membuka pembayaran tunai untuk menghitung kembalian."
           disabled={disabled}
           icon="cash"
           loading={loading}

@@ -33,6 +33,22 @@ export function assertSandboxSessionCurrent(session: Session): void {
   }
 }
 
+/** Quick amounts for the cash sheet: the exact total first, then the next
+ * amounts above it at Rp10k/50k/100k steps that a customer is likely to hand
+ * over. Rounding is strictly above the total, so round totals still get
+ * larger-note suggestions. */
+export function suggestCashAmounts(total: number, limit = 3): number[] {
+  if (total <= 0) return [];
+  const larger = [10_000, 50_000, 100_000].map(
+    (step) => (Math.floor(total / step) + 1) * step,
+  );
+  return [total, ...[...new Set(larger)].sort((a, b) => a - b).slice(0, limit)];
+}
+
+export function cashChange(total: number, received: number): number | null {
+  return received >= total ? received - total : null;
+}
+
 export const paymentMethodLabel: Record<PaymentMethod, string> = {
   cash: "Tunai",
   qris: "QRIS",

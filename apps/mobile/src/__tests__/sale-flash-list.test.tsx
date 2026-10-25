@@ -107,6 +107,9 @@ jest.mock("@/components/layout/PageHeader", () => {
   return { PageHeader: ({ title }: { title: string }) => <Text>{title}</Text> };
 });
 jest.mock("@/components/ui/Icon", () => ({ Icon: () => null }));
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -160,7 +163,7 @@ it("keeps package quantities and the sticky total aligned after list updates", a
   expect(within(summary).getByText("Rp 120.000")).toBeTruthy();
 });
 
-it("saves once when a payment method is tapped twice and opens automatic printing", async () => {
+it("saves once when Uang pas is tapped twice and prints with the cash received", async () => {
   let completeSave: ((value: { id: string }) => void) | undefined;
   mockCreateTransaction.mockImplementation(
     () =>
@@ -171,16 +174,18 @@ it("saves once when a payment method is tapped twice and opens automatic printin
   const screen = render(<SaleComposerScreen />);
   await screen.findByText("Paket A");
   fireEvent.press(screen.getAllByRole("button", { name: "Tambah jumlah" })[0]!);
-  const cash = screen.getByRole("button", { name: "Bayar Tunai" });
-  fireEvent.press(cash);
-  fireEvent.press(cash);
+  fireEvent.press(screen.getByRole("button", { name: "Bayar Tunai" }));
+  expect(mockCreateTransaction).not.toHaveBeenCalled();
+  const exact = screen.getByRole("button", { name: "Uang pas" });
+  fireEvent.press(exact);
+  fireEvent.press(exact);
   expect(mockCreateTransaction).toHaveBeenCalledTimes(1);
   expect(mockCreateTransaction.mock.calls[0]?.[1]).toBe("cash");
   completeSave?.({ id: "transaction-1" });
   await waitFor(() =>
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/transactions/[id]/print",
-      params: { id: "transaction-1", autoPrint: "1" },
+      params: { id: "transaction-1", autoPrint: "1", cashReceived: "20000" },
     }),
   );
 });
@@ -223,4 +228,29 @@ it("adds a unit when the package row is tapped and clears the cart", async () =>
   fireEvent.press(screen.getByRole("button", { name: "Kosongkan" }));
   expect(within(summary).getByText("Rp 0")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Kosongkan" })).toBeNull();
+});
+
+it("shows change for a typed amount and only saves once it covers the total", async () => {
+  const screen = render(<SaleComposerScreen />);
+  await screen.findByText("Paket A");
+  fireEvent.press(screen.getAllByRole("button", { name: "Tambah jumlah" })[1]!);
+  fireEvent.press(screen.getByRole("button", { name: "Bayar Tunai" }));
+  const input = screen.getByLabelText("Uang diterima");
+  const confirm = screen.getByRole("button", { name: "Simpan & cetak" });
+
+  fireEvent.changeText(input, "50.000");
+  expect(screen.getByText("Kurang")).toBeTruthy();
+  expect(confirm.props.accessibilityState.disabled).toBe(true);
+
+  fireEvent.press(screen.getByRole("button", { name: "Rp 150.000" }));
+  expect(screen.getByText("Kembalian")).toBeTruthy();
+  expect(screen.getByText("Rp 50.000")).toBeTruthy();
+  fireEvent.press(confirm);
+  await waitFor(() => expect(mockCreateTransaction).toHaveBeenCalledTimes(1));
+  await waitFor(() =>
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/transactions/[id]/print",
+      params: { id: "transaction-1", autoPrint: "1", cashReceived: "150000" },
+    }),
+  );
 });
