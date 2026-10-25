@@ -1,14 +1,9 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { DataMode, Transaction } from "@/domain/types";
-import {
-  colors,
-  radius,
-  spacing,
-  textStyles,
-  typography,
-} from "@/theme/tokens";
+import { radius, spacing, typography } from "@/theme/tokens";
 import {
   compactTransactionId,
   formatJakartaDateTime,
@@ -27,6 +22,7 @@ export function TransactionRow({
   onPress: () => void;
   dataMode?: DataMode;
 }) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const accentToken = transaction.items[0]?.accent ?? "primary";
   const accent =
@@ -80,50 +76,52 @@ export function TransactionRow({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderColor: colors.outline,
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    flexDirection: "row",
-    overflow: "hidden",
-  },
-  accent: { width: 5 },
-  content: { flex: 1, padding: spacing.md, gap: spacing.sm },
-  top: { flexDirection: "row", gap: spacing.sm },
-  flex: { flex: 1 },
-  id: textStyles.technical,
-  name: {
-    fontFamily: typography.headingSemibold,
-    fontSize: 16,
-    color: colors.text,
-    marginTop: 2,
-  },
-  amount: {
-    fontFamily: typography.heading,
-    fontSize: 16,
-    color: colors.primary,
-  },
-  meta: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  muted: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
-  bottom: {
-    paddingTop: spacing.sm,
-    borderTopColor: colors.outline,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  actor: { ...textStyles.body, flex: 1, color: colors.textMuted },
-  badges: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: spacing.xs,
-    flexWrap: "wrap",
-  },
-  pressed: { opacity: 0.82 },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.card,
+      borderColor: colors.outline,
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      flexDirection: "row",
+      overflow: "hidden",
+    },
+    accent: { width: 5 },
+    content: { flex: 1, padding: spacing.md, gap: spacing.sm },
+    top: { flexDirection: "row", gap: spacing.sm },
+    flex: { flex: 1 },
+    id: textStyles.technical,
+    name: {
+      fontFamily: typography.headingSemibold,
+      fontSize: 16,
+      color: colors.text,
+      marginTop: 2,
+    },
+    amount: {
+      fontFamily: typography.heading,
+      fontSize: 16,
+      color: colors.primary,
+    },
+    meta: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    muted: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
+    bottom: {
+      paddingTop: spacing.sm,
+      borderTopColor: colors.outline,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    actor: { ...textStyles.body, flex: 1, color: colors.textMuted },
+    badges: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: spacing.xs,
+      flexWrap: "wrap",
+    },
+    pressed: { opacity: 0.82 },
+  }),
+);

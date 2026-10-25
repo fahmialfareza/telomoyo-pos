@@ -6,7 +6,8 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { textStyles } from "./tokens";
+import { useTheme } from "./ThemeContext";
+import type { Theme } from "./tokens";
 
 export function getResponsiveSizing(width: number) {
   const compact = width < 414;
@@ -90,17 +91,57 @@ export function responsiveStyles<T extends StyleMap>(
   ) as unknown as T;
 }
 
-export function useResponsiveStyles<T extends StyleMap>(base: T): T {
+const THEMED = Symbol("themed");
+
+export interface ThemedStyles<T extends StyleMap> {
+  readonly [THEMED]: (theme: Theme) => T;
+}
+
+/** Declares a stylesheet that depends on the active palette. The factory runs
+ * once per color scheme; `useResponsiveStyles` resolves and scales it. */
+export function themed<T extends StyleMap>(
+  factory: (theme: Theme) => T,
+): ThemedStyles<T> {
+  const cache = new Map<Theme, T>();
+  return {
+    [THEMED]: (theme) => {
+      let styles = cache.get(theme);
+      if (!styles) {
+        styles = factory(theme);
+        cache.set(theme, styles);
+      }
+      return styles;
+    },
+  };
+}
+
+function isThemed<T extends StyleMap>(
+  base: T | ThemedStyles<T>,
+): base is ThemedStyles<T> {
+  return typeof base === "object" && THEMED in base;
+}
+
+export function useResponsiveStyles<T extends StyleMap>(
+  base: T | ThemedStyles<T>,
+): T {
   const { width } = useWindowDimensions();
+  const theme = useTheme();
   const compact = width < 414;
+  const resolved = isThemed(base) ? base[THEMED](theme) : base;
   return useMemo(
-    () => responsiveStyles(base, compact ? 360 : 414),
-    [base, compact],
+    () => responsiveStyles(resolved, compact ? 360 : 414),
+    [resolved, compact],
   );
 }
 
+/** Resolves a themed stylesheet for the active palette without responsive
+ * scaling, for components that size things themselves. */
+export function useThemedStyles<T extends StyleMap>(base: ThemedStyles<T>): T {
+  return base[THEMED](useTheme());
+}
+
 export function useResponsiveTextStyles() {
-  return useResponsiveStyles(textStyles);
+  return useResponsiveStyles(useTheme().textStyles);
 }
 
 export function useResponsiveSizing() {

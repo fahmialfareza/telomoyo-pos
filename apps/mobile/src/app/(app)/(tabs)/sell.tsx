@@ -1,4 +1,5 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { FlashList, type ListRenderItemInfo } from "@shopify/flash-list";
 import { useFocusEffect, useRouter } from "expo-router";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
@@ -35,16 +36,15 @@ import type {
 import { readQrisConfig } from "@/security/secure-store";
 import { useSyncRuntime } from "@/sync/SyncProvider";
 import {
-  colors,
   minimumTouchTarget,
   radius,
   spacing,
-  textStyles,
   typography,
 } from "@/theme/tokens";
 import { formatRupiah } from "@/utils/format";
 
 export default function SaleComposerScreen() {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const router = useRouter();
   const { session } = useAuth();
@@ -298,6 +298,7 @@ const PackageSelectorCard = memo(function PackageSelectorCard({
   quantity: number;
   onChange: (packageId: string, quantity: number) => void;
 }) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const accent =
     item.accent === "sunrise"
@@ -378,6 +379,7 @@ function StickyTransactionSummary({
   selectedPackages: RentalPackage[];
   quantities: Record<string, number>;
 }) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const [summaryExpanded, setSummaryExpanded] = useState(false);
   const summaryToggle = (
@@ -482,147 +484,149 @@ function StickyTransactionSummary({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    padding: 0,
-    paddingBottom: 0,
-    gap: 0,
-  },
-  list: { flex: 1 },
-  listContent: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  listHeader: {
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  sectionTitle: { ...textStyles.heading },
-  packageCard: {
-    borderLeftWidth: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  packageCardSelected: { backgroundColor: colors.surfaceBright },
-  packageCardPressed: { opacity: 0.85 },
-  packageCopy: { flex: 1, gap: 2 },
-  packageName: {
-    fontFamily: typography.heading,
-    fontSize: 18,
-    color: colors.text,
-  },
-  description: { ...textStyles.body, color: colors.textMuted, fontSize: 13 },
-  packagePrice: {
-    fontFamily: typography.heading,
-    fontSize: 16,
-  },
-  packageSeparator: { height: spacing.sm },
-  stickySummary: {
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.md,
-    backgroundColor: colors.card,
-  },
-  stickySummaryHeader: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-  },
-  stickySummaryMeta: {
-    ...textStyles.label,
-    color: colors.textMuted,
-    fontSize: 11,
-  },
-  summaryToggle: {
-    minHeight: minimumTouchTarget,
-    minWidth: minimumTouchTarget,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  summaryLines: {
-    maxHeight: 112,
-    paddingRight: spacing.xs,
-  },
-  summaryLinesContent: {
-    gap: spacing.sm,
-  },
-  summaryLine: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  summaryLineCopy: {
-    flex: 1,
-  },
-  summaryLineName: {
-    ...textStyles.body,
-    color: colors.text,
-    fontFamily: typography.bodySemibold,
-  },
-  summaryLineCalculation: {
-    ...textStyles.label,
-    color: colors.textMuted,
-    fontSize: 10,
-  },
-  summaryLineTotal: {
-    ...textStyles.body,
-    color: colors.text,
-    fontFamily: typography.bodySemibold,
-    textAlign: "right",
-  },
-  stickyTotalRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-  },
-  stickyTotalLabelGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-  },
-  stickyTotalLabel: {
-    ...textStyles.body,
-    color: colors.text,
-    fontFamily: typography.bodySemibold,
-  },
-  stickyTotal: {
-    fontFamily: typography.price,
-    fontSize: 22,
-    lineHeight: 28,
-    letterSpacing: -0.4,
-    color: colors.primary,
-    textAlign: "right",
-  },
-  error: {
-    ...textStyles.body,
-    color: colors.error,
-    backgroundColor: colors.errorSoft,
-    padding: spacing.md,
-    borderRadius: radius.md,
-  },
-  stickyError: {
-    ...textStyles.body,
-    color: colors.error,
-    fontSize: 12,
-  },
-  loading: {
-    paddingVertical: spacing.xl,
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  loadingText: { ...textStyles.body, color: colors.textMuted },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    screen: {
+      padding: 0,
+      paddingBottom: 0,
+      gap: 0,
+    },
+    list: { flex: 1 },
+    listContent: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    listHeader: {
+      gap: spacing.md,
+      marginBottom: spacing.md,
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    sectionTitle: { ...textStyles.heading },
+    packageCard: {
+      borderLeftWidth: 5,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+    },
+    packageCardSelected: { backgroundColor: colors.surfaceBright },
+    packageCardPressed: { opacity: 0.85 },
+    packageCopy: { flex: 1, gap: 2 },
+    packageName: {
+      fontFamily: typography.heading,
+      fontSize: 18,
+      color: colors.text,
+    },
+    description: { ...textStyles.body, color: colors.textMuted, fontSize: 13 },
+    packagePrice: {
+      fontFamily: typography.heading,
+      fontSize: 16,
+    },
+    packageSeparator: { height: spacing.sm },
+    stickySummary: {
+      gap: spacing.xs,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderRadius: radius.md,
+      backgroundColor: colors.card,
+    },
+    stickySummaryHeader: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+    },
+    stickySummaryMeta: {
+      ...textStyles.label,
+      color: colors.textMuted,
+      fontSize: 11,
+    },
+    summaryToggle: {
+      minHeight: minimumTouchTarget,
+      minWidth: minimumTouchTarget,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    summaryLines: {
+      maxHeight: 112,
+      paddingRight: spacing.xs,
+    },
+    summaryLinesContent: {
+      gap: spacing.sm,
+    },
+    summaryLine: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    summaryLineCopy: {
+      flex: 1,
+    },
+    summaryLineName: {
+      ...textStyles.body,
+      color: colors.text,
+      fontFamily: typography.bodySemibold,
+    },
+    summaryLineCalculation: {
+      ...textStyles.label,
+      color: colors.textMuted,
+      fontSize: 10,
+    },
+    summaryLineTotal: {
+      ...textStyles.body,
+      color: colors.text,
+      fontFamily: typography.bodySemibold,
+      textAlign: "right",
+    },
+    stickyTotalRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+    },
+    stickyTotalLabelGroup: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+    },
+    stickyTotalLabel: {
+      ...textStyles.body,
+      color: colors.text,
+      fontFamily: typography.bodySemibold,
+    },
+    stickyTotal: {
+      fontFamily: typography.price,
+      fontSize: 22,
+      lineHeight: 28,
+      letterSpacing: -0.4,
+      color: colors.primary,
+      textAlign: "right",
+    },
+    error: {
+      ...textStyles.body,
+      color: colors.error,
+      backgroundColor: colors.errorSoft,
+      padding: spacing.md,
+      borderRadius: radius.md,
+    },
+    stickyError: {
+      ...textStyles.body,
+      color: colors.error,
+      fontSize: 12,
+    },
+    loading: {
+      paddingVertical: spacing.xl,
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    loadingText: { ...textStyles.body, color: colors.textMuted },
+  }),
+);

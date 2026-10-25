@@ -1,4 +1,4 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { StyleSheet, Text } from "react-native";
@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
-import { colors, spacing, textStyles } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 
 const schema = z
   .object({
@@ -125,9 +125,11 @@ export function PasswordForm({
   );
 }
 
-const styles = StyleSheet.create({
-  help: { ...textStyles.body, color: colors.textMuted },
-  error: { ...textStyles.body, color: colors.error },
-  success: { ...textStyles.body, color: colors.success },
-  spacer: { marginBottom: spacing.xs },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    help: { ...textStyles.body, color: colors.textMuted },
+    error: { ...textStyles.body, color: colors.error },
+    success: { ...textStyles.body, color: colors.success },
+    spacer: { marginBottom: spacing.xs },
+  }),
+);

@@ -1,13 +1,15 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { useSyncRuntime } from "@/sync/SyncProvider";
-import { colors, spacing, typography } from "@/theme/tokens";
+import { spacing, typography } from "@/theme/tokens";
 
 import { Icon } from "../ui/Icon";
 
 export function SyncBar() {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const router = useRouter();
   const { online, pendingCount, syncing, lastSyncedAt } = useSyncRuntime();
@@ -59,45 +61,48 @@ function relativeTime(iso: string): string {
   return `${Math.floor(minutes / 60)} jam lalu`;
 }
 
-const styles = StyleSheet.create({
-  bar: {
-    minHeight: 48,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.primary,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  offline: {
-    backgroundColor: colors.warning,
-  },
-  left: {
-    flexShrink: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  right: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 2,
-  },
-  dot: { width: 7, height: 7, borderRadius: 4 },
-  dotOnline: { backgroundColor: "#65E6AD" },
-  dotOffline: { backgroundColor: "#FFE1A8" },
-  text: {
-    color: colors.onPrimary,
-    fontFamily: typography.bodySemibold,
-    fontSize: 10,
-  },
-  detail: {
-    color: colors.onPrimary,
-    fontFamily: typography.body,
-    fontSize: 11,
-    maxWidth: "80%",
-  },
-});
+const styles = themed(({ colors, scheme }) =>
+  StyleSheet.create({
+    bar: {
+      minHeight: 48,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.md,
+      backgroundColor: colors.primary,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    offline: {
+      backgroundColor: colors.warning,
+    },
+    left: {
+      flexShrink: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    right: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "flex-end",
+      gap: 2,
+    },
+    dot: { width: 7, height: 7, borderRadius: 4 },
+    // The bar sits on primary/warning, which flip from dark to light fills.
+    dotOnline: { backgroundColor: scheme === "dark" ? "#0B6B47" : "#65E6AD" },
+    dotOffline: { backgroundColor: scheme === "dark" ? "#5C3B00" : "#FFE1A8" },
+    text: {
+      color: colors.onPrimary,
+      fontFamily: typography.bodySemibold,
+      fontSize: 10,
+    },
+    detail: {
+      color: colors.onPrimary,
+      fontFamily: typography.body,
+      fontSize: 11,
+      maxWidth: "80%",
+    },
+  }),
+);

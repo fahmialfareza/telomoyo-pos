@@ -460,9 +460,7 @@ describe("Transaction detail dynamic QRIS", () => {
 
     await screen.findByTestId("transaction-summary-card");
     expect(screen.getByText("Sudah pernah dicetak")).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: "Cetak salinan" }),
-    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cetak salinan" })).toBeTruthy();
   });
 
   it("shows no printed mark before the first print", async () => {

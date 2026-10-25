@@ -1,10 +1,12 @@
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { StyleSheet, Text, View } from "react-native";
 
-import { colors, spacing, textStyles } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 
 import { Button } from "./Button";
 import { Icon, type IconName } from "./Icon";
@@ -24,6 +26,7 @@ export function StateView({
   actionLabel,
   onAction,
 }: StateViewProps) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const responsiveText = useResponsiveTextStyles();
   return (
@@ -40,17 +43,19 @@ export function StateView({
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: {
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.md,
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  message: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    textAlign: "center",
-    maxWidth: 320,
-  },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    wrapper: {
+      paddingVertical: spacing.xl,
+      paddingHorizontal: spacing.md,
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    message: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      textAlign: "center",
+      maxWidth: 320,
+    },
+  }),
+);

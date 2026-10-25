@@ -9,6 +9,7 @@ import {
   type Session,
 } from "@/domain/types";
 import { activeTenantId } from "@/mode/mode-store";
+import type { AppearancePreference } from "@/theme/ThemeContext";
 
 const keys = {
   session: "sewa-motor.session.v1",
@@ -18,6 +19,7 @@ const keys = {
   printer: "sewa-motor.printer-config.v1",
   qris: "sewa-motor.qris-config.v1",
   authNotice: "sewa-motor.auth-notice.v1",
+  appearance: "sewa-motor.appearance.v1",
 } as const;
 
 export interface TerminalIdentityRecord {
@@ -249,6 +251,17 @@ export async function readPrinterConfig(): Promise<PrinterConfig> {
 
 export async function writePrinterConfig(config: PrinterConfig): Promise<void> {
   await writeJson(keys.printer, config);
+}
+
+export async function readAppearancePreference(): Promise<AppearancePreference> {
+  const stored = await readJson<AppearancePreference>(keys.appearance);
+  return stored === "light" || stored === "dark" ? stored : "system";
+}
+
+export async function writeAppearancePreference(
+  preference: AppearancePreference,
+): Promise<void> {
+  await writeJson(keys.appearance, preference);
 }
 
 export async function readQrisConfig(

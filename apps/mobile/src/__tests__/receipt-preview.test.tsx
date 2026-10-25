@@ -13,7 +13,7 @@ import type { Session, Transaction } from "@/domain/types";
 import { formatReceipt } from "@/printer/receipt";
 import { receiptFromTransaction, type ReceiptDocument } from "@/printer/types";
 import type { PrinterConfig } from "@/security/secure-store";
-import { colors } from "@/theme/tokens";
+import { lightColors as colors } from "@/theme/tokens";
 
 const mockSession: Session = {
   token: "token",

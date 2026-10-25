@@ -4,8 +4,9 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWindowDimensions } from "react-native";
 import { useResponsiveSizing } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { Icon, type IconName } from "@/components/ui/Icon";
-import { colors, minimumTouchTarget, typography } from "@/theme/tokens";
+import { minimumTouchTarget, typography } from "@/theme/tokens";
 
 const tabs: {
   name: string;
@@ -20,6 +21,7 @@ const tabs: {
 ];
 
 export default function TabsLayout() {
+  const colors = useThemeColors();
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
   const { fontScale } = useWindowDimensions();

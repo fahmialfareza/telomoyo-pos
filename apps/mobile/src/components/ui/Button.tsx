@@ -1,4 +1,9 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import {
+  useResponsiveStyles,
+  themed,
+  useThemedStyles,
+} from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import {
   ActivityIndicator,
   Pressable,
@@ -10,7 +15,6 @@ import {
 } from "react-native";
 
 import {
-  colors,
   minimumTouchTarget,
   radius,
   spacing,
@@ -41,7 +45,9 @@ export function Button({
   style,
   ...props
 }: ButtonProps) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
+  const raw = useThemedStyles(styles);
   const foreground =
     variant === "primary" || variant === "dangerSolid"
       ? colors.onPrimary
@@ -60,7 +66,7 @@ export function Button({
       style={({ pressed }) => [
         responsive.base,
         compact && responsive.compact,
-        styles[variant],
+        raw[variant],
         pressed && responsive.pressed,
         (disabled || loading) && responsive.disabled,
         style,
@@ -77,53 +83,55 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
-  base: {
-    minHeight: minimumTouchTarget,
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-  },
-  compact: {
-    minHeight: minimumTouchTarget,
-    alignSelf: "flex-start",
-  },
-  primary: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  secondary: {
-    backgroundColor: colors.card,
-    borderColor: colors.primary,
-  },
-  danger: {
-    backgroundColor: colors.card,
-    borderColor: colors.error,
-  },
-  dangerSolid: {
-    backgroundColor: colors.error,
-    borderColor: colors.error,
-  },
-  ghost: {
-    backgroundColor: "transparent",
-    borderColor: "transparent",
-  },
-  text: {
-    fontFamily: typography.bodySemibold,
-    fontSize: 15,
-    textAlign: "center",
-    flexShrink: 1,
-  },
-  pressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.985 }],
-  },
-  disabled: {
-    opacity: 0.45,
-  },
-});
+const styles = themed(({ colors }) =>
+  StyleSheet.create({
+    base: {
+      minHeight: minimumTouchTarget,
+      borderRadius: radius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "row",
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderWidth: 1,
+    },
+    compact: {
+      minHeight: minimumTouchTarget,
+      alignSelf: "flex-start",
+    },
+    primary: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    secondary: {
+      backgroundColor: colors.card,
+      borderColor: colors.primary,
+    },
+    danger: {
+      backgroundColor: colors.card,
+      borderColor: colors.error,
+    },
+    dangerSolid: {
+      backgroundColor: colors.error,
+      borderColor: colors.error,
+    },
+    ghost: {
+      backgroundColor: "transparent",
+      borderColor: "transparent",
+    },
+    text: {
+      fontFamily: typography.bodySemibold,
+      fontSize: 15,
+      textAlign: "center",
+      flexShrink: 1,
+    },
+    pressed: {
+      opacity: 0.8,
+      transform: [{ scale: 0.985 }],
+    },
+    disabled: {
+      opacity: 0.45,
+    },
+  }),
+);

@@ -1,6 +1,7 @@
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
@@ -13,13 +14,7 @@ import { AppScreen } from "@/components/layout/AppScreen";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Field";
-import {
-  colors,
-  radius,
-  spacing,
-  textStyles,
-  typography,
-} from "@/theme/tokens";
+import { radius, spacing, typography } from "@/theme/tokens";
 
 const loginSchema = z.object({
   username: z.string().trim().min(1, "Nama pengguna wajib diisi."),
@@ -174,46 +169,48 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flexGrow: 1,
-    justifyContent: "center",
-    gap: spacing.lg,
-  },
-  brand: { alignItems: "center", gap: spacing.xs },
-  logo: {
-    width: 76,
-    height: 76,
-    borderRadius: radius.xl,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.sm,
-  },
-  logoMark: {
-    width: 72,
-    height: 72,
-  },
-  brandName: {
-    fontFamily: typography.heading,
-    fontSize: 28,
-    color: colors.primary,
-  },
-  tagline: { ...textStyles.body, color: colors.textMuted },
-  form: { gap: spacing.md },
-  help: { ...textStyles.body, color: colors.textMuted },
-  error: { ...textStyles.body, color: colors.error },
-  notice: {
-    ...textStyles.body,
-    color: colors.warning,
-    backgroundColor: colors.warningSoft,
-    padding: spacing.sm,
-    borderRadius: radius.md,
-  },
-  demo: { gap: spacing.sm, backgroundColor: colors.primarySoft },
-  demoLabel: { ...textStyles.label, color: colors.primary },
-  demoActions: { flexDirection: "row", gap: spacing.sm },
-  demoButton: { flex: 1 },
-  footer: { alignItems: "center" },
-  footerText: { ...textStyles.label, fontSize: 10 },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    screen: {
+      flexGrow: 1,
+      justifyContent: "center",
+      gap: spacing.lg,
+    },
+    brand: { alignItems: "center", gap: spacing.xs },
+    logo: {
+      width: 76,
+      height: 76,
+      borderRadius: radius.xl,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.sm,
+    },
+    logoMark: {
+      width: 72,
+      height: 72,
+    },
+    brandName: {
+      fontFamily: typography.heading,
+      fontSize: 28,
+      color: colors.primary,
+    },
+    tagline: { ...textStyles.body, color: colors.textMuted },
+    form: { gap: spacing.md },
+    help: { ...textStyles.body, color: colors.textMuted },
+    error: { ...textStyles.body, color: colors.error },
+    notice: {
+      ...textStyles.body,
+      color: colors.warning,
+      backgroundColor: colors.warningSoft,
+      padding: spacing.sm,
+      borderRadius: radius.md,
+    },
+    demo: { gap: spacing.sm, backgroundColor: colors.primarySoft },
+    demoLabel: { ...textStyles.label, color: colors.primary },
+    demoActions: { flexDirection: "row", gap: spacing.sm },
+    demoButton: { flex: 1 },
+    footer: { alignItems: "center" },
+    footerText: { ...textStyles.label, fontSize: 10 },
+  }),
+);

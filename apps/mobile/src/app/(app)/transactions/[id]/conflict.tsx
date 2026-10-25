@@ -1,7 +1,9 @@
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -14,7 +16,7 @@ import { Card } from "@/components/ui/Card";
 import { getConflictForTransaction, resolveConflict } from "@/db/repositories";
 import type { SyncConflict, Transaction } from "@/domain/types";
 import { useSyncRuntime } from "@/sync/SyncProvider";
-import { colors, spacing, textStyles, typography } from "@/theme/tokens";
+import { spacing, typography } from "@/theme/tokens";
 import { displayTransactionId, formatRupiah } from "@/utils/format";
 
 export default function ConflictReviewScreen() {
@@ -135,6 +137,7 @@ function SnapshotCard({
   transaction: Transaction;
   tone: "local" | "server";
 }) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const responsiveText = useResponsiveTextStyles();
   return (
@@ -169,26 +172,28 @@ function SnapshotCard({
   );
 }
 
-const styles = StyleSheet.create({
-  columns: { gap: spacing.md },
-  snapshot: { gap: spacing.sm, borderWidth: 2 },
-  revision: {
-    fontFamily: typography.heading,
-    fontSize: 18,
-    color: colors.text,
-  },
-  snapshotLine: { flexDirection: "row", justifyContent: "space-between" },
-  itemName: { ...textStyles.body, flex: 1 },
-  quantity: { ...textStyles.body, fontFamily: typography.bodySemibold },
-  amount: {
-    fontFamily: typography.heading,
-    fontSize: 20,
-    color: colors.primary,
-    textAlign: "right",
-  },
-  warning: { gap: spacing.xs, backgroundColor: colors.warningSoft },
-  warningTitle: { ...textStyles.heading, color: colors.warning },
-  muted: { ...textStyles.body, color: colors.textMuted },
-  deleted: { ...textStyles.label, color: colors.error },
-  error: { ...textStyles.body, color: colors.error },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    columns: { gap: spacing.md },
+    snapshot: { gap: spacing.sm, borderWidth: 2 },
+    revision: {
+      fontFamily: typography.heading,
+      fontSize: 18,
+      color: colors.text,
+    },
+    snapshotLine: { flexDirection: "row", justifyContent: "space-between" },
+    itemName: { ...textStyles.body, flex: 1 },
+    quantity: { ...textStyles.body, fontFamily: typography.bodySemibold },
+    amount: {
+      fontFamily: typography.heading,
+      fontSize: 20,
+      color: colors.primary,
+      textAlign: "right",
+    },
+    warning: { gap: spacing.xs, backgroundColor: colors.warningSoft },
+    warningTitle: { ...textStyles.heading, color: colors.warning },
+    muted: { ...textStyles.body, color: colors.textMuted },
+    deleted: { ...textStyles.label, color: colors.error },
+    error: { ...textStyles.body, color: colors.error },
+  }),
+);

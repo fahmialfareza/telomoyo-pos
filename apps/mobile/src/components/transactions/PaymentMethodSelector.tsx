@@ -1,13 +1,12 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { SelectablePaymentMethod } from "@/domain/types";
 import {
-  colors,
   minimumTouchTarget,
   radius,
   spacing,
-  textStyles,
   typography,
 } from "@/theme/tokens";
 
@@ -40,6 +39,7 @@ export function PaymentMethodSelector({
   label?: string;
   actionHint?: string;
 }) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   return (
     <View accessibilityLabel="Metode pembayaran" style={responsive.container}>
@@ -100,43 +100,45 @@ export function PaymentMethodSelector({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { gap: spacing.xs },
-  label: { ...textStyles.label, color: colors.textMuted, fontSize: 10 },
-  option: {
-    minHeight: minimumTouchTarget,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.card,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  optionSelected: {
-    backgroundColor: colors.primary,
-  },
-  optionDisabled: {
-    borderColor: colors.outline,
-    backgroundColor: colors.container,
-    opacity: 0.72,
-  },
-  optionText: {
-    flexShrink: 1,
-    textAlign: "center",
-    fontFamily: typography.bodySemibold,
-    fontSize: 14,
-    color: colors.primary,
-  },
-  selectedText: { color: colors.onPrimary },
-  disabledText: { color: colors.textMuted },
-  disabledReason: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    fontSize: 11,
-  },
-  pressed: { opacity: 0.82 },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    container: { gap: spacing.xs },
+    label: { ...textStyles.label, color: colors.textMuted, fontSize: 10 },
+    option: {
+      minHeight: minimumTouchTarget,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      backgroundColor: colors.card,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+    },
+    optionSelected: {
+      backgroundColor: colors.primary,
+    },
+    optionDisabled: {
+      borderColor: colors.outline,
+      backgroundColor: colors.container,
+      opacity: 0.72,
+    },
+    optionText: {
+      flexShrink: 1,
+      textAlign: "center",
+      fontFamily: typography.bodySemibold,
+      fontSize: 14,
+      color: colors.primary,
+    },
+    selectedText: { color: colors.onPrimary },
+    disabledText: { color: colors.textMuted },
+    disabledReason: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      fontSize: 11,
+    },
+    pressed: { opacity: 0.82 },
+  }),
+);

@@ -9,7 +9,9 @@ import {
   responsiveStyles,
   useResponsiveTextStyles,
 } from "@/theme/responsive";
-import { colors, textStyles } from "@/theme/tokens";
+import { lightTheme } from "@/theme/tokens";
+
+const { colors, textStyles } = lightTheme;
 
 let mockDimensions = { width: 360, height: 640, scale: 1, fontScale: 1 };
 jest.mock("@/components/ui/Icon", () => ({ Icon: () => null }));

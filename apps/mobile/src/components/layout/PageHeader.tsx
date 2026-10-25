@@ -1,11 +1,13 @@
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
-import { colors, spacing, textStyles } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 
 import { Icon } from "../ui/Icon";
 
@@ -24,6 +26,7 @@ export function PageHeader({
   onBack,
   right,
 }: PageHeaderProps) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const responsiveText = useResponsiveTextStyles();
   const router = useRouter();
@@ -54,26 +57,28 @@ export function PageHeader({
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    minHeight: 56,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  back: {
-    width: 48,
-    height: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: -10,
-  },
-  copy: {
-    flex: 1,
-  },
-  subtitle: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    row: {
+      minHeight: 56,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    back: {
+      width: 48,
+      height: 48,
+      alignItems: "center",
+      justifyContent: "center",
+      marginLeft: -10,
+    },
+    copy: {
+      flex: 1,
+    },
+    subtitle: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+  }),
+);

@@ -1,11 +1,11 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
 import { useState } from "react";
 import { StyleSheet, Text } from "react-native";
 
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import type { RentalPackage } from "@/domain/types";
-import { colors, spacing, textStyles } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 
 export interface PackageFormValue {
   name: string;
@@ -87,12 +87,14 @@ export function PackageForm({
   );
 }
 
-const styles = StyleSheet.create({
-  description: {
-    minHeight: 96,
-    textAlignVertical: "top",
-    paddingTop: spacing.md,
-  },
-  note: { ...textStyles.body, color: colors.textMuted },
-  error: { ...textStyles.body, color: colors.error },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    description: {
+      minHeight: 96,
+      textAlignVertical: "top",
+      paddingTop: spacing.md,
+    },
+    note: { ...textStyles.body, color: colors.textMuted },
+    error: { ...textStyles.body, color: colors.error },
+  }),
+);

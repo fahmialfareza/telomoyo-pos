@@ -8,11 +8,12 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Field";
-import { colors, spacing, textStyles } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 import { toUserFacingErrorMessage } from "@/utils/errors";
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
 
 export default function AccountProfileScreen() {
@@ -94,8 +95,10 @@ export default function AccountProfileScreen() {
   );
 }
 
-const baseStyles = StyleSheet.create({
-  card: { gap: spacing.md },
-  note: { ...textStyles.body, color: colors.textMuted },
-  error: { ...textStyles.body, color: colors.error },
-});
+const baseStyles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    card: { gap: spacing.md },
+    note: { ...textStyles.body, color: colors.textMuted },
+    error: { ...textStyles.body, color: colors.error },
+  }),
+);

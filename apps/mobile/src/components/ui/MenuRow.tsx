@@ -1,13 +1,8 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import {
-  colors,
-  minimumTouchTarget,
-  spacing,
-  textStyles,
-  typography,
-} from "@/theme/tokens";
+import { minimumTouchTarget, spacing, typography } from "@/theme/tokens";
 
 import { Icon, type IconName } from "./Icon";
 
@@ -32,6 +27,7 @@ export function MenuRow({
   accessibilityLabel?: string;
   status?: string;
 }) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const color = destructive ? colors.error : colors.primary;
   return (
@@ -66,33 +62,35 @@ export function MenuRow({
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    minHeight: minimumTouchTarget + 12,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    borderBottomColor: colors.outline,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  icon: {
-    width: 40,
-    height: 40,
-    backgroundColor: colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  copy: { flex: 1, minWidth: 0, gap: 2 },
-  title: {
-    fontFamily: typography.bodyMedium,
-    fontSize: 15,
-    color: colors.text,
-  },
-  detail: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
-  status: { ...textStyles.label, color: colors.primary },
-  selected: { backgroundColor: colors.primarySoft },
-  disabled: { opacity: 0.5 },
-  pressed: { backgroundColor: colors.surface },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    row: {
+      minHeight: minimumTouchTarget + 12,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      borderBottomColor: colors.outline,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    icon: {
+      width: 40,
+      height: 40,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    copy: { flex: 1, minWidth: 0, gap: 2 },
+    title: {
+      fontFamily: typography.bodyMedium,
+      fontSize: 15,
+      color: colors.text,
+    },
+    detail: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
+    status: { ...textStyles.label, color: colors.primary },
+    selected: { backgroundColor: colors.primarySoft },
+    disabled: { opacity: 0.5 },
+    pressed: { backgroundColor: colors.surface },
+  }),
+);

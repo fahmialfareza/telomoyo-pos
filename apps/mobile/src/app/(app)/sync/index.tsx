@@ -18,10 +18,11 @@ import {
 } from "@/db/repositories";
 import type { SyncConflict } from "@/domain/types";
 import { useSyncRuntime } from "@/sync/SyncProvider";
-import { colors, spacing, textStyles, typography } from "@/theme/tokens";
+import { spacing, typography } from "@/theme/tokens";
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
 import { toUserFacingErrorMessage } from "@/utils/errors";
 import { displayTransactionId, formatJakartaDateTime } from "@/utils/format";
@@ -302,26 +303,28 @@ export default function SyncCenterScreen() {
   );
 }
 
-const baseStyles = StyleSheet.create({
-  hero: { gap: spacing.md },
-  heroTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  pending: {
-    fontFamily: typography.heading,
-    fontSize: 17,
-    color: colors.text,
-  },
-  detail: { ...textStyles.body, color: colors.textMuted },
-  cursor: { ...textStyles.technical, fontSize: 9 },
-  errorCard: { gap: spacing.xs, backgroundColor: colors.errorSoft },
-  errorTitle: { ...textStyles.heading, color: colors.error },
-  errorHint: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
-  recoveryError: { ...textStyles.body, color: colors.error },
-  conflict: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  conflictCopy: { flex: 1 },
-  conflictId: { ...textStyles.technical, color: colors.primary },
-  note: { gap: spacing.sm, backgroundColor: colors.surfaceBright },
-});
+const baseStyles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    hero: { gap: spacing.md },
+    heroTop: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    pending: {
+      fontFamily: typography.heading,
+      fontSize: 17,
+      color: colors.text,
+    },
+    detail: { ...textStyles.body, color: colors.textMuted },
+    cursor: { ...textStyles.technical, fontSize: 9 },
+    errorCard: { gap: spacing.xs, backgroundColor: colors.errorSoft },
+    errorTitle: { ...textStyles.heading, color: colors.error },
+    errorHint: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
+    recoveryError: { ...textStyles.body, color: colors.error },
+    conflict: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+    conflictCopy: { flex: 1 },
+    conflictId: { ...textStyles.technical, color: colors.primary },
+    note: { gap: spacing.sm, backgroundColor: colors.surfaceBright },
+  }),
+);

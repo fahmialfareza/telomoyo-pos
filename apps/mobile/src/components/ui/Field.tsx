@@ -1,4 +1,5 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { forwardRef, useState } from "react";
 import {
   Pressable,
@@ -11,11 +12,9 @@ import {
 } from "react-native";
 
 import {
-  colors,
   minimumTouchTarget,
   radius,
   spacing,
-  textStyles,
   typography,
 } from "@/theme/tokens";
 
@@ -31,6 +30,7 @@ export const Field = forwardRef<TextInputInstance, FieldProps>(function Field(
   { label, error, hint, secureTextEntry, style, ...props },
   ref,
 ) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPasswordField = secureTextEntry === true;
@@ -81,49 +81,51 @@ export const Field = forwardRef<TextInputInstance, FieldProps>(function Field(
   );
 });
 
-const styles = StyleSheet.create({
-  wrapper: {
-    gap: spacing.xs,
-  },
-  label: textStyles.label,
-  input: {
-    minHeight: 56,
-    borderWidth: 1,
-    borderColor: colors.outline,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.card,
-    color: colors.text,
-    fontFamily: typography.body,
-    fontSize: 16,
-  },
-  passwordInput: {
-    paddingRight: minimumTouchTarget + spacing.sm,
-  },
-  passwordToggle: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    minWidth: minimumTouchTarget,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  passwordTogglePressed: {
-    opacity: 0.6,
-  },
-  inputError: {
-    borderColor: colors.error,
-  },
-  error: {
-    ...textStyles.body,
-    color: colors.error,
-    fontSize: 12,
-  },
-  hint: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    fontSize: 12,
-  },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    wrapper: {
+      gap: spacing.xs,
+    },
+    label: textStyles.label,
+    input: {
+      minHeight: 56,
+      borderWidth: 1,
+      borderColor: colors.outline,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      backgroundColor: colors.card,
+      color: colors.text,
+      fontFamily: typography.body,
+      fontSize: 16,
+    },
+    passwordInput: {
+      paddingRight: minimumTouchTarget + spacing.sm,
+    },
+    passwordToggle: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      minWidth: minimumTouchTarget,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    passwordTogglePressed: {
+      opacity: 0.6,
+    },
+    inputError: {
+      borderColor: colors.error,
+    },
+    error: {
+      ...textStyles.body,
+      color: colors.error,
+      fontSize: 12,
+    },
+    hint: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      fontSize: 12,
+    },
+  }),
+);

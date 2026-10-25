@@ -24,7 +24,9 @@ import { useContextNavigation } from "@/navigation/context-navigation";
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { canManageOrganization } from "@/domain/permissions";
 import type {
   BusinessProfile,
@@ -32,7 +34,7 @@ import type {
   TenantSummary,
   UserSummary,
 } from "@/domain/types";
-import { colors, spacing, textStyles } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 import { toUserFacingErrorMessage } from "@/utils/errors";
 import { cacheTenantConfiguration } from "./configuration";
 
@@ -136,6 +138,7 @@ function useRemote<T>(path: string, token?: string) {
 }
 
 function LoadingMessage({ children }: { children: string }) {
+  const colors = useThemeColors();
   const styles = useResponsiveStyles(baseStyles);
   return (
     <View
@@ -822,6 +825,7 @@ export function ManagedUserEditor({
   id: string;
   onBack?: () => void;
 }) {
+  const colors = useThemeColors();
   const styles = useResponsiveStyles(baseStyles);
   const textStyles = useResponsiveTextStyles();
   const { confirm } = useConfirmation();
@@ -1121,18 +1125,20 @@ export function BusinessProfileScreen() {
   );
 }
 
-const baseStyles = StyleSheet.create({
-  card: { gap: spacing.md },
-  businessSection: { gap: spacing.sm },
-  body: { ...textStyles.body, color: colors.textMuted },
-  error: { ...textStyles.body, color: colors.error },
-  row: { flexDirection: "row", gap: spacing.sm },
-  flex: { flex: 1 },
-  loading: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  toggle: {
-    minHeight: 56,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-});
+const baseStyles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    card: { gap: spacing.md },
+    businessSection: { gap: spacing.sm },
+    body: { ...textStyles.body, color: colors.textMuted },
+    error: { ...textStyles.body, color: colors.error },
+    row: { flexDirection: "row", gap: spacing.sm },
+    flex: { flex: 1 },
+    loading: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+    toggle: {
+      minHeight: 56,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+  }),
+);

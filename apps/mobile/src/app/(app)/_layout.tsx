@@ -9,8 +9,9 @@ import {
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
-import { colors, spacing, textStyles } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 
 export default function ProtectedLayout() {
   const segments = useSegments() as string[];
@@ -51,7 +52,9 @@ export default function ProtectedLayout() {
     segments.includes("(tabs)");
   if (
     scopeLocked ||
-    (session.contextKind && session.contextKind !== "tenant" && !accountUsersTab)
+    (session.contextKind &&
+      session.contextKind !== "tenant" &&
+      !accountUsersTab)
   ) {
     return <Redirect href="/contexts" />;
   }
@@ -66,14 +69,16 @@ export default function ProtectedLayout() {
   );
 }
 
-const baseStyles = StyleSheet.create({
-  failure: {
-    flex: 1,
-    padding: spacing.lg,
-    backgroundColor: colors.surface,
-    justifyContent: "center",
-    gap: spacing.md,
-  },
-  failureMessage: { ...textStyles.body, color: colors.textMuted },
-  code: { ...textStyles.technical, color: colors.error },
-});
+const baseStyles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    failure: {
+      flex: 1,
+      padding: spacing.lg,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      gap: spacing.md,
+    },
+    failureMessage: { ...textStyles.body, color: colors.textMuted },
+    code: { ...textStyles.technical, color: colors.error },
+  }),
+);

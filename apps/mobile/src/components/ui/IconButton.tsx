@@ -1,6 +1,8 @@
+import { themed, useThemedStyles } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { ActivityIndicator, Pressable, StyleSheet } from "react-native";
 
-import { colors, minimumTouchTarget, radius } from "@/theme/tokens";
+import { minimumTouchTarget, radius } from "@/theme/tokens";
 import { Icon, type IconName } from "./Icon";
 
 /** Compact visual action with a full-size accessible touch target. */
@@ -17,6 +19,8 @@ export function IconButton({
   disabled?: boolean;
   loading?: boolean;
 }) {
+  const colors = useThemeColors();
+  const raw = useThemedStyles(styles);
   const blocked = disabled || loading;
   return (
     <Pressable
@@ -26,9 +30,9 @@ export function IconButton({
       disabled={blocked}
       onPress={blocked ? undefined : onPress}
       style={({ pressed }) => [
-        styles.button,
-        pressed && styles.pressed,
-        blocked && styles.disabled,
+        raw.button,
+        pressed && raw.pressed,
+        blocked && raw.disabled,
       ]}
     >
       {loading ? (
@@ -40,18 +44,20 @@ export function IconButton({
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    width: minimumTouchTarget,
-    height: minimumTouchTarget,
-    flexShrink: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.outline,
-    borderRadius: radius.md,
-  },
-  pressed: { backgroundColor: colors.primarySoft },
-  disabled: { opacity: 0.5 },
-});
+const styles = themed(({ colors }) =>
+  StyleSheet.create({
+    button: {
+      width: minimumTouchTarget,
+      height: minimumTouchTarget,
+      flexShrink: 0,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.outline,
+      borderRadius: radius.md,
+    },
+    pressed: { backgroundColor: colors.primarySoft },
+    disabled: { opacity: 0.5 },
+  }),
+);

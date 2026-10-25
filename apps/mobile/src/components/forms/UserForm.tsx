@@ -1,20 +1,16 @@
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import type { Role } from "@/domain/types";
-import {
-  colors,
-  radius,
-  spacing,
-  textStyles,
-  typography,
-} from "@/theme/tokens";
+import { radius, spacing, typography } from "@/theme/tokens";
 
 export interface UserFormValue {
   fullName: string;
@@ -33,6 +29,7 @@ export function UserForm({
   create: boolean;
   onSubmit: (value: UserFormValue) => Promise<void>;
 }) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const responsiveText = useResponsiveTextStyles();
   const [value, setValue] = useState<UserFormValue>({
@@ -163,34 +160,36 @@ export function UserForm({
   );
 }
 
-const styles = StyleSheet.create({
-  options: { flexDirection: "row", gap: spacing.sm },
-  option: {
-    flex: 1,
-    minHeight: 112,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.outline,
-    backgroundColor: colors.card,
-    gap: spacing.xs,
-  },
-  optionSelected: { borderColor: colors.primary, borderWidth: 2 },
-  optionTitle: {
-    fontFamily: typography.headingSemibold,
-    fontSize: 16,
-    color: colors.text,
-  },
-  optionDetail: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
-  toggle: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: colors.outline,
-    borderRadius: radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  toggleActive: { backgroundColor: colors.successSoft },
-  toggleText: { ...textStyles.label },
-  error: { ...textStyles.body, color: colors.error },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    options: { flexDirection: "row", gap: spacing.sm },
+    option: {
+      flex: 1,
+      minHeight: 112,
+      padding: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.outline,
+      backgroundColor: colors.card,
+      gap: spacing.xs,
+    },
+    optionSelected: { borderColor: colors.primary, borderWidth: 2 },
+    optionTitle: {
+      fontFamily: typography.headingSemibold,
+      fontSize: 16,
+      color: colors.text,
+    },
+    optionDetail: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
+    toggle: {
+      minHeight: 48,
+      borderWidth: 1,
+      borderColor: colors.outline,
+      borderRadius: radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    toggleActive: { backgroundColor: colors.successSoft },
+    toggleText: { ...textStyles.label },
+    error: { ...textStyles.body, color: colors.error },
+  }),
+);

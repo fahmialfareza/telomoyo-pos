@@ -11,7 +11,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: appVersion,
   icon: "./assets/branding/app-icon.png",
   orientation: "portrait",
-  userInterfaceStyle: "light",
+  userInterfaceStyle: "automatic",
   scheme: "sewamotor",
   android: {
     package: ANDROID_APPLICATION_ID,
@@ -39,7 +39,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     "expo-router",
-    ["expo-status-bar", { style: "dark" }],
+    "expo-status-bar",
     [
       "expo-splash-screen",
       {

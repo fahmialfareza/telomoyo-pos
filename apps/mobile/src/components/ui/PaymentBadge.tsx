@@ -1,12 +1,17 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import {
+  useResponsiveStyles,
+  themed,
+  useThemedStyles,
+} from "@/theme/responsive";
 import { StyleSheet, Text, View } from "react-native";
 
 import { paymentMethodLabel } from "@/domain/payments";
 import type { PaymentMethod, PaymentStatus } from "@/domain/types";
-import { colors, radius, spacing, typography } from "@/theme/tokens";
+import { radius, spacing, typography } from "@/theme/tokens";
 
 export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
   const responsive = useResponsiveStyles(styles);
+  const raw = useThemedStyles(styles);
   const tone =
     status === "success"
       ? "success"
@@ -20,9 +25,9 @@ export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
   }[status];
 
   return (
-    <View style={[responsive.badge, styles[`${tone}Background`]]}>
-      <View style={[responsive.dot, styles[`${tone}Dot`]]} />
-      <Text style={[responsive.text, styles[`${tone}Text`]]}>{label}</Text>
+    <View style={[responsive.badge, raw[`${tone}Background`]]}>
+      <View style={[responsive.dot, raw[`${tone}Dot`]]} />
+      <Text style={[responsive.text, raw[`${tone}Text`]]}>{label}</Text>
     </View>
   );
 }
@@ -40,35 +45,37 @@ export function PaymentMethodBadge({ method }: { method: PaymentMethod }) {
   );
 }
 
-const styles = StyleSheet.create({
-  badge: {
-    minHeight: 26,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 6,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: radius.pill,
-  },
-  text: {
-    fontFamily: typography.bodySemibold,
-    fontSize: 10,
-    letterSpacing: 0.25,
-  },
-  successBackground: { backgroundColor: colors.successSoft },
-  successDot: { backgroundColor: colors.success },
-  successText: { color: colors.success },
-  warningBackground: { backgroundColor: colors.warningSoft },
-  warningDot: { backgroundColor: colors.warning },
-  warningText: { color: colors.warning },
-  errorBackground: { backgroundColor: colors.errorSoft },
-  errorDot: { backgroundColor: colors.error },
-  errorText: { color: colors.error },
-  methodBackground: { backgroundColor: colors.primarySoft },
-  methodText: { color: colors.primary },
-});
+const styles = themed(({ colors }) =>
+  StyleSheet.create({
+    badge: {
+      minHeight: 26,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "flex-start",
+      gap: 6,
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: radius.pill,
+    },
+    text: {
+      fontFamily: typography.bodySemibold,
+      fontSize: 10,
+      letterSpacing: 0.25,
+    },
+    successBackground: { backgroundColor: colors.successSoft },
+    successDot: { backgroundColor: colors.success },
+    successText: { color: colors.success },
+    warningBackground: { backgroundColor: colors.warningSoft },
+    warningDot: { backgroundColor: colors.warning },
+    warningText: { color: colors.warning },
+    errorBackground: { backgroundColor: colors.errorSoft },
+    errorDot: { backgroundColor: colors.error },
+    errorText: { color: colors.error },
+    methodBackground: { backgroundColor: colors.primarySoft },
+    methodText: { color: colors.primary },
+  }),
+);

@@ -5,10 +5,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuthStore } from "@/auth/auth-store";
 import { Button } from "@/components/ui/Button";
-import { colors, spacing } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
 
 import {
@@ -186,20 +187,22 @@ export function ContextNavigationFeedback() {
   );
 }
 
-const baseStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    paddingHorizontal: spacing.md,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 600,
-    maxHeight: "100%",
-    alignSelf: "center",
-    backgroundColor: colors.card,
-    borderRadius: 16,
-  },
-  content: { padding: spacing.md, gap: spacing.sm },
-});
+const baseStyles = themed(({ colors }) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.45)",
+      justifyContent: "center",
+      paddingHorizontal: spacing.md,
+    },
+    card: {
+      width: "100%",
+      maxWidth: 600,
+      maxHeight: "100%",
+      alignSelf: "center",
+      backgroundColor: colors.card,
+      borderRadius: 16,
+    },
+    content: { padding: spacing.md, gap: spacing.sm },
+  }),
+);

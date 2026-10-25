@@ -22,10 +22,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuthStore } from "@/auth/auth-store";
-import { colors, radius } from "@/theme/tokens";
+import { radius } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/ThemeContext";
 import {
   useResponsiveSizing,
   useResponsiveTextStyles,
+  themed,
+  useThemedStyles,
 } from "@/theme/responsive";
 import { toUserFacingErrorMessage } from "@/utils/errors";
 
@@ -46,6 +49,8 @@ const ConfirmationContext = createContext<{
 
 /** Pending confirmations belong to the exact session that opened them. */
 export function ConfirmationProvider({ children }: { children: ReactNode }) {
+  const colors = useThemeColors();
+  const raw = useThemedStyles(styles);
   const sessionId = useAuthStore((state) => state.session?.sessionId);
   const switching = useAuthStore((state) => state.switchingMode);
   const [pending, setPending] = useState<
@@ -141,7 +146,7 @@ export function ConfirmationProvider({ children }: { children: ReactNode }) {
       >
         <View
           style={[
-            styles.overlay,
+            raw.overlay,
             {
               padding: sizing.gutter,
               paddingTop: insets.top + sizing.gutter,
@@ -152,12 +157,12 @@ export function ConfirmationProvider({ children }: { children: ReactNode }) {
           <View
             accessibilityViewIsModal
             style={[
-              styles.dialog,
+              raw.dialog,
               { padding: sizing.gutter, gap: sizing.sectionGap },
             ]}
           >
             <ScrollView
-              style={styles.message}
+              style={raw.message}
               contentContainerStyle={{ gap: sizing.gap }}
             >
               <Text
@@ -204,20 +209,22 @@ export function useConfirmation() {
   return context;
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  dialog: {
-    width: "100%",
-    maxWidth: 400,
-    maxHeight: "100%",
-    borderRadius: radius.lg,
-    backgroundColor: colors.card,
-    flexShrink: 1,
-  },
-  message: { flexShrink: 1 },
-});
+const styles = themed(({ colors }) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    dialog: {
+      width: "100%",
+      maxWidth: 400,
+      maxHeight: "100%",
+      borderRadius: radius.lg,
+      backgroundColor: colors.card,
+      flexShrink: 1,
+    },
+    message: { flexShrink: 1 },
+  }),
+);

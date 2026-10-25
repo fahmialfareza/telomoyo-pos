@@ -3,10 +3,13 @@ import { ScrollView, StyleSheet, Text } from "react-native";
 import { Card } from "@/components/ui/Card";
 import { formatReceipt } from "@/printer/receipt";
 import type { ReceiptDocument } from "@/printer/types";
-import { colors, spacing, textStyles, typography } from "@/theme/tokens";
+import { PaperThemeScope } from "@/theme/PaperThemeScope";
+import { spacing, typography } from "@/theme/tokens";
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
+  useThemedStyles,
 } from "@/theme/responsive";
 
 interface ReceiptPreviewProps {
@@ -15,8 +18,17 @@ interface ReceiptPreviewProps {
 }
 
 /** Read-only: this component never connects a printer or records an attempt. */
-export function ReceiptPreview({ document, columns }: ReceiptPreviewProps) {
+export function ReceiptPreview(props: ReceiptPreviewProps) {
+  return (
+    <PaperThemeScope>
+      <ReceiptPreviewContent {...props} />
+    </PaperThemeScope>
+  );
+}
+
+function ReceiptPreviewContent({ document, columns }: ReceiptPreviewProps) {
   const responsive = useResponsiveStyles(styles);
+  const raw = useThemedStyles(styles);
   const headings = useResponsiveTextStyles();
   return (
     <Card style={responsive.card} testID="receipt-preview">
@@ -26,15 +38,15 @@ export function ReceiptPreview({ document, columns }: ReceiptPreviewProps) {
       </Text>
       <ScrollView
         nestedScrollEnabled
-        style={styles.viewport}
+        style={raw.viewport}
         accessibilityLabel="Gulir pratinjau struk"
       >
         <ScrollView
           horizontal
-          contentContainerStyle={styles.paper}
+          contentContainerStyle={raw.paper}
           accessibilityLabel="Geser lebar struk"
         >
-          <Text selectable style={styles.receipt} testID="receipt-preview-text">
+          <Text selectable style={raw.receipt} testID="receipt-preview-text">
             {formatReceipt(document, columns)}
           </Text>
         </ScrollView>
@@ -43,17 +55,19 @@ export function ReceiptPreview({ document, columns }: ReceiptPreviewProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: { gap: spacing.sm },
-  caption: { ...textStyles.body, color: colors.textMuted },
-  viewport: { maxHeight: 360 },
-  paper: { padding: spacing.sm },
-  receipt: {
-    fontFamily: typography.mono,
-    fontSize: 12,
-    lineHeight: 18,
-    letterSpacing: 0,
-    color: colors.text,
-    flexShrink: 0,
-  },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    card: { gap: spacing.sm },
+    caption: { ...textStyles.body, color: colors.textMuted },
+    viewport: { maxHeight: 360 },
+    paper: { padding: spacing.sm },
+    receipt: {
+      fontFamily: typography.mono,
+      fontSize: 12,
+      lineHeight: 18,
+      letterSpacing: 0,
+      color: colors.text,
+      flexShrink: 0,
+    },
+  }),
+);

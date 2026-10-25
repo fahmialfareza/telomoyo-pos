@@ -1,6 +1,7 @@
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -12,7 +13,7 @@ import { AppScreen } from "@/components/layout/AppScreen";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StateView } from "@/components/ui/StateView";
-import { colors, spacing, textStyles } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 
 export default function ForcedPasswordScreen() {
   const responsive = useResponsiveStyles(styles);
@@ -73,9 +74,11 @@ export default function ForcedPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flexGrow: 1, justifyContent: "center" },
-  subtitle: { ...textStyles.body, color: colors.textMuted },
-  card: { gap: spacing.md },
-  error: { ...textStyles.body, color: colors.error, textAlign: "center" },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    screen: { flexGrow: 1, justifyContent: "center" },
+    subtitle: { ...textStyles.body, color: colors.textMuted },
+    card: { gap: spacing.md },
+    error: { ...textStyles.body, color: colors.error, textAlign: "center" },
+  }),
+);

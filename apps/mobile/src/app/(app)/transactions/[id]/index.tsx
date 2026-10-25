@@ -27,10 +27,11 @@ import type { Transaction } from "@/domain/types";
 import { readQrisConfig, type QrisConfig } from "@/security/secure-store";
 import { qrisPayloadForTransaction } from "@/tenant/configuration";
 import { useSyncRuntime } from "@/sync/SyncProvider";
-import { colors, spacing, textStyles, typography } from "@/theme/tokens";
+import { spacing, typography } from "@/theme/tokens";
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
 import {
   displayTransactionId,
@@ -490,63 +491,65 @@ export default function TransactionDetailScreen() {
   );
 }
 
-const baseStyles = StyleSheet.create({
-  badges: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
-  conflict: { gap: spacing.sm, backgroundColor: colors.warningSoft },
-  conflictTitle: { ...textStyles.heading, color: colors.warning },
-  syncBlocked: { gap: spacing.sm, backgroundColor: colors.errorSoft },
-  syncBlockedTitle: { ...textStyles.heading, color: colors.error },
-  muted: { ...textStyles.body, color: colors.textMuted },
-  receipt: { gap: spacing.md },
-  metaRow: { flexDirection: "row", justifyContent: "space-between" },
-  metaValue: {
-    fontFamily: typography.bodySemibold,
-    color: colors.text,
-    marginTop: spacing.xs,
-  },
-  alignRight: { alignItems: "flex-end" },
-  rule: { height: 1, backgroundColor: colors.outline },
-  item: { flexDirection: "row", gap: spacing.sm },
-  itemCopy: { flex: 1 },
-  itemName: {
-    fontFamily: typography.headingSemibold,
-    fontSize: 16,
-    color: colors.text,
-  },
-  itemTotal: {
-    fontFamily: typography.heading,
-    fontSize: 16,
-    color: colors.primary,
-  },
-  snapshot: { ...textStyles.technical, marginTop: spacing.xs, fontSize: 9 },
-  total: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  totalLabel: { ...textStyles.heading },
-  audit: { gap: spacing.xs, backgroundColor: colors.surfaceBright },
-  payment: { gap: spacing.sm },
-  paymentSuccess: { backgroundColor: colors.successSoft },
-  paymentHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.sm,
-  },
-  paymentCopy: { flex: 1 },
-  paymentTitle: { ...textStyles.heading, marginTop: spacing.xs },
-  printedInfo: { gap: spacing.xs, backgroundColor: colors.container },
-  printedInfoTitle: { ...textStyles.heading, color: colors.textMuted },
-  terminal: { ...textStyles.technical, fontSize: 9 },
-  onlineOnly: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    textAlign: "center",
-    fontSize: 12,
-  },
-  sandboxPaymentAmount: {
-    ...textStyles.body,
-    color: colors.warning,
-    fontFamily: typography.bodySemibold,
-  },
-});
+const baseStyles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    badges: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
+    conflict: { gap: spacing.sm, backgroundColor: colors.warningSoft },
+    conflictTitle: { ...textStyles.heading, color: colors.warning },
+    syncBlocked: { gap: spacing.sm, backgroundColor: colors.errorSoft },
+    syncBlockedTitle: { ...textStyles.heading, color: colors.error },
+    muted: { ...textStyles.body, color: colors.textMuted },
+    receipt: { gap: spacing.md },
+    metaRow: { flexDirection: "row", justifyContent: "space-between" },
+    metaValue: {
+      fontFamily: typography.bodySemibold,
+      color: colors.text,
+      marginTop: spacing.xs,
+    },
+    alignRight: { alignItems: "flex-end" },
+    rule: { height: 1, backgroundColor: colors.outline },
+    item: { flexDirection: "row", gap: spacing.sm },
+    itemCopy: { flex: 1 },
+    itemName: {
+      fontFamily: typography.headingSemibold,
+      fontSize: 16,
+      color: colors.text,
+    },
+    itemTotal: {
+      fontFamily: typography.heading,
+      fontSize: 16,
+      color: colors.primary,
+    },
+    snapshot: { ...textStyles.technical, marginTop: spacing.xs, fontSize: 9 },
+    total: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    totalLabel: { ...textStyles.heading },
+    audit: { gap: spacing.xs, backgroundColor: colors.surfaceBright },
+    payment: { gap: spacing.sm },
+    paymentSuccess: { backgroundColor: colors.successSoft },
+    paymentHeader: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+    },
+    paymentCopy: { flex: 1 },
+    paymentTitle: { ...textStyles.heading, marginTop: spacing.xs },
+    printedInfo: { gap: spacing.xs, backgroundColor: colors.container },
+    printedInfoTitle: { ...textStyles.heading, color: colors.textMuted },
+    terminal: { ...textStyles.technical, fontSize: 9 },
+    onlineOnly: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      textAlign: "center",
+      fontSize: 12,
+    },
+    sandboxPaymentAmount: {
+      ...textStyles.body,
+      color: colors.warning,
+      fontFamily: typography.bodySemibold,
+    },
+  }),
+);

@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { StateView } from "@/components/ui/StateView";
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import {
   listHistoryCreatorOptions,
   listHistoryPackageOptions,
@@ -22,11 +23,9 @@ import {
 } from "@/db/repositories";
 import type { SyncState, Transaction } from "@/domain/types";
 import {
-  colors,
   minimumTouchTarget,
   radius,
   spacing,
-  textStyles,
   typography,
 } from "@/theme/tokens";
 import {
@@ -47,6 +46,7 @@ const syncFilters: { label: string; value?: SyncState }[] = [
 ];
 
 export default function HistoryScreen() {
+  const colors = useThemeColors();
   const styles = useResponsiveStyles(baseStyles);
   const router = useRouter();
   const { session } = useAuth();
@@ -465,146 +465,148 @@ function HistorySeparator() {
   return <View style={{ height: spacing.md }} />;
 }
 
-const baseStyles = StyleSheet.create({
-  list: { flex: 1 },
-  listHeader: { gap: spacing.md, paddingBottom: spacing.md },
-  listFooter: { paddingTop: spacing.md },
-  searchControls: { gap: spacing.sm },
-  searchChip: {
-    minHeight: minimumTouchTarget,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
-  },
-  searchChipText: { ...textStyles.body, color: colors.primary, flex: 1 },
-  resultToolbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
-  },
-  resultSummary: {
-    flex: 1,
-    gap: 2,
-  },
-  resultTitle: {
-    ...textStyles.label,
-    color: colors.text,
-  },
-  resultCount: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    fontSize: 12,
-  },
-  filterButton: {
-    minHeight: minimumTouchTarget,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.outline,
-    backgroundColor: colors.card,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.xs,
-  },
-  filterButtonExpanded: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
-  },
-  filterButtonText: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    fontFamily: typography.bodyMedium,
-  },
-  filterButtonTextExpanded: {
-    color: colors.primary,
-  },
-  filterCount: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: radius.pill,
-    paddingHorizontal: 5,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  filterCountText: {
-    fontFamily: typography.bodySemibold,
-    fontSize: 11,
-    color: colors.onPrimary,
-  },
-  filterPanel: {
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.outline,
-    backgroundColor: colors.card,
-    gap: spacing.md,
-  },
-  filterPanelHeader: {
-    minHeight: 32,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-  },
-  filterPanelTitle: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  filterPanelTitleText: {
-    fontFamily: typography.headingSemibold,
-    fontSize: 16,
-    color: colors.text,
-  },
-  resetButton: {
-    minHeight: minimumTouchTarget,
-    minWidth: minimumTouchTarget,
-    paddingHorizontal: spacing.sm,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  resetButtonText: {
-    ...textStyles.body,
-    color: colors.primary,
-    fontFamily: typography.bodySemibold,
-  },
-  group: {
-    gap: spacing.sm,
-  },
-  groupTitle: {
-    ...textStyles.label,
-    color: colors.textMuted,
-  },
-  filters: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    flexWrap: "wrap",
-  },
-  filter: {
-    minHeight: minimumTouchTarget,
-    justifyContent: "center",
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.outline,
-    backgroundColor: colors.card,
-  },
-  filterSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  filterText: { ...textStyles.body, fontFamily: typography.bodyMedium },
-  filterTextSelected: { color: colors.onPrimary },
-  pressed: {
-    opacity: 0.72,
-  },
-});
+const baseStyles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    list: { flex: 1 },
+    listHeader: { gap: spacing.md, paddingBottom: spacing.md },
+    listFooter: { paddingTop: spacing.md },
+    searchControls: { gap: spacing.sm },
+    searchChip: {
+      minHeight: minimumTouchTarget,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      backgroundColor: colors.primarySoft,
+    },
+    searchChipText: { ...textStyles.body, color: colors.primary, flex: 1 },
+    resultToolbar: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    resultSummary: {
+      flex: 1,
+      gap: 2,
+    },
+    resultTitle: {
+      ...textStyles.label,
+      color: colors.text,
+    },
+    resultCount: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      fontSize: 12,
+    },
+    filterButton: {
+      minHeight: minimumTouchTarget,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.outline,
+      backgroundColor: colors.card,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.xs,
+    },
+    filterButtonExpanded: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primarySoft,
+    },
+    filterButtonText: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      fontFamily: typography.bodyMedium,
+    },
+    filterButtonTextExpanded: {
+      color: colors.primary,
+    },
+    filterCount: {
+      minWidth: 20,
+      height: 20,
+      borderRadius: radius.pill,
+      paddingHorizontal: 5,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    filterCountText: {
+      fontFamily: typography.bodySemibold,
+      fontSize: 11,
+      color: colors.onPrimary,
+    },
+    filterPanel: {
+      padding: spacing.md,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.outline,
+      backgroundColor: colors.card,
+      gap: spacing.md,
+    },
+    filterPanelHeader: {
+      minHeight: 32,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+    },
+    filterPanelTitle: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    filterPanelTitleText: {
+      fontFamily: typography.headingSemibold,
+      fontSize: 16,
+      color: colors.text,
+    },
+    resetButton: {
+      minHeight: minimumTouchTarget,
+      minWidth: minimumTouchTarget,
+      paddingHorizontal: spacing.sm,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    resetButtonText: {
+      ...textStyles.body,
+      color: colors.primary,
+      fontFamily: typography.bodySemibold,
+    },
+    group: {
+      gap: spacing.sm,
+    },
+    groupTitle: {
+      ...textStyles.label,
+      color: colors.textMuted,
+    },
+    filters: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      flexWrap: "wrap",
+    },
+    filter: {
+      minHeight: minimumTouchTarget,
+      justifyContent: "center",
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.outline,
+      backgroundColor: colors.card,
+    },
+    filterSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    filterText: { ...textStyles.body, fontFamily: typography.bodyMedium },
+    filterTextSelected: { color: colors.onPrimary },
+    pressed: {
+      opacity: 0.72,
+    },
+  }),
+);

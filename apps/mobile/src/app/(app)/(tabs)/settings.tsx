@@ -13,17 +13,31 @@ import { MenuRow } from "@/components/ui/MenuRow";
 import { useConfirmation } from "@/components/ui/ConfirmationProvider";
 import { useContextNavigation } from "@/navigation/context-navigation";
 import { ManagedTenantsScreen } from "@/tenant/screens";
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
 import {
-  colors,
-  radius,
-  spacing,
-  textStyles,
-  typography,
-} from "@/theme/tokens";
+  useAppearancePreference,
+  type AppearancePreference,
+} from "@/theme/ThemeContext";
+import { radius, spacing, typography } from "@/theme/tokens";
 import { initials } from "@/utils/format";
 
 const appVersion = Constants.expoConfig?.version ?? "0.2.0";
+
+const appearanceOptions: {
+  value: AppearancePreference;
+  title: string;
+  detail?: string;
+  icon: "theme-light-dark" | "white-balance-sunny" | "weather-night";
+}[] = [
+  {
+    value: "system",
+    title: "Ikuti sistem",
+    detail: "Terang atau gelap mengikuti pengaturan Android",
+    icon: "theme-light-dark",
+  },
+  { value: "light", title: "Terang", icon: "white-balance-sunny" },
+  { value: "dark", title: "Gelap", icon: "weather-night" },
+];
 
 export default function SettingsScreen() {
   const styles = useResponsiveStyles(baseStyles);
@@ -33,6 +47,7 @@ export default function SettingsScreen() {
   const { confirm } = useConfirmation();
   const [error, setError] = useState<string | null>(null);
   const [showTenants, setShowTenants] = useState(false);
+  const appearance = useAppearancePreference();
 
   if (showTenants) {
     return <ManagedTenantsScreen onBack={() => setShowTenants(false)} />;
@@ -100,6 +115,19 @@ export default function SettingsScreen() {
             title="Ganti kata sandi"
           />
         ) : null}
+      </Card>
+      <Text style={styles.section}>TAMPILAN</Text>
+      <Card padded={false}>
+        {appearanceOptions.map((option) => (
+          <MenuRow
+            key={option.value}
+            icon={option.icon}
+            title={option.title}
+            {...(option.detail ? { detail: option.detail } : {})}
+            selected={appearance.preference === option.value}
+            onPress={() => appearance.setPreference(option.value)}
+          />
+        ))}
       </Card>
       <Text style={styles.section}>TERMINAL</Text>
       <Card padded={false}>
@@ -173,44 +201,50 @@ export default function SettingsScreen() {
   );
 }
 
-const baseStyles = StyleSheet.create({
-  profile: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.lg,
-    backgroundColor: colors.onPrimary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: {
-    fontFamily: typography.heading,
-    fontSize: 18,
-    color: colors.primary,
-  },
-  profileCopy: { flex: 1, gap: 2 },
-  name: {
-    fontFamily: typography.heading,
-    color: colors.onPrimary,
-    fontSize: 18,
-  },
-  username: { ...textStyles.body, color: colors.primarySoft },
-  role: {
-    marginTop: spacing.xs,
-    backgroundColor: colors.onPrimary,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    alignSelf: "flex-start",
-  },
-  roleText: { ...textStyles.label, color: colors.primary, fontSize: 10 },
-  section: textStyles.label,
-  error: { ...textStyles.body, color: colors.error },
-  version: { ...textStyles.label, textAlign: "center", marginTop: spacing.lg },
-});
+const baseStyles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    profile: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+    },
+    avatar: {
+      width: 64,
+      height: 64,
+      borderRadius: radius.lg,
+      backgroundColor: colors.onPrimary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    avatarText: {
+      fontFamily: typography.heading,
+      fontSize: 18,
+      color: colors.primary,
+    },
+    profileCopy: { flex: 1, gap: 2 },
+    name: {
+      fontFamily: typography.heading,
+      color: colors.onPrimary,
+      fontSize: 18,
+    },
+    username: { ...textStyles.body, color: colors.primarySoft },
+    role: {
+      marginTop: spacing.xs,
+      backgroundColor: colors.onPrimary,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      alignSelf: "flex-start",
+    },
+    roleText: { ...textStyles.label, color: colors.primary, fontSize: 10 },
+    section: textStyles.label,
+    error: { ...textStyles.body, color: colors.error },
+    version: {
+      ...textStyles.label,
+      textAlign: "center",
+      marginTop: spacing.lg,
+    },
+  }),
+);

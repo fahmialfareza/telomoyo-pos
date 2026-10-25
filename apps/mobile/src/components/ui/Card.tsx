@@ -1,7 +1,7 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
 import { StyleSheet, View, type ViewProps, type ViewStyle } from "react-native";
 
-import { cardStyle, spacing } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 
 interface CardProps extends ViewProps {
   padded?: boolean;
@@ -18,9 +18,11 @@ export function Card({ padded = true, style, ...props }: CardProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: cardStyle,
-  padded: {
-    padding: spacing.md,
-  },
-});
+const styles = themed(({ cardStyle }) =>
+  StyleSheet.create({
+    card: cardStyle,
+    padded: {
+      padding: spacing.md,
+    },
+  }),
+);

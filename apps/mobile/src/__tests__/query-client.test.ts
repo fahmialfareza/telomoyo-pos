@@ -16,11 +16,14 @@ describe("shouldRetryQuery", () => {
     },
   );
 
-  it.each([400, 401, 403, 404, 409, 422])("never retries status %s", (status) => {
-    expect(
-      shouldRetryQuery(1, new ApiError({ status, code: "X", message: "x" })),
-    ).toBe(false);
-  });
+  it.each([400, 401, 403, 404, 409, 422])(
+    "never retries status %s",
+    (status) => {
+      expect(
+        shouldRetryQuery(1, new ApiError({ status, code: "X", message: "x" })),
+      ).toBe(false);
+    },
+  );
 
   it("never retries non-ApiError failures", () => {
     expect(shouldRetryQuery(1, new Error("boom"))).toBe(false);

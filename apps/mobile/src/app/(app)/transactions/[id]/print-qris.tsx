@@ -16,10 +16,13 @@ import { getConfiguredPrinter } from "@/printer/service";
 import { beginLocalMutation } from "@/mode/mutation-barrier";
 import { useModeStore } from "@/mode/mode-store";
 import { qrisDocumentForTransaction } from "@/tenant/transaction-qris";
-import { colors } from "@/theme/tokens";
+import { useResponsiveTextStyles } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { formatRupiah } from "@/utils/format";
 
 export default function PrintQrisScreen() {
+  const colors = useThemeColors();
+  const textStyles = useResponsiveTextStyles();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session } = useAuth();
@@ -156,7 +159,7 @@ export default function PrintQrisScreen() {
             sandbox={document.dataMode === "sandbox"}
             error={null}
           />
-          <Text>
+          <Text style={textStyles.body}>
             {printing
               ? "Mencetak QRIS pembayaran… struk akan dicetak sesudahnya."
               : `QRIS ${formatRupiah(document.paymentAmount)} siap dicetak.`}
@@ -171,7 +174,7 @@ export default function PrintQrisScreen() {
       ) : (
         <View>
           <ActivityIndicator color={colors.primary} />
-          <Text>Menyiapkan QRIS transaksi…</Text>
+          <Text style={textStyles.body}>Menyiapkan QRIS transaksi…</Text>
         </View>
       )}
     </AppScreen>

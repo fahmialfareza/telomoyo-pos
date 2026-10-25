@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -17,11 +19,12 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { listPackages, upsertPackage } from "@/db/repositories";
 import type { RentalPackage } from "@/domain/types";
-import { colors, spacing, textStyles, typography } from "@/theme/tokens";
+import { spacing, typography } from "@/theme/tokens";
 import { formatRupiah } from "@/utils/format";
 import { toUserFacingErrorMessage } from "@/utils/errors";
 
 export default function PackagesScreen() {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const responsiveText = useResponsiveTextStyles();
   const router = useRouter();
@@ -39,10 +42,7 @@ export default function PackagesScreen() {
     useCallback(() => {
       void load().catch((reason) =>
         setLoadError(
-          toUserFacingErrorMessage(
-            reason,
-            "Daftar paket belum dapat dimuat.",
-          ),
+          toUserFacingErrorMessage(reason, "Daftar paket belum dapat dimuat."),
         ),
       );
     }, [load]),
@@ -148,33 +148,35 @@ export default function PackagesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  package: {
-    paddingLeft: spacing.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    overflow: "hidden",
-    gap: spacing.sm,
-  },
-  accent: { position: "absolute", left: 0, top: 0, bottom: 0, width: 5 },
-  copy: { flex: 1 },
-  name: {
-    fontFamily: typography.headingSemibold,
-    fontSize: 16,
-    color: colors.text,
-  },
-  description: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
-  revision: {
-    ...textStyles.technical,
-    fontSize: 9,
-    marginTop: spacing.xs,
-  },
-  right: { alignItems: "flex-end" },
-  price: {
-    fontFamily: typography.heading,
-    color: colors.primary,
-    fontSize: 16,
-  },
-  active: { ...textStyles.label, color: colors.success, fontSize: 9 },
-  inactive: { ...textStyles.label, color: colors.textMuted, fontSize: 9 },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    package: {
+      paddingLeft: spacing.lg,
+      flexDirection: "row",
+      alignItems: "center",
+      overflow: "hidden",
+      gap: spacing.sm,
+    },
+    accent: { position: "absolute", left: 0, top: 0, bottom: 0, width: 5 },
+    copy: { flex: 1 },
+    name: {
+      fontFamily: typography.headingSemibold,
+      fontSize: 16,
+      color: colors.text,
+    },
+    description: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
+    revision: {
+      ...textStyles.technical,
+      fontSize: 9,
+      marginTop: spacing.xs,
+    },
+    right: { alignItems: "flex-end" },
+    price: {
+      fontFamily: typography.heading,
+      color: colors.primary,
+      fontSize: 16,
+    },
+    active: { ...textStyles.label, color: colors.success, fontSize: 9 },
+    inactive: { ...textStyles.label, color: colors.textMuted, fontSize: 9 },
+  }),
+);

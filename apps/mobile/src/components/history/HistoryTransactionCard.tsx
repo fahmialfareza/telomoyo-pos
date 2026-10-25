@@ -1,4 +1,5 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type {
@@ -9,11 +10,9 @@ import type {
 } from "@/domain/types";
 import { paymentMethodLabel, paymentStatusLabel } from "@/domain/payments";
 import {
-  colors,
   minimumTouchTarget,
   radius,
   spacing,
-  textStyles,
   typography,
 } from "@/theme/tokens";
 import {
@@ -50,6 +49,7 @@ export function HistoryTransactionCard({
   onPress: () => void;
   dataMode?: DataMode;
 }) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const transactionId = compactTransactionId(transaction.id, dataMode);
   const itemQuantity = transaction.items.reduce(
@@ -127,89 +127,91 @@ export function HistoryTransactionCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    minHeight: minimumTouchTarget,
-    backgroundColor: colors.card,
-    borderColor: colors.outline,
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    flexDirection: "row",
-    overflow: "hidden",
-  },
-  accent: {
-    width: 4,
-  },
-  content: {
-    flex: 1,
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-  },
-  id: {
-    ...textStyles.technical,
-    color: colors.textMuted,
-    flex: 1,
-  },
-  summary: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.md,
-  },
-  summaryCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  packageNames: {
-    fontFamily: typography.headingSemibold,
-    fontSize: 16,
-    lineHeight: 22,
-    color: colors.text,
-  },
-  date: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    fontSize: 12,
-  },
-  amount: {
-    fontFamily: typography.heading,
-    fontSize: 17,
-    lineHeight: 22,
-    color: colors.primary,
-    textAlign: "right",
-  },
-  footer: {
-    minHeight: 28,
-    paddingTop: spacing.sm,
-    borderTopColor: colors.outline,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  actor: {
-    flex: 1,
-    minWidth: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-  },
-  actorName: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    flexShrink: 1,
-  },
-  chevron: {
-    width: 24,
-    alignItems: "flex-end",
-  },
-  pressed: {
-    backgroundColor: colors.surfaceBright,
-    opacity: 0.86,
-  },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    card: {
+      minHeight: minimumTouchTarget,
+      backgroundColor: colors.card,
+      borderColor: colors.outline,
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      flexDirection: "row",
+      overflow: "hidden",
+    },
+    accent: {
+      width: 4,
+    },
+    content: {
+      flex: 1,
+      padding: spacing.md,
+      gap: spacing.sm,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+    },
+    id: {
+      ...textStyles.technical,
+      color: colors.textMuted,
+      flex: 1,
+    },
+    summary: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.md,
+    },
+    summaryCopy: {
+      flex: 1,
+      gap: 2,
+    },
+    packageNames: {
+      fontFamily: typography.headingSemibold,
+      fontSize: 16,
+      lineHeight: 22,
+      color: colors.text,
+    },
+    date: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      fontSize: 12,
+    },
+    amount: {
+      fontFamily: typography.heading,
+      fontSize: 17,
+      lineHeight: 22,
+      color: colors.primary,
+      textAlign: "right",
+    },
+    footer: {
+      minHeight: 28,
+      paddingTop: spacing.sm,
+      borderTopColor: colors.outline,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    actor: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+    },
+    actorName: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      flexShrink: 1,
+    },
+    chevron: {
+      width: 24,
+      alignItems: "flex-end",
+    },
+    pressed: {
+      backgroundColor: colors.surfaceBright,
+      opacity: 0.86,
+    },
+  }),
+);

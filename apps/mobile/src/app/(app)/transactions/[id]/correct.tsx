@@ -1,6 +1,7 @@
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -33,7 +34,7 @@ import type {
 } from "@/domain/types";
 import { readQrisConfig, type QrisConfig } from "@/security/secure-store";
 import { useSyncRuntime } from "@/sync/SyncProvider";
-import { colors, spacing, textStyles, typography } from "@/theme/tokens";
+import { spacing, typography } from "@/theme/tokens";
 import { displayTransactionId, formatRupiah } from "@/utils/format";
 
 interface TransactionLoadResult {
@@ -323,23 +324,25 @@ export default function CorrectTransactionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  notice: { gap: spacing.xs, backgroundColor: colors.primarySoft },
-  noticeTitle: { ...textStyles.heading, color: colors.primary },
-  muted: { ...textStyles.body, color: colors.textMuted },
-  line: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  copy: { flex: 1 },
-  name: {
-    fontFamily: typography.headingSemibold,
-    fontSize: 16,
-    color: colors.text,
-  },
-  reason: { minHeight: 96, textAlignVertical: "top", paddingTop: spacing.md },
-  total: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  error: { ...textStyles.body, color: colors.error },
-  legacyMethod: { ...textStyles.body, color: colors.warning },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    notice: { gap: spacing.xs, backgroundColor: colors.primarySoft },
+    noticeTitle: { ...textStyles.heading, color: colors.primary },
+    muted: { ...textStyles.body, color: colors.textMuted },
+    line: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+    copy: { flex: 1 },
+    name: {
+      fontFamily: typography.headingSemibold,
+      fontSize: 16,
+      color: colors.text,
+    },
+    reason: { minHeight: 96, textAlignVertical: "top", paddingTop: spacing.md },
+    total: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    error: { ...textStyles.body, color: colors.error },
+    legacyMethod: { ...textStyles.body, color: colors.warning },
+  }),
+);

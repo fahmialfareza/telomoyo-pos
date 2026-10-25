@@ -1,16 +1,11 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 
 import { formatRupiah } from "@/utils/format";
-import {
-  colors,
-  radius,
-  spacing,
-  textStyles,
-  typography,
-} from "@/theme/tokens";
+import { radius, spacing, typography } from "@/theme/tokens";
 
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -37,6 +32,7 @@ export function DynamicQrisCard({
   error,
   onConfigure,
 }: DynamicQrisCardProps) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const [qrWidth, setQrWidth] = useState(304);
   if (!payload || !merchantName || !merchantCity) {
@@ -122,97 +118,99 @@ export function DynamicQrisCard({
   );
 }
 
-const styles = StyleSheet.create({
-  ready: {
-    gap: spacing.md,
-    alignItems: "stretch",
-    borderColor: colors.primary,
-    backgroundColor: colors.surfaceBright,
-  },
-  unavailable: {
-    gap: spacing.md,
-    backgroundColor: colors.warningSoft,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  headerCopy: { flex: 1 },
-  readyIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.primarySoft,
-  },
-  warningIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.card,
-  },
-  eyebrow: { ...textStyles.label, color: colors.primary, fontSize: 10 },
-  title: { ...textStyles.heading, marginTop: 2 },
-  qrFrame: {
-    alignSelf: "center",
-    alignItems: "center",
-    width: "100%",
-    borderRadius: radius.lg,
-    backgroundColor: colors.card,
-  },
-  amountBlock: { alignItems: "center", gap: spacing.xs },
-  amountLabel: { ...textStyles.label, fontSize: 10 },
-  amount: {
-    fontFamily: typography.price,
-    fontSize: 28,
-    lineHeight: 36,
-    color: colors.primary,
-  },
-  merchant: {
-    alignItems: "center",
-    gap: 2,
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.outline,
-  },
-  merchantName: {
-    fontFamily: typography.headingSemibold,
-    fontSize: 16,
-    color: colors.text,
-    textAlign: "center",
-  },
-  merchantCity: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    textAlign: "center",
-  },
-  guidance: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    textAlign: "center",
-    fontSize: 12,
-  },
-  sandboxNotice: {
-    padding: spacing.sm,
-    borderRadius: radius.md,
-    backgroundColor: colors.warningSoft,
-    borderWidth: 1,
-    borderColor: colors.warning,
-    alignItems: "center",
-  },
-  sandboxNoticeTitle: {
-    ...textStyles.label,
-    color: colors.warning,
-    fontSize: 11,
-  },
-  sandboxNoticeText: {
-    ...textStyles.body,
-    color: colors.warning,
-    textAlign: "center",
-  },
-  orderTotal: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    ready: {
+      gap: spacing.md,
+      alignItems: "stretch",
+      borderColor: colors.primary,
+      backgroundColor: colors.surfaceBright,
+    },
+    unavailable: {
+      gap: spacing.md,
+      backgroundColor: colors.warningSoft,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    headerCopy: { flex: 1 },
+    readyIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.primarySoft,
+    },
+    warningIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.card,
+    },
+    eyebrow: { ...textStyles.label, color: colors.primary, fontSize: 10 },
+    title: { ...textStyles.heading, marginTop: 2 },
+    qrFrame: {
+      alignSelf: "center",
+      alignItems: "center",
+      width: "100%",
+      borderRadius: radius.lg,
+      backgroundColor: colors.card,
+    },
+    amountBlock: { alignItems: "center", gap: spacing.xs },
+    amountLabel: { ...textStyles.label, fontSize: 10 },
+    amount: {
+      fontFamily: typography.price,
+      fontSize: 28,
+      lineHeight: 36,
+      color: colors.primary,
+    },
+    merchant: {
+      alignItems: "center",
+      gap: 2,
+      paddingTop: spacing.sm,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.outline,
+    },
+    merchantName: {
+      fontFamily: typography.headingSemibold,
+      fontSize: 16,
+      color: colors.text,
+      textAlign: "center",
+    },
+    merchantCity: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      textAlign: "center",
+    },
+    guidance: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      textAlign: "center",
+      fontSize: 12,
+    },
+    sandboxNotice: {
+      padding: spacing.sm,
+      borderRadius: radius.md,
+      backgroundColor: colors.warningSoft,
+      borderWidth: 1,
+      borderColor: colors.warning,
+      alignItems: "center",
+    },
+    sandboxNoticeTitle: {
+      ...textStyles.label,
+      color: colors.warning,
+      fontSize: 11,
+    },
+    sandboxNoticeText: {
+      ...textStyles.body,
+      color: colors.warning,
+      textAlign: "center",
+    },
+    orderTotal: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
+  }),
+);

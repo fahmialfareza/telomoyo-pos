@@ -1,6 +1,7 @@
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
 import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -10,13 +11,7 @@ import { AppScreen } from "@/components/layout/AppScreen";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import {
-  colors,
-  radius,
-  spacing,
-  textStyles,
-  typography,
-} from "@/theme/tokens";
+import { radius, spacing, typography } from "@/theme/tokens";
 import { initials } from "@/utils/format";
 
 export default function ProfileScreen() {
@@ -73,25 +68,27 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  profile: { alignItems: "center", gap: spacing.xs },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: {
-    fontFamily: typography.heading,
-    fontSize: 22,
-    color: colors.onPrimary,
-  },
-  name: { ...textStyles.heading, marginTop: spacing.sm },
-  username: { ...textStyles.body, color: colors.textMuted },
-  details: { gap: spacing.md },
-  row: { gap: spacing.xs },
-  value: { ...textStyles.body, fontFamily: typography.bodyMedium },
-  note: { ...textStyles.body, color: colors.textMuted, textAlign: "center" },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    profile: { alignItems: "center", gap: spacing.xs },
+    avatar: {
+      width: 72,
+      height: 72,
+      borderRadius: radius.lg,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    avatarText: {
+      fontFamily: typography.heading,
+      fontSize: 22,
+      color: colors.onPrimary,
+    },
+    name: { ...textStyles.heading, marginTop: spacing.sm },
+    username: { ...textStyles.body, color: colors.textMuted },
+    details: { gap: spacing.md },
+    row: { gap: spacing.xs },
+    value: { ...textStyles.body, fontFamily: typography.bodyMedium },
+    note: { ...textStyles.body, color: colors.textMuted, textAlign: "center" },
+  }),
+);

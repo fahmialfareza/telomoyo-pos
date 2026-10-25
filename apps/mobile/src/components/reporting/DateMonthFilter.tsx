@@ -1,4 +1,5 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
@@ -13,11 +14,9 @@ import {
 } from "react-native";
 
 import {
-  colors,
   minimumTouchTarget,
   radius,
   spacing,
-  textStyles,
   typography,
 } from "@/theme/tokens";
 import {
@@ -88,6 +87,7 @@ export function DateMonthFilter({
   onMonthChange,
   maximumDate = currentJakartaDate(),
 }: DateMonthFilterProps) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const maximumMonth = monthFromCalendarDate(maximumDate);
   const selection = mode === "date" ? date : month;
@@ -309,6 +309,7 @@ function PeriodArrow({
   icon: "chevron-left" | "chevron-right";
   onPress: () => void;
 }) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   return (
     <Pressable
@@ -343,6 +344,7 @@ function MonthPickerModal({
   selectedMonth: CalendarMonthKey;
   year: number;
 }) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const maximumYear = parseCalendarMonthKey(maximumMonth).year;
 
@@ -429,158 +431,160 @@ function MonthPickerModal({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    gap: spacing.sm,
-  },
-  modeSelector: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  modeButton: {
-    minHeight: minimumTouchTarget,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.outline,
-    backgroundColor: colors.card,
-  },
-  modeButtonSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary,
-  },
-  modeButtonText: {
-    ...textStyles.body,
-    fontFamily: typography.bodyMedium,
-  },
-  modeButtonTextSelected: {
-    color: colors.onPrimary,
-  },
-  selectionRow: {
-    flexDirection: "row",
-    alignItems: "stretch",
-    gap: spacing.sm,
-  },
-  arrowButton: {
-    width: minimumTouchTarget,
-    minHeight: minimumTouchTarget,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.outline,
-    backgroundColor: colors.card,
-  },
-  selectionButton: {
-    minHeight: 60,
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
-  },
-  selectionCopy: {
-    minWidth: 0,
-    flex: 1,
-    gap: 2,
-  },
-  selectionCaption: {
-    ...textStyles.label,
-    color: colors.primary,
-  },
-  selectionValue: {
-    fontFamily: typography.bodySemibold,
-    fontSize: 15,
-    color: colors.text,
-    textTransform: "capitalize",
-  },
-  modalBackdrop: {
-    flex: 1,
-    justifyContent: "center",
-    padding: spacing.md,
-    backgroundColor: "rgba(25, 27, 35, 0.48)",
-  },
-  modalCard: {
-    width: "100%",
-    maxWidth: 440,
-    alignSelf: "center",
-    gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: radius.xl,
-    backgroundColor: colors.card,
-  },
-  modalHeading: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: spacing.md,
-  },
-  modalTitleCopy: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  modalEyebrow: {
-    ...textStyles.label,
-    color: colors.primary,
-  },
-  modalTitle: {
-    ...textStyles.heading,
-    textTransform: "capitalize",
-  },
-  closeButton: {
-    width: minimumTouchTarget,
-    height: minimumTouchTarget,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  yearSelector: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  yearValue: {
-    fontFamily: typography.heading,
-    fontSize: 22,
-    color: colors.text,
-  },
-  monthGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  monthButton: {
-    minHeight: minimumTouchTarget,
-    flexBasis: "30%",
-    flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.outline,
-    backgroundColor: colors.card,
-  },
-  monthButtonSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary,
-  },
-  monthButtonText: {
-    ...textStyles.body,
-    fontFamily: typography.bodyMedium,
-    textTransform: "capitalize",
-  },
-  monthButtonTextSelected: {
-    color: colors.onPrimary,
-  },
-  pressed: {
-    opacity: 0.72,
-  },
-  disabled: {
-    opacity: 0.38,
-  },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    container: {
+      gap: spacing.sm,
+    },
+    modeSelector: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    modeButton: {
+      minHeight: minimumTouchTarget,
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.outline,
+      backgroundColor: colors.card,
+    },
+    modeButtonSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primary,
+    },
+    modeButtonText: {
+      ...textStyles.body,
+      fontFamily: typography.bodyMedium,
+    },
+    modeButtonTextSelected: {
+      color: colors.onPrimary,
+    },
+    selectionRow: {
+      flexDirection: "row",
+      alignItems: "stretch",
+      gap: spacing.sm,
+    },
+    arrowButton: {
+      width: minimumTouchTarget,
+      minHeight: minimumTouchTarget,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.outline,
+      backgroundColor: colors.card,
+    },
+    selectionButton: {
+      minHeight: 60,
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      backgroundColor: colors.primarySoft,
+    },
+    selectionCopy: {
+      minWidth: 0,
+      flex: 1,
+      gap: 2,
+    },
+    selectionCaption: {
+      ...textStyles.label,
+      color: colors.primary,
+    },
+    selectionValue: {
+      fontFamily: typography.bodySemibold,
+      fontSize: 15,
+      color: colors.text,
+      textTransform: "capitalize",
+    },
+    modalBackdrop: {
+      flex: 1,
+      justifyContent: "center",
+      padding: spacing.md,
+      backgroundColor: "rgba(25, 27, 35, 0.48)",
+    },
+    modalCard: {
+      width: "100%",
+      maxWidth: 440,
+      alignSelf: "center",
+      gap: spacing.md,
+      padding: spacing.md,
+      borderRadius: radius.xl,
+      backgroundColor: colors.card,
+    },
+    modalHeading: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    modalTitleCopy: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    modalEyebrow: {
+      ...textStyles.label,
+      color: colors.primary,
+    },
+    modalTitle: {
+      ...textStyles.heading,
+      textTransform: "capitalize",
+    },
+    closeButton: {
+      width: minimumTouchTarget,
+      height: minimumTouchTarget,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    yearSelector: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    yearValue: {
+      fontFamily: typography.heading,
+      fontSize: 22,
+      color: colors.text,
+    },
+    monthGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    monthButton: {
+      minHeight: minimumTouchTarget,
+      flexBasis: "30%",
+      flexGrow: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.outline,
+      backgroundColor: colors.card,
+    },
+    monthButtonSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primary,
+    },
+    monthButtonText: {
+      ...textStyles.body,
+      fontFamily: typography.bodyMedium,
+      textTransform: "capitalize",
+    },
+    monthButtonTextSelected: {
+      color: colors.onPrimary,
+    },
+    pressed: {
+      opacity: 0.72,
+    },
+    disabled: {
+      opacity: 0.38,
+    },
+  }),
+);

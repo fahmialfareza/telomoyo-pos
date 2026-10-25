@@ -21,16 +21,12 @@ import { StateView } from "@/components/ui/StateView";
 import { readStaticQrisFromImage } from "@/domain/qris-image";
 import { validateStaticQris, type ParsedQris } from "@/domain/qris";
 import { readLegacyQrisConfig } from "@/security/secure-store";
-import {
-  colors,
-  radius,
-  spacing,
-  textStyles,
-  typography,
-} from "@/theme/tokens";
+import { radius, spacing, typography } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/ThemeContext";
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
 
 const MAX_QRIS_IMAGE_BYTES = 25 * 1024 * 1024;
@@ -49,6 +45,7 @@ interface QrisSummaryCardProps {
 }
 
 function QrisSummaryCard({ qris, status }: QrisSummaryCardProps) {
+  const colors = useThemeColors();
   const styles = useResponsiveStyles(baseStyles);
   const textStyles = useResponsiveTextStyles();
   const saved = status === "saved";
@@ -130,6 +127,7 @@ async function parseQrisImageAsset(
 }
 
 export default function QrisSettingsScreen() {
+  const colors = useThemeColors();
   const styles = useResponsiveStyles(baseStyles);
   const { confirm } = useConfirmation();
   const { session } = useAuth();
@@ -172,7 +170,9 @@ export default function QrisSettingsScreen() {
       const selected = config.payloads.find(
         (item) => item.payloadHash === config.activePayloadHash,
       );
-      const current = selected ? validateStaticQris(selected.staticPayload) : null;
+      const current = selected
+        ? validateStaticQris(selected.staticPayload)
+        : null;
       if (!active) return;
       setSaved(current);
       setRevision(config.revision);
@@ -181,7 +181,9 @@ export default function QrisSettingsScreen() {
         if (
           previous &&
           active &&
-          !config.payloads.some((item) => item.staticPayload === previous.staticPayload)
+          !config.payloads.some(
+            (item) => item.staticPayload === previous.staticPayload,
+          )
         )
           setLegacy(validateStaticQris(previous.staticPayload));
       }
@@ -550,103 +552,108 @@ export default function QrisSettingsScreen() {
   );
 }
 
-const baseStyles = StyleSheet.create({
-  activationRow: {
-    minHeight: 56,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  activationCopy: { flex: 1, gap: spacing.xs },
-  activationLabel: { ...textStyles.body, fontFamily: typography.bodySemibold },
-  info: { gap: spacing.xs, backgroundColor: colors.primarySoft },
-  infoTitle: { ...textStyles.heading, color: colors.primary },
-  infoText: { ...textStyles.body, color: colors.textMuted },
-  savedCard: { gap: spacing.md, backgroundColor: colors.successSoft },
-  candidateCard: { gap: spacing.md, backgroundColor: colors.primarySoft },
-  lockHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  lockIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.card,
-  },
-  candidateIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.card,
-  },
-  lockCopy: { flex: 1, gap: 2 },
-  lockHint: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
-  qrFrame: {
-    alignSelf: "center",
-    backgroundColor: "#FFFFFF",
-    padding: spacing.sm,
-    borderRadius: radius.lg,
-  },
-  merchantCopy: { alignItems: "center", gap: spacing.xs },
-  merchantName: {
-    fontFamily: typography.heading,
-    fontSize: 20,
-    color: colors.text,
-    textAlign: "center",
-  },
-  merchantCity: { ...textStyles.body, color: colors.textMuted },
-  payloadReference: {
-    minHeight: 36,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.sm,
-    backgroundColor: colors.card,
-  },
-  payloadText: {
-    flex: 1,
-    color: colors.textMuted,
-    fontFamily: typography.mono,
-    fontSize: 11,
-  },
-  reviewHint: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    textAlign: "center",
-  },
-  scannerCard: { gap: spacing.md, alignItems: "stretch" },
-  scannerIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.lg,
-    alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "center",
-    backgroundColor: colors.primarySoft,
-  },
-  scannerTitle: {
-    ...textStyles.heading,
-    color: colors.text,
-    textAlign: "center",
-  },
-  scannerText: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    textAlign: "center",
-  },
-  error: { ...textStyles.body, color: colors.error, textAlign: "center" },
-  message: { ...textStyles.body, color: colors.success, textAlign: "center" },
-  disclaimer: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    textAlign: "center",
-    fontSize: 12,
-  },
-});
+const baseStyles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    activationRow: {
+      minHeight: 56,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    activationCopy: { flex: 1, gap: spacing.xs },
+    activationLabel: {
+      ...textStyles.body,
+      fontFamily: typography.bodySemibold,
+    },
+    info: { gap: spacing.xs, backgroundColor: colors.primarySoft },
+    infoTitle: { ...textStyles.heading, color: colors.primary },
+    infoText: { ...textStyles.body, color: colors.textMuted },
+    savedCard: { gap: spacing.md, backgroundColor: colors.successSoft },
+    candidateCard: { gap: spacing.md, backgroundColor: colors.primarySoft },
+    lockHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    lockIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.card,
+    },
+    candidateIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.card,
+    },
+    lockCopy: { flex: 1, gap: 2 },
+    lockHint: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
+    qrFrame: {
+      alignSelf: "center",
+      backgroundColor: "#FFFFFF",
+      padding: spacing.sm,
+      borderRadius: radius.lg,
+    },
+    merchantCopy: { alignItems: "center", gap: spacing.xs },
+    merchantName: {
+      fontFamily: typography.heading,
+      fontSize: 20,
+      color: colors.text,
+      textAlign: "center",
+    },
+    merchantCity: { ...textStyles.body, color: colors.textMuted },
+    payloadReference: {
+      minHeight: 36,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radius.sm,
+      backgroundColor: colors.card,
+    },
+    payloadText: {
+      flex: 1,
+      color: colors.textMuted,
+      fontFamily: typography.mono,
+      fontSize: 11,
+    },
+    reviewHint: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      textAlign: "center",
+    },
+    scannerCard: { gap: spacing.md, alignItems: "stretch" },
+    scannerIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: radius.lg,
+      alignItems: "center",
+      justifyContent: "center",
+      alignSelf: "center",
+      backgroundColor: colors.primarySoft,
+    },
+    scannerTitle: {
+      ...textStyles.heading,
+      color: colors.text,
+      textAlign: "center",
+    },
+    scannerText: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      textAlign: "center",
+    },
+    error: { ...textStyles.body, color: colors.error, textAlign: "center" },
+    message: { ...textStyles.body, color: colors.success, textAlign: "center" },
+    disclaimer: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      textAlign: "center",
+      fontSize: 12,
+    },
+  }),
+);

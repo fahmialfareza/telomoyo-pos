@@ -1,7 +1,8 @@
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { colors, minimumTouchTarget, radius, typography } from "@/theme/tokens";
+import { minimumTouchTarget, radius, typography } from "@/theme/tokens";
 
 import { Icon } from "./Icon";
 
@@ -16,6 +17,7 @@ export function QuantityStepper({
   onChange,
   maximum = 999,
 }: QuantityStepperProps) {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   return (
     <View style={responsive.wrapper}>
@@ -54,30 +56,32 @@ export function QuantityStepper({
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: {
-    minHeight: minimumTouchTarget,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.outline,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceBright,
-    overflow: "hidden",
-  },
-  control: {
-    width: minimumTouchTarget,
-    height: minimumTouchTarget,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  value: {
-    minWidth: 34,
-    textAlign: "center",
-    fontFamily: typography.heading,
-    color: colors.text,
-    fontSize: 18,
-  },
-  pressed: { backgroundColor: colors.containerHigh },
-  disabled: { opacity: 0.35 },
-});
+const styles = themed(({ colors }) =>
+  StyleSheet.create({
+    wrapper: {
+      minHeight: minimumTouchTarget,
+      flexDirection: "row",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.outline,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surfaceBright,
+      overflow: "hidden",
+    },
+    control: {
+      width: minimumTouchTarget,
+      height: minimumTouchTarget,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    value: {
+      minWidth: 34,
+      textAlign: "center",
+      fontFamily: typography.heading,
+      color: colors.text,
+      fontSize: 18,
+    },
+    pressed: { backgroundColor: colors.containerHigh },
+    disabled: { opacity: 0.35 },
+  }),
+);

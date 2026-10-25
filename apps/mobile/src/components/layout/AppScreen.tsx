@@ -1,4 +1,8 @@
-import { useResponsiveStyles, useResponsiveSizing } from "@/theme/responsive";
+import {
+  useResponsiveStyles,
+  useResponsiveSizing,
+  themed,
+} from "@/theme/responsive";
 import { useRouter, useSegments } from "expo-router";
 import { useState } from "react";
 import {
@@ -23,12 +27,7 @@ import {
 
 import { useAuthStore } from "@/auth/auth-store";
 import { useModeStore } from "@/mode/mode-store";
-import {
-  colors,
-  minimumTouchTarget,
-  spacing,
-  typography,
-} from "@/theme/tokens";
+import { minimumTouchTarget, spacing, typography } from "@/theme/tokens";
 
 import { SyncBar } from "./SyncBar";
 
@@ -185,81 +184,83 @@ export function AppScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface,
-  },
-  tenantBanner: {
-    backgroundColor: colors.primarySoft,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  tenantName: {
-    fontFamily: typography.bodySemibold,
-    color: colors.primary,
-    fontSize: 12,
-  },
-  flex: { flex: 1 },
-  content: {
-    width: "100%",
-    maxWidth: 600,
-    alignSelf: "center",
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-    gap: spacing.md,
-  },
-  footer: {
-    borderTopWidth: 1,
-    borderTopColor: colors.outline,
-    backgroundColor: colors.card,
-  },
-  footerContent: {
-    width: "100%",
-    maxWidth: 600,
-    alignSelf: "center",
-  },
-  dismissTarget: {
-    minHeight: minimumTouchTarget,
-    minWidth: minimumTouchTarget,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sandboxBanner: {
-    minHeight: 34,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.warningSoft,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.warning,
-  },
-  sandboxBannerText: {
-    color: colors.warning,
-    fontFamily: typography.bodySemibold,
-    fontSize: 11,
-    textAlign: "center",
-  },
-  recoveryNotice: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    backgroundColor: colors.primarySoft,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.primary,
-  },
-  recoveryNoticeText: {
-    flex: 1,
-    color: colors.text,
-    fontFamily: typography.body,
-    fontSize: 12,
-  },
-  recoveryNoticeDismiss: {
-    color: colors.primary,
-    fontFamily: typography.bodySemibold,
-    fontSize: 12,
-  },
-});
+const styles = themed(({ colors }) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.surface,
+    },
+    tenantBanner: {
+      backgroundColor: colors.primarySoft,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+    },
+    tenantName: {
+      fontFamily: typography.bodySemibold,
+      color: colors.primary,
+      fontSize: 12,
+    },
+    flex: { flex: 1 },
+    content: {
+      width: "100%",
+      maxWidth: 600,
+      alignSelf: "center",
+      padding: spacing.md,
+      paddingBottom: spacing.xl,
+      gap: spacing.md,
+    },
+    footer: {
+      borderTopWidth: 1,
+      borderTopColor: colors.outline,
+      backgroundColor: colors.card,
+    },
+    footerContent: {
+      width: "100%",
+      maxWidth: 600,
+      alignSelf: "center",
+    },
+    dismissTarget: {
+      minHeight: minimumTouchTarget,
+      minWidth: minimumTouchTarget,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    sandboxBanner: {
+      minHeight: 34,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.warningSoft,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.warning,
+    },
+    sandboxBannerText: {
+      color: colors.warning,
+      fontFamily: typography.bodySemibold,
+      fontSize: 11,
+      textAlign: "center",
+    },
+    recoveryNotice: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      backgroundColor: colors.primarySoft,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.primary,
+    },
+    recoveryNoticeText: {
+      flex: 1,
+      color: colors.text,
+      fontFamily: typography.body,
+      fontSize: 12,
+    },
+    recoveryNoticeDismiss: {
+      color: colors.primary,
+      fontFamily: typography.bodySemibold,
+      fontSize: 12,
+    },
+  }),
+);

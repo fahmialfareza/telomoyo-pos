@@ -1,7 +1,9 @@
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StyleSheet, Text } from "react-native";
 
@@ -10,10 +12,11 @@ import { AppScreen } from "@/components/layout/AppScreen";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { colors, spacing, textStyles } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 import { displayTransactionId } from "@/utils/format";
 
 export default function PrintFailureScreen() {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const responsiveText = useResponsiveTextStyles();
   const { id, status, message } = useLocalSearchParams<{
@@ -73,20 +76,22 @@ export default function PrintFailureScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  symbol: {
-    ...textStyles.title,
-    color: colors.error,
-    fontSize: 54,
-    textAlign: "center",
-  },
-  title: { ...textStyles.title, textAlign: "center" },
-  subtitle: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    textAlign: "center",
-  },
-  card: { gap: spacing.sm },
-  message: { ...textStyles.body },
-  warning: { ...textStyles.body, color: colors.warning },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    symbol: {
+      ...textStyles.title,
+      color: colors.error,
+      fontSize: 54,
+      textAlign: "center",
+    },
+    title: { ...textStyles.title, textAlign: "center" },
+    subtitle: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      textAlign: "center",
+    },
+    card: { gap: spacing.sm },
+    message: { ...textStyles.body },
+    warning: { ...textStyles.body, color: colors.warning },
+  }),
+);

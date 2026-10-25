@@ -1,7 +1,9 @@
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -16,13 +18,7 @@ import { Card } from "@/components/ui/Card";
 import { getDashboardStats, listTransactions } from "@/db/repositories";
 import type { DashboardStats, Transaction } from "@/domain/types";
 import { useSyncRuntime } from "@/sync/SyncProvider";
-import {
-  colors,
-  radius,
-  spacing,
-  textStyles,
-  typography,
-} from "@/theme/tokens";
+import { radius, spacing, typography } from "@/theme/tokens";
 import { formatRupiah, initials } from "@/utils/format";
 import {
   currentJakartaDate,
@@ -40,6 +36,7 @@ const emptyStats: DashboardStats = {
 };
 
 export default function HomeScreen() {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const responsiveText = useResponsiveTextStyles();
   const router = useRouter();
@@ -266,71 +263,73 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarText: {
-    color: colors.onPrimary,
-    fontFamily: typography.heading,
-    fontSize: 16,
-  },
-  revenue: { gap: spacing.lg },
-  revenueNote: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
-  loadError: {
-    gap: spacing.md,
-    backgroundColor: colors.errorSoft,
-  },
-  loadErrorCopy: { gap: spacing.xs },
-  loadErrorTitle: { ...textStyles.heading, color: colors.error },
-  loadErrorMessage: { ...textStyles.body, color: colors.textMuted },
-  metricTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  countPill: {
-    backgroundColor: colors.successSoft,
-    padding: spacing.sm,
-    borderRadius: radius.md,
-  },
-  countText: { ...textStyles.body, color: colors.success, fontSize: 12 },
-  chart: {
-    height: 68,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: spacing.sm,
-  },
-  bar: { flex: 1, borderRadius: radius.sm },
-  metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  smallMetric: { flexGrow: 1, flexBasis: "45%", gap: spacing.xs },
-  packageDot: { width: 28, height: 4, borderRadius: radius.pill },
-  metricLabel: { ...textStyles.label, textTransform: "uppercase" },
-  metricValue: {
-    fontFamily: typography.heading,
-    fontSize: 20,
-    color: colors.text,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  link: { ...textStyles.body, color: colors.primary },
-  empty: { ...textStyles.body, color: colors.textMuted },
-  sandboxReconciliation: {
-    gap: spacing.xs,
-    backgroundColor: colors.warningSoft,
-    borderColor: colors.warning,
-  },
-  sandboxAmount: {
-    fontFamily: typography.heading,
-    fontSize: 22,
-    color: colors.warning,
-  },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    avatar: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.md,
+      backgroundColor: colors.primary,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    avatarText: {
+      color: colors.onPrimary,
+      fontFamily: typography.heading,
+      fontSize: 16,
+    },
+    revenue: { gap: spacing.lg },
+    revenueNote: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
+    loadError: {
+      gap: spacing.md,
+      backgroundColor: colors.errorSoft,
+    },
+    loadErrorCopy: { gap: spacing.xs },
+    loadErrorTitle: { ...textStyles.heading, color: colors.error },
+    loadErrorMessage: { ...textStyles.body, color: colors.textMuted },
+    metricTop: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+    },
+    countPill: {
+      backgroundColor: colors.successSoft,
+      padding: spacing.sm,
+      borderRadius: radius.md,
+    },
+    countText: { ...textStyles.body, color: colors.success, fontSize: 12 },
+    chart: {
+      height: 68,
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: spacing.sm,
+    },
+    bar: { flex: 1, borderRadius: radius.sm },
+    metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    smallMetric: { flexGrow: 1, flexBasis: "45%", gap: spacing.xs },
+    packageDot: { width: 28, height: 4, borderRadius: radius.pill },
+    metricLabel: { ...textStyles.label, textTransform: "uppercase" },
+    metricValue: {
+      fontFamily: typography.heading,
+      fontSize: 20,
+      color: colors.text,
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    link: { ...textStyles.body, color: colors.primary },
+    empty: { ...textStyles.body, color: colors.textMuted },
+    sandboxReconciliation: {
+      gap: spacing.xs,
+      backgroundColor: colors.warningSoft,
+      borderColor: colors.warning,
+    },
+    sandboxAmount: {
+      fontFamily: typography.heading,
+      fontSize: 22,
+      color: colors.warning,
+    },
+  }),
+);

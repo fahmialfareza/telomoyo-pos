@@ -7,7 +7,6 @@ import { Roboto_800ExtraBold } from "@expo-google-fonts/roboto/800ExtraBold";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -30,12 +29,17 @@ import {
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
-import { colors, spacing, textStyles } from "@/theme/tokens";
+import { NavigationTheme } from "@/theme/NavigationTheme";
+import { useThemeColors } from "@/theme/ThemeContext";
+import { ThemeProvider } from "@/theme/ThemeProvider";
+import { spacing } from "@/theme/tokens";
 
 void SplashScreen.preventAutoHideAsync();
 
 function AppRoutes() {
+  const colors = useThemeColors();
   const styles = useResponsiveStyles(baseStyles);
   const textStyles = useResponsiveTextStyles();
   // Keep the router tree unmounted for the full transition, including the
@@ -92,37 +96,42 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <SafeAreaProvider>
-      <KeyboardProvider>
-        <AuthProvider>
-          <ConfirmationProvider>
-            <ContextNavigationLifecycle />
-            <SyncProvider>
-              <AppQueryProvider>
-                <StatusBar style="dark" />
-                <AppRoutes />
-              </AppQueryProvider>
-            </SyncProvider>
-          </ConfirmationProvider>
-        </AuthProvider>
-      </KeyboardProvider>
-    </SafeAreaProvider>
+    <ThemeProvider>
+      <SafeAreaProvider>
+        <KeyboardProvider>
+          <AuthProvider>
+            <ConfirmationProvider>
+              <ContextNavigationLifecycle />
+              <SyncProvider>
+                <AppQueryProvider>
+                  <NavigationTheme>
+                    <AppRoutes />
+                  </NavigationTheme>
+                </AppQueryProvider>
+              </SyncProvider>
+            </ConfirmationProvider>
+          </AuthProvider>
+        </KeyboardProvider>
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 }
 
-const baseStyles = StyleSheet.create({
-  recovery: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.md,
-    padding: spacing.xl,
-    backgroundColor: colors.surface,
-  },
-  recoveryMessage: {
-    ...textStyles.body,
-    maxWidth: 360,
-    color: colors.textMuted,
-    textAlign: "center",
-  },
-});
+const baseStyles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    recovery: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.md,
+      padding: spacing.xl,
+      backgroundColor: colors.surface,
+    },
+    recoveryMessage: {
+      ...textStyles.body,
+      maxWidth: 360,
+      color: colors.textMuted,
+      textAlign: "center",
+    },
+  }),
+);

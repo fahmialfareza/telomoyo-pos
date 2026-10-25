@@ -31,17 +31,12 @@ import { useModeStore } from "@/mode/mode-store";
 import { useSyncRuntime } from "@/sync/SyncProvider";
 import { isPaymentConfirmedForCurrentRevision } from "@/domain/payments";
 import { qrisDocumentForTransaction } from "@/tenant/transaction-qris";
-import {
-  colors,
-  radius,
-  spacing,
-  textStyles,
-  typography,
-} from "@/theme/tokens";
+import { radius, spacing, typography } from "@/theme/tokens";
 import { displayTransactionId, formatRupiah } from "@/utils/format";
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
 
 export default function PrintTransactionScreen() {
@@ -471,72 +466,74 @@ export default function PrintTransactionScreen() {
   );
 }
 
-const baseStyles = StyleSheet.create({
-  icon: {
-    width: 84,
-    height: 84,
-    borderRadius: radius.xl,
-    backgroundColor: colors.primary,
-    alignSelf: "center",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconSuccess: { backgroundColor: colors.success },
-  iconGlyph: {
-    fontFamily: typography.heading,
-    fontSize: 46,
-    color: colors.onPrimary,
-  },
-  title: { ...textStyles.title, textAlign: "center" },
-  subtitle: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    textAlign: "center",
-  },
-  summary: { gap: spacing.sm },
-  summaryHeader: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-  },
-  id: {
-    ...textStyles.technical,
-    color: colors.primary,
-    flexShrink: 1,
-    maxWidth: "100%",
-  },
-  line: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
-  lineName: { ...textStyles.body, flex: 1 },
-  lineValue: { ...textStyles.body, fontFamily: typography.bodySemibold },
-  total: {
-    marginTop: spacing.sm,
-    paddingTop: spacing.md,
-    borderTopColor: colors.outline,
-    borderTopWidth: 1,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  totalAmount: { flexShrink: 1, maxWidth: "100%" },
-  error: {
-    ...textStyles.body,
-    color: colors.error,
-    backgroundColor: colors.errorSoft,
-    padding: spacing.md,
-    borderRadius: radius.md,
-  },
-  testWarning: {
-    gap: spacing.xs,
-    backgroundColor: colors.warningSoft,
-    borderColor: colors.warning,
-  },
-  testWarningTitle: {
-    ...textStyles.heading,
-    color: colors.warning,
-    textAlign: "center",
-  },
-});
+const baseStyles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    icon: {
+      width: 84,
+      height: 84,
+      borderRadius: radius.xl,
+      backgroundColor: colors.primary,
+      alignSelf: "center",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    iconSuccess: { backgroundColor: colors.success },
+    iconGlyph: {
+      fontFamily: typography.heading,
+      fontSize: 46,
+      color: colors.onPrimary,
+    },
+    title: { ...textStyles.title, textAlign: "center" },
+    subtitle: {
+      ...textStyles.body,
+      color: colors.textMuted,
+      textAlign: "center",
+    },
+    summary: { gap: spacing.sm },
+    summaryHeader: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+    },
+    id: {
+      ...textStyles.technical,
+      color: colors.primary,
+      flexShrink: 1,
+      maxWidth: "100%",
+    },
+    line: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+    lineName: { ...textStyles.body, flex: 1 },
+    lineValue: { ...textStyles.body, fontFamily: typography.bodySemibold },
+    total: {
+      marginTop: spacing.sm,
+      paddingTop: spacing.md,
+      borderTopColor: colors.outline,
+      borderTopWidth: 1,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    totalAmount: { flexShrink: 1, maxWidth: "100%" },
+    error: {
+      ...textStyles.body,
+      color: colors.error,
+      backgroundColor: colors.errorSoft,
+      padding: spacing.md,
+      borderRadius: radius.md,
+    },
+    testWarning: {
+      gap: spacing.xs,
+      backgroundColor: colors.warningSoft,
+      borderColor: colors.warning,
+    },
+    testWarningTitle: {
+      ...textStyles.heading,
+      color: colors.warning,
+      textAlign: "center",
+    },
+  }),
+);

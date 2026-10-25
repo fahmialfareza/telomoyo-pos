@@ -34,7 +34,8 @@ export async function navigateContext(
         await auth.switchContext("account");
       // Staff management lives in the bottom tab, while its session remains
       // account-scoped. The old path is an entry alias, not another screen.
-      destination = intent.path === "/management/users" ? "/users" : intent.path;
+      destination =
+        intent.path === "/management/users" ? "/users" : intent.path;
     } else if (intent.kind === "business") {
       const sameBusiness =
         (!session.contextKind || session.contextKind === "tenant") &&

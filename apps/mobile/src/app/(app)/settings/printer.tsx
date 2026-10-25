@@ -1,7 +1,9 @@
 import {
   useResponsiveStyles,
   useResponsiveTextStyles,
+  themed,
 } from "@/theme/responsive";
+import { useThemeColors } from "@/theme/ThemeContext";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -16,13 +18,7 @@ import {
   writePrinterConfig,
   type PrinterConfig,
 } from "@/security/secure-store";
-import {
-  colors,
-  radius,
-  spacing,
-  textStyles,
-  typography,
-} from "@/theme/tokens";
+import { radius, spacing, typography } from "@/theme/tokens";
 
 const adapterLabels: Record<PrinterConfig["adapter"], string> = {
   simulator: "Simulator",
@@ -31,6 +27,7 @@ const adapterLabels: Record<PrinterConfig["adapter"], string> = {
 };
 
 export default function PrinterSettingsScreen() {
+  const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const responsiveText = useResponsiveTextStyles();
   const [config, setConfig] = useState<PrinterConfig | null>(null);
@@ -173,26 +170,28 @@ export default function PrinterSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  options: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  option: {
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    justifyContent: "center",
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.outline,
-    backgroundColor: colors.card,
-  },
-  selected: { borderColor: colors.primary, borderWidth: 2 },
-  optionText: { ...textStyles.body, fontFamily: typography.bodyMedium },
-  deviceSelected: { borderColor: colors.primary, borderWidth: 2 },
-  deviceName: {
-    fontFamily: typography.headingSemibold,
-    fontSize: 16,
-    color: colors.text,
-  },
-  deviceId: { ...textStyles.technical, marginTop: spacing.xs },
-  current: { gap: spacing.xs, backgroundColor: colors.primarySoft },
-  message: { ...textStyles.body, color: colors.secondary },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    options: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    option: {
+      minHeight: 48,
+      paddingHorizontal: spacing.md,
+      justifyContent: "center",
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.outline,
+      backgroundColor: colors.card,
+    },
+    selected: { borderColor: colors.primary, borderWidth: 2 },
+    optionText: { ...textStyles.body, fontFamily: typography.bodyMedium },
+    deviceSelected: { borderColor: colors.primary, borderWidth: 2 },
+    deviceName: {
+      fontFamily: typography.headingSemibold,
+      fontSize: 16,
+      color: colors.text,
+    },
+    deviceId: { ...textStyles.technical, marginTop: spacing.xs },
+    current: { gap: spacing.xs, backgroundColor: colors.primarySoft },
+    message: { ...textStyles.body, color: colors.secondary },
+  }),
+);

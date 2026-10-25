@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useResponsiveStyles } from "@/theme/responsive";
+import { useResponsiveStyles, themed } from "@/theme/responsive";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -11,7 +11,7 @@ import type {
 } from "@/api/contracts";
 import { useAuth } from "@/auth/AuthProvider";
 import { useSyncRuntime } from "@/sync/SyncProvider";
-import { colors, radius, spacing, textStyles } from "@/theme/tokens";
+import { radius, spacing } from "@/theme/tokens";
 import { toUserFacingErrorMessage } from "@/utils/errors";
 
 import { Button } from "../ui/Button";
@@ -319,41 +319,43 @@ export function ModeOperationCard() {
   );
 }
 
-const styles = StyleSheet.create({
-  card: { gap: spacing.md },
-  sandboxCard: {
-    backgroundColor: colors.warningSoft,
-    borderColor: colors.warning,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  copy: { flex: 1 },
-  label: { ...textStyles.label, color: colors.primary, fontSize: 10 },
-  title: { ...textStyles.heading, marginTop: 2 },
-  description: { ...textStyles.body, color: colors.textMuted },
-  badge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.pill,
-    backgroundColor: colors.successSoft,
-  },
-  sandboxBadge: { backgroundColor: colors.warning },
-  badgeText: { ...textStyles.label, color: colors.success, fontSize: 10 },
-  sandboxBadgeText: { color: colors.onPrimary },
-  generation: { ...textStyles.technical, color: colors.warning },
-  hint: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
-  resetPanel: {
-    gap: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.warning,
-  },
-  resetTitle: { ...textStyles.heading, color: colors.error },
-  actions: { flexDirection: "row", gap: spacing.sm },
-  action: { flex: 1 },
-  success: { ...textStyles.body, color: colors.success },
-  error: { ...textStyles.body, color: colors.error },
-});
+const styles = themed(({ colors, textStyles }) =>
+  StyleSheet.create({
+    card: { gap: spacing.md },
+    sandboxCard: {
+      backgroundColor: colors.warningSoft,
+      borderColor: colors.warning,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    copy: { flex: 1 },
+    label: { ...textStyles.label, color: colors.primary, fontSize: 10 },
+    title: { ...textStyles.heading, marginTop: 2 },
+    description: { ...textStyles.body, color: colors.textMuted },
+    badge: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderRadius: radius.pill,
+      backgroundColor: colors.successSoft,
+    },
+    sandboxBadge: { backgroundColor: colors.warning },
+    badgeText: { ...textStyles.label, color: colors.success, fontSize: 10 },
+    sandboxBadgeText: { color: colors.onPrimary },
+    generation: { ...textStyles.technical, color: colors.warning },
+    hint: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
+    resetPanel: {
+      gap: spacing.sm,
+      paddingTop: spacing.sm,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.warning,
+    },
+    resetTitle: { ...textStyles.heading, color: colors.error },
+    actions: { flexDirection: "row", gap: spacing.sm },
+    action: { flex: 1 },
+    success: { ...textStyles.body, color: colors.success },
+    error: { ...textStyles.body, color: colors.error },
+  }),
+);
