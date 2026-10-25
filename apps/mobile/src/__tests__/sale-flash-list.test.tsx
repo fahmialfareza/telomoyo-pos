@@ -6,6 +6,8 @@ import {
 } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 
+import * as Haptics from "expo-haptics";
+
 import SaleComposerScreen from "@/app/(app)/(tabs)/sell";
 
 const mockListPackages = jest.fn();
@@ -181,6 +183,7 @@ it("saves once when Uang pas is tapped twice and prints with the cash received",
   fireEvent.press(exact);
   expect(mockCreateTransaction).toHaveBeenCalledTimes(1);
   expect(mockCreateTransaction.mock.calls[0]?.[1]).toBe("cash");
+  expect(Haptics.notificationAsync).not.toHaveBeenCalled();
   completeSave?.({ id: "transaction-1" });
   await waitFor(() =>
     expect(mockPush).toHaveBeenCalledWith({
@@ -188,6 +191,7 @@ it("saves once when Uang pas is tapped twice and prints with the cash received",
       params: { id: "transaction-1", autoPrint: "1", cashReceived: "20000" },
     }),
   );
+  expect(Haptics.notificationAsync).toHaveBeenCalledWith("success");
 });
 
 it("does not create a transaction without selected packages", async () => {
@@ -223,6 +227,7 @@ it("adds a unit when the package row is tapped and clears the cart", async () =>
   const screen = render(<SaleComposerScreen />);
   fireEvent.press(await screen.findByText("Paket B"));
   fireEvent.press(screen.getByText("Paket B"));
+  expect(Haptics.selectionAsync).toHaveBeenCalledTimes(2);
   const summary = screen.getByTestId("sale-summary");
   expect(within(summary).getByText("Rp 200.000")).toBeTruthy();
   fireEvent.press(screen.getByRole("button", { name: "Kosongkan" }));

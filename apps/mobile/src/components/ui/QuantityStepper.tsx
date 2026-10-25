@@ -4,6 +4,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { minimumTouchTarget, radius, typography } from "@/theme/tokens";
 
+import { tapHaptic } from "@/utils/haptics";
+
 import { Icon } from "./Icon";
 
 interface QuantityStepperProps {
@@ -26,7 +28,10 @@ export function QuantityStepper({
         accessibilityRole="button"
         disabled={value === 0}
         hitSlop={4}
-        onPress={() => onChange(Math.max(0, value - 1))}
+        onPress={() => {
+          tapHaptic();
+          onChange(Math.max(0, value - 1));
+        }}
         style={({ pressed }) => [
           responsive.control,
           pressed && responsive.pressed,
@@ -43,7 +48,10 @@ export function QuantityStepper({
         accessibilityRole="button"
         disabled={value >= maximum}
         hitSlop={4}
-        onPress={() => onChange(Math.min(maximum, value + 1))}
+        onPress={() => {
+          tapHaptic();
+          onChange(Math.min(maximum, value + 1));
+        }}
         style={({ pressed }) => [
           responsive.control,
           pressed && responsive.pressed,

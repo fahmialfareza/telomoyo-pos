@@ -43,6 +43,7 @@ import {
   typography,
 } from "@/theme/tokens";
 import { formatRupiah } from "@/utils/format";
+import { successHaptic, tapHaptic } from "@/utils/haptics";
 
 export default function SaleComposerScreen() {
   const colors = useThemeColors();
@@ -178,6 +179,7 @@ export default function SaleComposerScreen() {
         session,
       );
       completedRef.current = true;
+      successHaptic();
       setQuantities({});
       setCashSheetOpen(false);
       router.push({
@@ -339,7 +341,10 @@ const PackageSelectorCard = memo(function PackageSelectorCard({
     // accessibility element so TalkBack still reaches the stepper buttons.
     <Pressable
       accessible={false}
-      onPress={() => onChange(item.id, Math.min(999, quantity + 1))}
+      onPress={() => {
+        tapHaptic();
+        onChange(item.id, Math.min(999, quantity + 1));
+      }}
     >
       {({ pressed }) => (
         <Card
