@@ -93,6 +93,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           // resource shrinking, which is not.
           enableMinifyInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,
+          // Room instantiates generated *_Impl databases by name. Without
+          // this, R8 strips WorkManager's WorkDatabase_Impl (pulled in by
+          // expo-background-task) and the app crashes on launch.
+          extraProguardRules: [
+            "-keep class * extends androidx.room.RoomDatabase { <init>(); }",
+            "-keepnames class * extends androidx.room.RoomDatabase",
+          ].join("\n"),
         },
       },
     ],
