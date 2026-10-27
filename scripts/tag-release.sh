@@ -103,7 +103,10 @@ echo ""
 echo "📤 Push the tag to remote:"
 echo "   git push origin $TAG_NAME"
 
-git push origin "$TAG_NAME"
+# Push over HTTPS (gh credential helper): SSH keys aren't always available,
+# and a tag that never reaches GitHub never triggers the EAS release workflow.
+REMOTE_URL="$(git remote get-url origin | sed -E 's#^git@github\.com:#https://github.com/#')"
+git push "$REMOTE_URL" "$TAG_NAME"
 echo "✅ Tag pushed to remote: $TAG_NAME"
 echo ""
 echo "🎉 Release process completed successfully!"
