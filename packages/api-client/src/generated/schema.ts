@@ -32,7 +32,7 @@ export interface paths {
         put?: never;
         /**
          * Exchange the session into account or selected tenant context
-         * @description Tenant context always starts in Production. Requires online outbox drainage or explicit quarantine after revoked access. The previous session is revoked and retained as immutable origin evidence.
+         * @description Tenant context always starts in Production. Requires online outbox drainage or explicit quarantine after revoked access. The previous session is revoked and retained as immutable origin evidence. Sessions revoked by membership change, tenant suspension, or terminal revocation may still be exchanged here (the account must be active and not need a password change); the new tenant session is bound to a terminal only when the installation has an active enrollment in that tenant. Sessions revoked by deactivation, role change, password recovery, password change, or logout cannot be exchanged.
          */
         post: operations["switchAuthContext"];
         delete?: never;
@@ -1003,7 +1003,23 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Revoke a terminal and its sessions */
+        /**
+         * Revoke a terminal enrollment and its terminal-bound sessions
+         * @description Global Superadmin in the terminal tenant's Production context only.
+         *     Deactivates the enrollment and its signing key, so the installation can
+         *     no longer create, correct, confirm, print, or push signed mutations in
+         *     this tenant. Sessions bound to the terminal are revoked with
+         *     `terminal_revoked`, but this is not an account sign-out: such a session
+         *     may still call `/auth/contexts`, `/auth/switch-context`, and
+         *     `/auth/logout`, and switch-context issues a new account or tenant
+         *     session without a terminal, which keeps read access (dashboards,
+         *     history, reports, exports, sync pull) and, for a Superadmin, terminal
+         *     enrollment and account management. To fully cut off a lost or stolen device, also deactivate the
+         *     account (`PATCH /management/users/{userId}`) or reset its password
+         *     (`POST /management/users/{userId}/reset-password`); both revoke every
+         *     session of the account without recovery. A password change by the
+         *     account owner on another device also revokes the device's sessions.
+         */
         post: operations["revokeTerminal"];
         delete?: never;
         options?: never;
@@ -1666,6 +1682,7 @@ export interface components {
         };
         TransactionLineInput: {
             packageId: components["schemas"]["UUID"];
+            /** @description Any existing revision of the package in the session's data space, including a superseded revision or a soft-deleted package, so offline devices with a stale catalog can still sync. The server prices the line from the stored revision's name and unit price, never from client-supplied amounts. */
             packageRevision: number;
             quantity: number;
         };

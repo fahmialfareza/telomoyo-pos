@@ -191,6 +191,12 @@ canonicalization; `baseRevision` must be present as `null` for creates.
 Duplicates replay the stored result. Stale corrections return a revision conflict
 with local and server snapshots.
 
+Transaction lines may reference any existing package revision in the data
+space, including superseded revisions and soft-deleted packages, so offline
+devices with a stale catalog still sync; the server prices from the stored
+revision. Revoking a terminal does not sign out its account; see
+[accepted risks](docs/multi-tenant-operations.md#accepted-risks-and-intended-behavior).
+
 ## Infrastructure and release inputs
 
 Compose is for development and CI. Production requires managed credentials,

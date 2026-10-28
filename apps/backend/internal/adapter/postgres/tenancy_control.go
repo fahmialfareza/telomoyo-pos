@@ -217,6 +217,10 @@ func (s *Store) SwitchContextSession(ctx context.Context, current domain.Princip
 			return domain.Validation("Konteks tidak valid", nil)
 		}
 		var id uuid.UUID
+		// Intended: terminal_revoked sessions stay recoverable here and get a
+		// terminal-less session. Terminal revocation is not an account sign-out;
+		// lost devices also need a password reset or deactivation. See
+		// docs/multi-tenant-operations.md#accepted-risks-and-intended-behavior.
 		if e := tx.QueryRow(ctx, `SELECT id FROM sessions WHERE id=$1 AND token_hash=$2 AND user_id=$3 AND (revoked_at IS NULL OR revoked_reason IN ('membership_changed','tenant_suspended','terminal_revoked')) FOR UPDATE`, current.SessionID, currentHash, current.UserID).Scan(&id); e != nil {
 			return domain.NewError(domain.CodeUnauthorized, "Sesi telah berubah. Masuk kembali")
 		}

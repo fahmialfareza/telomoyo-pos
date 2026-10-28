@@ -405,6 +405,10 @@ func resolveItems(ctx context.Context, query rowQuerier, dataSpaceID uuid.UUID, 
 	var total int64
 	for index, input := range inputs {
 		var snapshot domain.PackageSnapshot
+		// Intended: any stored revision is accepted, including superseded
+		// revisions and soft-deleted packages, so offline devices with a stale
+		// catalog can still sync. See
+		// docs/multi-tenant-operations.md#accepted-risks-and-intended-behavior.
 		err := query.QueryRow(ctx, `
 			SELECT p.id, r.revision, p.code, r.name, r.description, r.unit_price
 			FROM packages p

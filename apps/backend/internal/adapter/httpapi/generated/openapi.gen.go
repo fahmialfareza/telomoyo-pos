@@ -1484,9 +1484,11 @@ type TransactionItemSnapshot struct {
 
 // TransactionLineInput defines model for TransactionLineInput.
 type TransactionLineInput struct {
-	PackageId       UUID `json:"packageId"`
-	PackageRevision int  `json:"packageRevision"`
-	Quantity        int  `json:"quantity"`
+	PackageId UUID `json:"packageId"`
+
+	// PackageRevision Any existing revision of the package in the session's data space, including a superseded revision or a soft-deleted package, so offline devices with a stale catalog can still sync. The server prices the line from the stored revision's name and unit price, never from client-supplied amounts.
+	PackageRevision int `json:"packageRevision"`
+	Quantity        int `json:"quantity"`
 }
 
 // TransactionListEnvelope defines model for TransactionListEnvelope.
@@ -2685,7 +2687,7 @@ type ServerInterface interface {
 	// Register a physical installation and Ed25519 public key
 	// (POST /terminals/enroll)
 	EnrollTerminal(c *gin.Context)
-	// Revoke a terminal and its sessions
+	// Revoke a terminal enrollment and its terminal-bound sessions
 	// (POST /terminals/{terminalId}/revoke)
 	RevokeTerminal(c *gin.Context, terminalId TerminalId)
 	// Search transaction history
@@ -8152,7 +8154,7 @@ type StrictServerInterface interface {
 	// Register a physical installation and Ed25519 public key
 	// (POST /terminals/enroll)
 	EnrollTerminal(ctx context.Context, request EnrollTerminalRequestObject) (EnrollTerminalResponseObject, error)
-	// Revoke a terminal and its sessions
+	// Revoke a terminal enrollment and its terminal-bound sessions
 	// (POST /terminals/{terminalId}/revoke)
 	RevokeTerminal(ctx context.Context, request RevokeTerminalRequestObject) (RevokeTerminalResponseObject, error)
 	// Search transaction history

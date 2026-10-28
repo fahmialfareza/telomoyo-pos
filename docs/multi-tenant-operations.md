@@ -181,6 +181,40 @@ Revocation in one tenant must neither rotate another tenant's key nor discard
 pending evidence. Test a Superadmin-to-Admin handoff on the same installation
 without clearing app data, including a second business and a revoked enrollment.
 
+### Terminal revocation versus a lost device
+
+Revoking a terminal ends the **enrollment**, not the account. It deactivates the
+installation's signing key in that tenant, so it can no longer create, correct,
+confirm, print, or push signed mutations there, and revokes sessions bound to
+the terminal with `terminal_revoked`. That reason is intentionally recoverable:
+the session may still call `/auth/contexts`, `/auth/switch-context`, and
+`/auth/logout`, and switching issues a new account or tenant session without a
+terminal. That session keeps read access (dashboards, history, reports, exports,
+sync pull) and, for a Superadmin, management actions. This lets a shared
+installation recover from revocation without clearing app data.
+
+To fully cut off a lost or stolen device, revoke the terminal **and** end the
+signed-in account's sessions: in **Pengguna**, reset its password
+(`password_recovered`) or deactivate it (`account_access_changed`), or use the
+`reset-password` operator action. These revoke every session of the account
+and cannot be recovered through switch-context. A password change by the owner
+on another device (`password_changed`) also revokes the lost device's sessions.
+
+## Accepted risks and intended behavior
+
+Reviewed and accepted; do not re-report these as vulnerabilities.
+
+- **Terminal revocation keeps switch-context recovery.** A `terminal_revoked`
+  session can obtain a terminal-less session through `/auth/switch-context`.
+  Lost devices also need a password reset or deactivation; see
+  [Terminal revocation versus a lost device](#terminal-revocation-versus-a-lost-device).
+- **Sales may use superseded or deleted package revisions.** Transaction create
+  and correct (online and sync push) price each line from any existing package
+  revision in the data space, including superseded revisions and soft-deleted
+  packages, so offline devices with a stale catalog can still sync. The server
+  prices from the stored revision, never from client amounts, and each
+  transaction line keeps the package revision it used.
+
 ## Real-value Sandbox and receipt history
 
 Protocol-v3 sessions bind `sandboxQrisPolicy=transaction_total`. New Sandbox
