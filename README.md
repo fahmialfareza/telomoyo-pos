@@ -243,3 +243,10 @@ intentionally unset:
 Production release requires a Play Internal Testing AAB, physical acceptance on
 each supported MPOS/printer combination, successful backup restore, and no
 unexplained transaction loss or duplication.
+
+## Agent Skills
+
+- Shared agent skills live in `.agents/skills/` (used by Codex) and are symlinked into `.claude/skills/` for Claude Code. `skills-lock.json` pins each skill's source and hash.
+- Installed: `cloudflare`, `eas-app-stores`, `eas-update`, `expo-upgrade`, `karpathy-guidelines`, `security-audit`, `use-railway`, `vercel-react-native-skills`, and `graphify`.
+- Restore after clone: `npx skills experimental_install`. Update: `npx skills update -p`. Add: `npx skills add <owner/repo> --skill <name> -a claude-code -a codex`.
+- `graphify` is managed by its own installer, not `skills-lock.json`: install the CLI with `uv tool install graphifyy`, then refresh the skill with `graphify install --project --platform agents`.
