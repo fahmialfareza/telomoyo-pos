@@ -42,13 +42,14 @@ func TestQueryIndexesMigrationCreatesIndexes(t *testing.T) {
 	if err = Apply(context.Background(), db); err != nil {
 		t.Fatal(err)
 	}
+	want := append(append([]string{}, queryIndexNames...), "transactions_data_space_id_prefix_idx")
 	var found []string
-	if err = db.Raw(`SELECT indexname FROM pg_indexes WHERE schemaname = ? AND indexname IN ?`, schema, queryIndexNames).
+	if err = db.Raw(`SELECT indexname FROM pg_indexes WHERE schemaname = ? AND indexname IN ?`, schema, want).
 		Scan(&found).Error; err != nil {
 		t.Fatal(err)
 	}
-	if len(found) != len(queryIndexNames) {
-		t.Fatalf("query indexes found %v, want %v", found, queryIndexNames)
+	if len(found) != len(want) {
+		t.Fatalf("query indexes found %v, want %v", found, want)
 	}
 	var stale []string
 	if err = db.Raw(`SELECT indexname FROM pg_indexes WHERE schemaname = ? AND indexname IN ?`, schema, droppedQueryIndexNames).

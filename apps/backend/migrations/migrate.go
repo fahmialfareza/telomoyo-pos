@@ -20,6 +20,7 @@ const (
 	autoConfirmedPaymentVersion = "000007_payments_auto_confirmed"
 	tenantSandboxSettingVersion = "000008_tenant_sandbox_setting"
 	queryIndexesVersion         = "000009_query_indexes"
+	transactionIDSearchVersion  = "000010_transaction_id_search_index"
 )
 
 type migration struct {
@@ -37,6 +38,7 @@ var orderedMigrations = []migration{
 	{version: autoConfirmedPaymentVersion, up: migratePaymentsAutoConfirmed},
 	{version: tenantSandboxSettingVersion, up: migrateTenantSandboxSetting},
 	{version: queryIndexesVersion, up: migrateQueryIndexes},
+	{version: transactionIDSearchVersion, up: migrateTransactionIDSearchIndex},
 }
 
 // Apply runs every pending migration through GORM in one PostgreSQL transaction.
