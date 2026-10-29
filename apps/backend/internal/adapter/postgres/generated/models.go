@@ -5,25 +5,28 @@
 package generated
 
 import (
+	"time"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type AuditEvent struct {
-	ID                   pgtype.UUID        `json:"id"`
-	DataSpaceID          pgtype.UUID        `json:"data_space_id"`
-	EventType            string             `json:"event_type"`
-	AggregateType        string             `json:"aggregate_type"`
-	AggregateID          string             `json:"aggregate_id"`
-	OriginActorID        pgtype.UUID        `json:"origin_actor_id"`
-	OriginSessionID      pgtype.UUID        `json:"origin_session_id"`
-	SubmittedByActorID   pgtype.UUID        `json:"submitted_by_actor_id"`
-	SubmittedBySessionID pgtype.UUID        `json:"submitted_by_session_id"`
-	TerminalID           pgtype.UUID        `json:"terminal_id"`
-	BeforeValues         []byte             `json:"before_values"`
-	AfterValues          []byte             `json:"after_values"`
-	Metadata             []byte             `json:"metadata"`
-	OccurredAt           pgtype.Timestamptz `json:"occurred_at"`
-	ServerReceivedAt     pgtype.Timestamptz `json:"server_received_at"`
+	ID                   pgtype.UUID `json:"id"`
+	EventType            string      `json:"event_type"`
+	AggregateType        string      `json:"aggregate_type"`
+	AggregateID          string      `json:"aggregate_id"`
+	OriginActorID        pgtype.UUID `json:"origin_actor_id"`
+	OriginSessionID      pgtype.UUID `json:"origin_session_id"`
+	SubmittedByActorID   pgtype.UUID `json:"submitted_by_actor_id"`
+	SubmittedBySessionID pgtype.UUID `json:"submitted_by_session_id"`
+	TerminalID           pgtype.UUID `json:"terminal_id"`
+	BeforeValues         []byte      `json:"before_values"`
+	AfterValues          []byte      `json:"after_values"`
+	Metadata             []byte      `json:"metadata"`
+	OccurredAt           time.Time   `json:"occurred_at"`
+	ServerReceivedAt     time.Time   `json:"server_received_at"`
+	DataSpaceID          pgtype.UUID `json:"data_space_id"`
+	TenantID             pgtype.UUID `json:"tenant_id"`
 }
 
 type DataSpace struct {
@@ -31,90 +34,168 @@ type DataSpace struct {
 	Mode        string             `json:"mode"`
 	Generation  int64              `json:"generation"`
 	Status      string             `json:"status"`
-	ActivatedAt pgtype.Timestamptz `json:"activated_at"`
+	ActivatedAt time.Time          `json:"activated_at"`
 	RetiredAt   pgtype.Timestamptz `json:"retired_at"`
 	PurgeAfter  pgtype.Timestamptz `json:"purge_after"`
 	PurgedAt    pgtype.Timestamptz `json:"purged_at"`
+	TenantID    pgtype.UUID        `json:"tenant_id"`
 }
 
 type IdempotencyRecord struct {
-	DataSpaceID    pgtype.UUID        `json:"data_space_id"`
-	TerminalID     pgtype.UUID        `json:"terminal_id"`
-	OperationID    string             `json:"operation_id"`
-	RequestHash    []byte             `json:"request_hash"`
-	ResponseStatus int32              `json:"response_status"`
-	Response       []byte             `json:"response"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	TerminalID     pgtype.UUID `json:"terminal_id"`
+	OperationID    string      `json:"operation_id"`
+	RequestHash    []byte      `json:"request_hash"`
+	ResponseStatus int32       `json:"response_status"`
+	Response       []byte      `json:"response"`
+	CreatedAt      time.Time   `json:"created_at"`
+	DataSpaceID    pgtype.UUID `json:"data_space_id"`
+	TenantID       pgtype.UUID `json:"tenant_id"`
 }
 
 type Package struct {
 	ID              pgtype.UUID        `json:"id"`
-	DataSpaceID     pgtype.UUID        `json:"data_space_id"`
 	Code            string             `json:"code"`
 	CurrentRevision int32              `json:"current_revision"`
-	SourcePackageID pgtype.UUID        `json:"source_package_id"`
-	SourceRevision  pgtype.Int4        `json:"source_revision"`
 	CreatedBy       pgtype.UUID        `json:"created_by"`
 	UpdatedBy       pgtype.UUID        `json:"updated_by"`
-	CreatedAt       pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	CreatedAt       time.Time          `json:"created_at"`
+	UpdatedAt       time.Time          `json:"updated_at"`
 	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
 	DeletedBy       pgtype.UUID        `json:"deleted_by"`
+	DataSpaceID     pgtype.UUID        `json:"data_space_id"`
+	SourcePackageID pgtype.UUID        `json:"source_package_id"`
+	SourceRevision  pgtype.Int4        `json:"source_revision"`
+	TenantID        pgtype.UUID        `json:"tenant_id"`
 }
 
 type PackageRevision struct {
-	PackageID    pgtype.UUID        `json:"package_id"`
-	Revision     int32              `json:"revision"`
-	DataSpaceID  pgtype.UUID        `json:"data_space_id"`
-	Name         string             `json:"name"`
-	Description  string             `json:"description"`
-	UnitPrice    int64              `json:"unit_price"`
-	ChangeReason pgtype.Text        `json:"change_reason"`
-	CreatedBy    pgtype.UUID        `json:"created_by"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	PackageID    pgtype.UUID `json:"package_id"`
+	Revision     int32       `json:"revision"`
+	Name         string      `json:"name"`
+	Description  string      `json:"description"`
+	UnitPrice    int64       `json:"unit_price"`
+	ChangeReason pgtype.Text `json:"change_reason"`
+	CreatedBy    pgtype.UUID `json:"created_by"`
+	CreatedAt    time.Time   `json:"created_at"`
+	DataSpaceID  pgtype.UUID `json:"data_space_id"`
+	TenantID     pgtype.UUID `json:"tenant_id"`
+}
+
+type PlatformAuditEvent struct {
+	ID        pgtype.UUID `json:"id"`
+	EventType string      `json:"event_type"`
+	ActorID   pgtype.UUID `json:"actor_id"`
+	TenantID  pgtype.UUID `json:"tenant_id"`
+	Metadata  []byte      `json:"metadata"`
+	CreatedAt time.Time   `json:"created_at"`
 }
 
 type PrintAttempt struct {
-	ID                  pgtype.UUID        `json:"id"`
-	DataSpaceID         pgtype.UUID        `json:"data_space_id"`
-	TransactionID       string             `json:"transaction_id"`
-	TransactionRevision int32              `json:"transaction_revision"`
-	TerminalID          pgtype.UUID        `json:"terminal_id"`
-	ActorID             pgtype.UUID        `json:"actor_id"`
-	SessionID           pgtype.UUID        `json:"session_id"`
-	Status              string             `json:"status"`
-	IsCopy              bool               `json:"is_copy"`
-	PrinterKind         string             `json:"printer_kind"`
-	PrinterIdentifier   pgtype.Text        `json:"printer_identifier"`
-	ErrorCode           pgtype.Text        `json:"error_code"`
-	ErrorMessage        pgtype.Text        `json:"error_message"`
-	Metadata            []byte             `json:"metadata"`
-	ClientOccurredAt    pgtype.Timestamptz `json:"client_occurred_at"`
-	ServerReceivedAt    pgtype.Timestamptz `json:"server_received_at"`
+	ID                  pgtype.UUID `json:"id"`
+	TransactionID       string      `json:"transaction_id"`
+	TransactionRevision int32       `json:"transaction_revision"`
+	TerminalID          pgtype.UUID `json:"terminal_id"`
+	ActorID             pgtype.UUID `json:"actor_id"`
+	SessionID           pgtype.UUID `json:"session_id"`
+	Status              string      `json:"status"`
+	IsCopy              bool        `json:"is_copy"`
+	PrinterKind         string      `json:"printer_kind"`
+	PrinterIdentifier   pgtype.Text `json:"printer_identifier"`
+	ErrorCode           pgtype.Text `json:"error_code"`
+	ErrorMessage        pgtype.Text `json:"error_message"`
+	Metadata            []byte      `json:"metadata"`
+	ClientOccurredAt    time.Time   `json:"client_occurred_at"`
+	ServerReceivedAt    time.Time   `json:"server_received_at"`
+	DataSpaceID         pgtype.UUID `json:"data_space_id"`
+	TenantID            pgtype.UUID `json:"tenant_id"`
 }
 
 type Session struct {
-	ID            pgtype.UUID        `json:"id"`
-	UserID        pgtype.UUID        `json:"user_id"`
-	TerminalID    pgtype.UUID        `json:"terminal_id"`
-	DataSpaceID   pgtype.UUID        `json:"data_space_id"`
-	TokenHash     []byte             `json:"token_hash"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-	LastSeenAt    pgtype.Timestamptz `json:"last_seen_at"`
-	RevokedAt     pgtype.Timestamptz `json:"revoked_at"`
-	RevokedReason pgtype.Text        `json:"revoked_reason"`
+	ID                pgtype.UUID        `json:"id"`
+	UserID            pgtype.UUID        `json:"user_id"`
+	TerminalID        pgtype.UUID        `json:"terminal_id"`
+	TokenHash         []byte             `json:"token_hash"`
+	CreatedAt         time.Time          `json:"created_at"`
+	LastSeenAt        time.Time          `json:"last_seen_at"`
+	RevokedAt         pgtype.Timestamptz `json:"revoked_at"`
+	RevokedReason     pgtype.Text        `json:"revoked_reason"`
+	DataSpaceID       pgtype.UUID        `json:"data_space_id"`
+	ContextKind       string             `json:"context_kind"`
+	TenantID          pgtype.UUID        `json:"tenant_id"`
+	MembershipID      pgtype.UUID        `json:"membership_id"`
+	LegacyOrigin      bool               `json:"legacy_origin"`
+	ProtocolVersion   int32              `json:"protocol_version"`
+	SandboxQrisPolicy string             `json:"sandbox_qris_policy"`
 }
 
 type SyncChange struct {
-	Cursor      int64              `json:"cursor"`
-	DataSpaceID pgtype.UUID        `json:"data_space_id"`
-	Aggregate   string             `json:"aggregate"`
-	AggregateID string             `json:"aggregate_id"`
-	Action      string             `json:"action"`
-	Revision    pgtype.Int4        `json:"revision"`
-	Payload     []byte             `json:"payload"`
-	Tombstone   bool               `json:"tombstone"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Cursor      int64       `json:"cursor"`
+	Aggregate   string      `json:"aggregate"`
+	AggregateID string      `json:"aggregate_id"`
+	Action      string      `json:"action"`
+	Revision    pgtype.Int4 `json:"revision"`
+	Payload     []byte      `json:"payload"`
+	Tombstone   bool        `json:"tombstone"`
+	CreatedAt   time.Time   `json:"created_at"`
+	DataSpaceID pgtype.UUID `json:"data_space_id"`
+	TenantID    pgtype.UUID `json:"tenant_id"`
+}
+
+type Tenant struct {
+	ID                     pgtype.UUID `json:"id"`
+	Name                   string      `json:"name"`
+	Slug                   string      `json:"slug"`
+	Status                 string      `json:"status"`
+	ProfileRevision        int32       `json:"profile_revision"`
+	QrisRevision           pgtype.Int4 `json:"qris_revision"`
+	CreatedBy              pgtype.UUID `json:"created_by"`
+	CreatedAt              time.Time   `json:"created_at"`
+	UpdatedAt              time.Time   `json:"updated_at"`
+	ManagementRevision     int32       `json:"management_revision"`
+	SandboxEnabledOverride pgtype.Bool `json:"sandbox_enabled_override"`
+}
+
+type TenantInvitation struct {
+	ID             pgtype.UUID        `json:"id"`
+	TenantID       pgtype.UUID        `json:"tenant_id"`
+	Role           string             `json:"role"`
+	CodeHash       []byte             `json:"code_hash"`
+	ExpiresAt      time.Time          `json:"expires_at"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	AcceptedBy     pgtype.UUID        `json:"accepted_by"`
+	AcceptedAt     pgtype.Timestamptz `json:"accepted_at"`
+	RevokedAt      pgtype.Timestamptz `json:"revoked_at"`
+	IsInitialOwner bool               `json:"is_initial_owner"`
+	CreatedAt      time.Time          `json:"created_at"`
+}
+
+type TenantMembership struct {
+	ID        pgtype.UUID `json:"id"`
+	TenantID  pgtype.UUID `json:"tenant_id"`
+	UserID    pgtype.UUID `json:"user_id"`
+	Role      string      `json:"role"`
+	Status    string      `json:"status"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
+}
+
+type TenantProfileRevision struct {
+	TenantID     pgtype.UUID `json:"tenant_id"`
+	Revision     int32       `json:"revision"`
+	BusinessName string      `json:"business_name"`
+	Address      string      `json:"address"`
+	Phone        string      `json:"phone"`
+	CreatedBy    pgtype.UUID `json:"created_by"`
+	CreatedAt    time.Time   `json:"created_at"`
+}
+
+type TenantQrisRevision struct {
+	TenantID      pgtype.UUID `json:"tenant_id"`
+	Revision      int32       `json:"revision"`
+	PayloadHash   string      `json:"payload_hash"`
+	StaticPayload string      `json:"static_payload"`
+	CreatedBy     pgtype.UUID `json:"created_by"`
+	CreatedAt     time.Time   `json:"created_at"`
 }
 
 type Terminal struct {
@@ -128,41 +209,44 @@ type Terminal struct {
 	AppVersion     pgtype.Text        `json:"app_version"`
 	IsActive       bool               `json:"is_active"`
 	EnrolledBy     pgtype.UUID        `json:"enrolled_by"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	CreatedAt      time.Time          `json:"created_at"`
+	UpdatedAt      time.Time          `json:"updated_at"`
 	RevokedAt      pgtype.Timestamptz `json:"revoked_at"`
+	TenantID       pgtype.UUID        `json:"tenant_id"`
 }
 
 type Transaction struct {
 	ID                       string             `json:"id"`
-	DataSpaceID              pgtype.UUID        `json:"data_space_id"`
 	CurrentRevision          int32              `json:"current_revision"`
-	OccurredAt               pgtype.Timestamptz `json:"occurred_at"`
-	ServerReceivedAt         pgtype.Timestamptz `json:"server_received_at"`
+	OccurredAt               time.Time          `json:"occurred_at"`
+	ServerReceivedAt         time.Time          `json:"server_received_at"`
 	OriginActorID            pgtype.UUID        `json:"origin_actor_id"`
 	OriginSessionID          pgtype.UUID        `json:"origin_session_id"`
 	TerminalID               pgtype.UUID        `json:"terminal_id"`
 	UpdatedBy                pgtype.UUID        `json:"updated_by"`
 	Subtotal                 int64              `json:"subtotal"`
 	Total                    int64              `json:"total"`
-	PaymentAmount            int64              `json:"payment_amount"`
-	PaymentMethod            string             `json:"payment_method"`
-	QrisPayloadHash          pgtype.Text        `json:"qris_payload_hash"`
-	PaymentStatus            string             `json:"payment_status"`
-	PaymentConfirmedRevision pgtype.Int4        `json:"payment_confirmed_revision"`
 	PrintState               string             `json:"print_state"`
 	LatestPrintedRevision    pgtype.Int4        `json:"latest_printed_revision"`
-	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
+	UpdatedAt                time.Time          `json:"updated_at"`
 	DeletedAt                pgtype.Timestamptz `json:"deleted_at"`
 	DeletedBy                pgtype.UUID        `json:"deleted_by"`
 	DeleteReason             pgtype.Text        `json:"delete_reason"`
+	PaymentMethod            string             `json:"payment_method"`
+	PaymentStatus            string             `json:"payment_status"`
+	PaymentConfirmedRevision pgtype.Int4        `json:"payment_confirmed_revision"`
+	QrisPayloadHash          pgtype.Text        `json:"qris_payload_hash"`
+	DataSpaceID              pgtype.UUID        `json:"data_space_id"`
+	PaymentAmount            int64              `json:"payment_amount"`
+	ReceiptProfileRevision   int32              `json:"receipt_profile_revision"`
+	ReceiptIdentity          []byte             `json:"receipt_identity"`
+	TenantID                 pgtype.UUID        `json:"tenant_id"`
 }
 
 type TransactionItem struct {
 	TransactionID      string      `json:"transaction_id"`
 	Revision           int32       `json:"revision"`
 	LineNumber         int32       `json:"line_number"`
-	DataSpaceID        pgtype.UUID `json:"data_space_id"`
 	PackageID          pgtype.UUID `json:"package_id"`
 	PackageRevision    int32       `json:"package_revision"`
 	PackageCode        string      `json:"package_code"`
@@ -171,26 +255,30 @@ type TransactionItem struct {
 	UnitPrice          int64       `json:"unit_price"`
 	Quantity           int32       `json:"quantity"`
 	LineTotal          int64       `json:"line_total"`
+	DataSpaceID        pgtype.UUID `json:"data_space_id"`
+	TenantID           pgtype.UUID `json:"tenant_id"`
 }
 
 type TransactionRevision struct {
-	TransactionID        string             `json:"transaction_id"`
-	Revision             int32              `json:"revision"`
-	DataSpaceID          pgtype.UUID        `json:"data_space_id"`
-	BaseRevision         pgtype.Int4        `json:"base_revision"`
-	ChangeType           string             `json:"change_type"`
-	Reason               pgtype.Text        `json:"reason"`
-	BeforeSnapshot       []byte             `json:"before_snapshot"`
-	AfterSnapshot        []byte             `json:"after_snapshot"`
-	QrisPayloadHash      pgtype.Text        `json:"qris_payload_hash"`
-	PaymentAmount        pgtype.Int8        `json:"payment_amount"`
-	OriginActorID        pgtype.UUID        `json:"origin_actor_id"`
-	OriginSessionID      pgtype.UUID        `json:"origin_session_id"`
-	TerminalID           pgtype.UUID        `json:"terminal_id"`
-	SubmittedByActorID   pgtype.UUID        `json:"submitted_by_actor_id"`
-	SubmittedBySessionID pgtype.UUID        `json:"submitted_by_session_id"`
-	ClientOccurredAt     pgtype.Timestamptz `json:"client_occurred_at"`
-	ServerReceivedAt     pgtype.Timestamptz `json:"server_received_at"`
+	TransactionID        string      `json:"transaction_id"`
+	Revision             int32       `json:"revision"`
+	BaseRevision         pgtype.Int4 `json:"base_revision"`
+	ChangeType           string      `json:"change_type"`
+	Reason               pgtype.Text `json:"reason"`
+	BeforeSnapshot       []byte      `json:"before_snapshot"`
+	AfterSnapshot        []byte      `json:"after_snapshot"`
+	OriginActorID        pgtype.UUID `json:"origin_actor_id"`
+	OriginSessionID      pgtype.UUID `json:"origin_session_id"`
+	TerminalID           pgtype.UUID `json:"terminal_id"`
+	SubmittedByActorID   pgtype.UUID `json:"submitted_by_actor_id"`
+	SubmittedBySessionID pgtype.UUID `json:"submitted_by_session_id"`
+	ClientOccurredAt     time.Time   `json:"client_occurred_at"`
+	ServerReceivedAt     time.Time   `json:"server_received_at"`
+	QrisPayloadHash      pgtype.Text `json:"qris_payload_hash"`
+	DataSpaceID          pgtype.UUID `json:"data_space_id"`
+	PaymentAmount        pgtype.Int8 `json:"payment_amount"`
+	ReceiptIdentity      []byte      `json:"receipt_identity"`
+	TenantID             pgtype.UUID `json:"tenant_id"`
 }
 
 type User struct {
@@ -201,7 +289,8 @@ type User struct {
 	Role               string             `json:"role"`
 	IsActive           bool               `json:"is_active"`
 	MustChangePassword bool               `json:"must_change_password"`
-	CreatedAt          pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
+	CreatedAt          time.Time          `json:"created_at"`
+	UpdatedAt          time.Time          `json:"updated_at"`
 	DeletedAt          pgtype.Timestamptz `json:"deleted_at"`
+	IsPlatformAdmin    bool               `json:"is_platform_admin"`
 }

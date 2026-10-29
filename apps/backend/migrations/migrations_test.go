@@ -152,9 +152,14 @@ func TestMigrationTablesMatchSQLCSnapshotTables(t *testing.T) {
 	t.Parallel()
 
 	// The immutable 000001 models still describe their original migration.
-	// data_spaces is added by the GORM-run 000004 migration, so include that
-	// additive table when comparing against sqlc's current-schema snapshot.
-	migrationTables := append(modelTableNames(t), "data_spaces")
+	// Later migrations add tables with raw SQL: data_spaces in 000004 and the
+	// tenancy tables in 000005. Include them when comparing against sqlc's
+	// current-schema snapshot.
+	migrationTables := append(modelTableNames(t),
+		"data_spaces",
+		"platform_audit_events", "tenant_invitations", "tenant_memberships",
+		"tenant_profile_revisions", "tenant_qris_revisions", "tenants",
+	)
 	sort.Strings(migrationTables)
 	snapshotPath := filepath.Join("..", "sqlc", "schema.sql")
 	body, err := os.ReadFile(snapshotPath)

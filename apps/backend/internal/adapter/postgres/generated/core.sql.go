@@ -7,12 +7,13 @@ package generated
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const currentTransactionItems = `-- name: CurrentTransactionItems :many
-SELECT i.transaction_id, i.revision, i.line_number, i.data_space_id, i.package_id, i.package_revision, i.package_code, i.package_name, i.package_description, i.unit_price, i.quantity, i.line_total
+SELECT i.transaction_id, i.revision, i.line_number, i.package_id, i.package_revision, i.package_code, i.package_name, i.package_description, i.unit_price, i.quantity, i.line_total, i.data_space_id, i.tenant_id
 FROM transaction_items i
 JOIN transactions t
   ON t.id = i.transaction_id AND t.current_revision = i.revision
@@ -39,7 +40,6 @@ func (q *Queries) CurrentTransactionItems(ctx context.Context, arg CurrentTransa
 			&i.TransactionID,
 			&i.Revision,
 			&i.LineNumber,
-			&i.DataSpaceID,
 			&i.PackageID,
 			&i.PackageRevision,
 			&i.PackageCode,
@@ -48,6 +48,8 @@ func (q *Queries) CurrentTransactionItems(ctx context.Context, arg CurrentTransa
 			&i.UnitPrice,
 			&i.Quantity,
 			&i.LineTotal,
+			&i.DataSpaceID,
+			&i.TenantID,
 		); err != nil {
 			return nil, err
 		}
@@ -116,15 +118,15 @@ type PullSyncChangesParams struct {
 }
 
 type PullSyncChangesRow struct {
-	Cursor      int64              `json:"cursor"`
-	Aggregate   string             `json:"aggregate"`
-	AggregateID string             `json:"aggregate_id"`
-	Action      string             `json:"action"`
-	Revision    pgtype.Int4        `json:"revision"`
-	Payload     []byte             `json:"payload"`
-	Tombstone   bool               `json:"tombstone"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	DataSpaceID pgtype.UUID        `json:"data_space_id"`
+	Cursor      int64       `json:"cursor"`
+	Aggregate   string      `json:"aggregate"`
+	AggregateID string      `json:"aggregate_id"`
+	Action      string      `json:"action"`
+	Revision    pgtype.Int4 `json:"revision"`
+	Payload     []byte      `json:"payload"`
+	Tombstone   bool        `json:"tombstone"`
+	CreatedAt   time.Time   `json:"created_at"`
+	DataSpaceID pgtype.UUID `json:"data_space_id"`
 }
 
 func (q *Queries) PullSyncChanges(ctx context.Context, arg PullSyncChangesParams) ([]PullSyncChangesRow, error) {
