@@ -231,8 +231,8 @@ func addSharedChange(ctx context.Context, tx pgx.Tx, aggregate, aggregateID, act
 	}
 	rows, err := tx.Query(ctx, `
 		SELECT id AS tenant_id FROM tenants WHERE $1 = 'user'
-		UNION SELECT tenant_id FROM terminals WHERE $1 = 'terminal' AND id::text = $2
-		ORDER BY tenant_id`, aggregate, aggregateID)
+		UNION SELECT tenant_id FROM terminals WHERE $1 = 'terminal' AND id = $2
+		ORDER BY tenant_id`, aggregate, aggregateUUID(aggregateID))
 	if err != nil {
 		return err
 	}
@@ -286,15 +286,25 @@ func addTenantChange(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, aggrega
 		       ELSE $5::jsonb END,
 		       $6 OR ($1 = 'user' AND (NOT u.is_active OR u.deleted_at IS NOT NULL))
 		FROM data_spaces ds
-		LEFT JOIN tenant_memberships m ON $1 = 'user' AND m.tenant_id = ds.tenant_id AND m.user_id::text = $2
-		LEFT JOIN users u ON $1 = 'user' AND u.id::text=$2
+		LEFT JOIN tenant_memberships m ON $1 = 'user' AND m.tenant_id = ds.tenant_id AND m.user_id = $8
+		LEFT JOIN users u ON $1 = 'user' AND u.id = $8
 		WHERE ds.tenant_id = $7 AND ds.status = 'active' AND (
 		  ($1 = 'user' AND u.id IS NOT NULL) OR
-		  ($1 = 'terminal' AND EXISTS (SELECT 1 FROM terminals t WHERE t.id::text = $2 AND t.tenant_id = ds.tenant_id)) OR
+		  ($1 = 'terminal' AND EXISTS (SELECT 1 FROM terminals t WHERE t.id = $8 AND t.tenant_id = ds.tenant_id)) OR
 		  $1 IN ('tenant_profile','tenant_qris','tenant_metadata'))`,
-		aggregate, aggregateID, action, revision, body, tombstone, tenantID,
+		aggregate, aggregateID, action, revision, body, tombstone, tenantID, aggregateUUID(aggregateID),
 	)
 	return err
+}
+
+// aggregateUUID lets uuid-keyed lookups use their indexes. Aggregate IDs that
+// are not UUIDs become NULL and match no row, as the former text cast did.
+func aggregateUUID(aggregateID string) *uuid.UUID {
+	id, err := uuid.Parse(aggregateID)
+	if err != nil {
+		return nil
+	}
+	return &id
 }
 
 func nullableJSON(value any) ([]byte, error) {

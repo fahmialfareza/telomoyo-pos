@@ -172,7 +172,7 @@ func apply(
 			INSERT INTO sync_changes (data_space_id, aggregate, aggregate_id, action, payload)
 			SELECT ds.id, 'user', $1, 'created', $2::jsonb || jsonb_build_object('tenantId',ds.tenant_id,'membershipId',m.id)
 			FROM data_spaces ds
-			LEFT JOIN tenant_memberships m ON m.tenant_id=ds.tenant_id AND m.user_id::text=$1
+			LEFT JOIN tenant_memberships m ON m.tenant_id=ds.tenant_id AND m.user_id=$1::uuid
 			WHERE ds.status = 'active'`,
 			id.String(), payload,
 		); err != nil {
@@ -326,7 +326,7 @@ func resetSampleSuperadminPassword(
 		INSERT INTO sync_changes (data_space_id, aggregate, aggregate_id, action, payload)
 		SELECT ds.id, 'user', $1, 'updated', $2::jsonb || jsonb_build_object('tenantId',ds.tenant_id,'membershipId',m.id)
 		FROM data_spaces ds
-		LEFT JOIN tenant_memberships m ON m.tenant_id=ds.tenant_id AND m.user_id::text=$1
+		LEFT JOIN tenant_memberships m ON m.tenant_id=ds.tenant_id AND m.user_id=$1::uuid
 		WHERE ds.status = 'active'`,
 		after.ID.String(), afterJSON,
 	); err != nil {

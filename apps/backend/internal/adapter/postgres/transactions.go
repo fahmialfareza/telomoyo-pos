@@ -560,13 +560,9 @@ func (s *Store) GetTransaction(ctx context.Context, dataSpaceID uuid.UUID, id st
 	return transaction, dbError(err, "get transaction")
 }
 
-func getTransactionWith(ctx context.Context, query queryer, dataSpaceID uuid.UUID, id string, includeDeleted bool) (domain.Transaction, error) {
-	defer observability.StartSegment(ctx, "Postgres.getTransactionWith")()
-	var item domain.Transaction
-	var deletedActorID *uuid.UUID
-	var deletedActorName, deletedActorUsername *string
-	var deletedActorRole *domain.Role
-	sql := `
+// transactionSelectSQL reads a transaction header; callers append WHERE,
+// ORDER BY and LIMIT clauses against alias t.
+const transactionSelectSQL = `
 		SELECT t.id, t.current_revision, t.occurred_at, t.server_received_at,
 		       t.subtotal, t.total, t.payment_amount, t.payment_method, t.payment_status,
 		       t.qris_payload_hash, t.payment_confirmed_revision,
@@ -580,14 +576,16 @@ func getTransactionWith(ctx context.Context, query queryer, dataSpaceID uuid.UUI
 		JOIN data_spaces ds ON ds.id = t.data_space_id
 		JOIN users origin ON origin.id = t.origin_actor_id
 		JOIN users updater ON updater.id = t.updated_by
-		LEFT JOIN users deleter ON deleter.id = t.deleted_by
-		WHERE t.id = $1 AND t.data_space_id = $2`
-	if !includeDeleted {
-		sql += ` AND t.deleted_at IS NULL`
-	}
+		LEFT JOIN users deleter ON deleter.id = t.deleted_by`
+
+func scanTransaction(row pgx.Row) (domain.Transaction, error) {
+	var item domain.Transaction
+	var deletedActorID *uuid.UUID
+	var deletedActorName, deletedActorUsername *string
+	var deletedActorRole *domain.Role
 	var mode domain.DataMode
 	var receiptJSON []byte
-	err := query.QueryRow(ctx, sql, id, domain.EffectiveDataSpaceID(dataSpaceID)).Scan(
+	err := row.Scan(
 		&item.ID, &item.Revision, &item.OccurredAt, &item.ServerReceivedAt,
 		&item.Subtotal, &item.Total, &item.PaymentAmount, &item.PaymentMethod, &item.PaymentStatus,
 		&item.QrisPayloadHash, &item.PaymentConfirmedRevision,
@@ -616,30 +614,70 @@ func getTransactionWith(ctx context.Context, query queryer, dataSpaceID uuid.UUI
 			Username: stringValue(deletedActorUsername), Role: roleValue(deletedActorRole),
 		}
 	}
+	item.Items = make([]domain.TransactionItem, 0)
+	return item, nil
+}
+
+// loadTransactionItems fills the current-revision lines of every transaction
+// in one round trip. All items must belong to dataSpaceID.
+func loadTransactionItems(ctx context.Context, query queryer, dataSpaceID uuid.UUID, items []domain.Transaction) error {
+	if len(items) == 0 {
+		return nil
+	}
+	ids := make([]string, len(items))
+	revisions := make([]int32, len(items))
+	index := make(map[string]int, len(items))
+	for i, item := range items {
+		ids[i] = item.ID
+		revisions[i] = int32(item.Revision)
+		index[item.ID] = i
+	}
 	rows, err := query.Query(ctx, `
-		SELECT line_number, package_id, package_revision, package_code, package_name,
-		       package_description, unit_price, quantity, line_total
-		FROM transaction_items
-		WHERE transaction_id = $1 AND revision = $2 AND data_space_id = $3
-		ORDER BY line_number`,
-		id, item.Revision, item.DataSpaceID,
+		SELECT i.transaction_id, i.line_number, i.package_id, i.package_revision, i.package_code,
+		       i.package_name, i.package_description, i.unit_price, i.quantity, i.line_total
+		FROM unnest($1::text[], $2::integer[]) AS wanted(transaction_id, revision)
+		JOIN transaction_items i
+		  ON i.transaction_id = wanted.transaction_id AND i.revision = wanted.revision
+		 AND i.data_space_id = $3
+		ORDER BY i.transaction_id, i.line_number`,
+		ids, revisions, dataSpaceID,
 	)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var transactionID string
+		var line domain.TransactionItem
+		if err := rows.Scan(
+			&transactionID, &line.LineNumber, &line.PackageID, &line.PackageRevision, &line.PackageCode,
+			&line.PackageName, &line.PackageDescription, &line.UnitPrice, &line.Quantity, &line.LineTotal,
+		); err != nil {
+			return err
+		}
+		if i, ok := index[transactionID]; ok {
+			items[i].Items = append(items[i].Items, line)
+		}
+	}
+	return rows.Err()
+}
+
+func getTransactionWith(ctx context.Context, query queryer, dataSpaceID uuid.UUID, id string, includeDeleted bool) (domain.Transaction, error) {
+	defer observability.StartSegment(ctx, "Postgres.getTransactionWith")()
+	sql := transactionSelectSQL + `
+		WHERE t.id = $1 AND t.data_space_id = $2`
+	if !includeDeleted {
+		sql += ` AND t.deleted_at IS NULL`
+	}
+	item, err := scanTransaction(query.QueryRow(ctx, sql, id, domain.EffectiveDataSpaceID(dataSpaceID)))
 	if err != nil {
 		return domain.Transaction{}, err
 	}
-	defer rows.Close()
-	item.Items = make([]domain.TransactionItem, 0)
-	for rows.Next() {
-		var line domain.TransactionItem
-		if err := rows.Scan(
-			&line.LineNumber, &line.PackageID, &line.PackageRevision, &line.PackageCode,
-			&line.PackageName, &line.PackageDescription, &line.UnitPrice, &line.Quantity, &line.LineTotal,
-		); err != nil {
-			return domain.Transaction{}, err
-		}
-		item.Items = append(item.Items, line)
+	items := []domain.Transaction{item}
+	if err := loadTransactionItems(ctx, query, item.DataSpaceID, items); err != nil {
+		return domain.Transaction{}, err
 	}
-	return item, rows.Err()
+	return items[0], nil
 }
 
 func (s *Store) ListTransactions(ctx context.Context, filter domain.TransactionFilter) (domain.TransactionPage, error) {
@@ -695,42 +733,36 @@ func (s *Store) ListTransactions(ctx context.Context, filter domain.TransactionF
 		limit = 25
 	}
 	args = append(args, limit+1)
-	sql := `
-		SELECT t.id
-		FROM transactions t
+	sql := transactionSelectSQL + `
 		WHERE ` + strings.Join(conditions, " AND ") + `
 		ORDER BY t.occurred_at DESC, t.id DESC
 		LIMIT $` + fmt.Sprintf("%d", len(args))
 	rows, err := s.Pool.Query(ctx, sql, args...)
 	if err != nil {
-		return domain.TransactionPage{}, dbError(err, "list transaction ids")
+		return domain.TransactionPage{}, dbError(err, "list transactions")
 	}
-	ids := make([]string, 0, limit+1)
+	transactions := make([]domain.Transaction, 0, limit+1)
 	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
+		item, err := scanTransaction(rows)
+		if err != nil {
 			rows.Close()
-			return domain.TransactionPage{}, dbError(err, "scan transaction id")
+			return domain.TransactionPage{}, dbError(err, "scan transaction")
 		}
-		ids = append(ids, id)
+		transactions = append(transactions, item)
 	}
 	if err := rows.Err(); err != nil {
 		rows.Close()
-		return domain.TransactionPage{}, dbError(err, "iterate transaction ids")
+		return domain.TransactionPage{}, dbError(err, "iterate transactions")
 	}
 	rows.Close()
-	hasMore := len(ids) > limit
+	hasMore := len(transactions) > limit
 	if hasMore {
-		ids = ids[:limit]
+		transactions = transactions[:limit]
 	}
-	page := domain.TransactionPage{Transactions: make([]domain.Transaction, 0, len(ids))}
-	for _, id := range ids {
-		item, err := getTransactionWith(ctx, s.Pool, filter.DataSpaceID, id, filter.IncludeDeleted)
-		if err != nil {
-			return domain.TransactionPage{}, dbError(err, "hydrate transaction list")
-		}
-		page.Transactions = append(page.Transactions, item)
+	if err := loadTransactionItems(ctx, s.Pool, domain.EffectiveDataSpaceID(filter.DataSpaceID), transactions); err != nil {
+		return domain.TransactionPage{}, dbError(err, "hydrate transaction items")
 	}
+	page := domain.TransactionPage{Transactions: transactions}
 	if hasMore && len(page.Transactions) > 0 {
 		last := page.Transactions[len(page.Transactions)-1]
 		page.NextCursor = domain.EncodeCursor(domain.Cursor{OccurredAt: last.OccurredAt, ID: last.ID})

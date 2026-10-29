@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -391,6 +392,13 @@ func assertTransactionList(t *testing.T, ctx context.Context, store *Store, data
 	if len(page.Transactions) != 1 || page.Transactions[0].ID != wantID ||
 		page.Transactions[0].DataSpaceID != dataSpaceID {
 		t.Fatalf("transactions in %s = %+v, want only %s", dataSpaceID, page.Transactions, wantID)
+	}
+	detail, err := store.GetTransaction(ctx, dataSpaceID, wantID, false)
+	if err != nil {
+		t.Fatalf("get transaction %s: %v", wantID, err)
+	}
+	if len(detail.Items) == 0 || !reflect.DeepEqual(page.Transactions[0], detail) {
+		t.Fatalf("listed transaction differs from detail\nlist:   %+v\ndetail: %+v", page.Transactions[0], detail)
 	}
 }
 
