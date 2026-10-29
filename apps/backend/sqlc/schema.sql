@@ -81,6 +81,10 @@ CREATE TABLE sessions (
 CREATE INDEX sessions_user_live_idx ON sessions (user_id) WHERE revoked_at IS NULL;
 CREATE INDEX sessions_data_space_live_idx ON sessions (data_space_id, user_id)
     WHERE revoked_at IS NULL;
+CREATE INDEX sessions_data_space_idx ON sessions (data_space_id)
+    WHERE data_space_id IS NOT NULL;
+CREATE INDEX sessions_terminal_live_idx ON sessions (terminal_id)
+    WHERE revoked_at IS NULL;
 
 CREATE TABLE packages (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -131,6 +135,9 @@ ALTER TABLE packages ADD CONSTRAINT packages_current_revision_space_fkey
 
 CREATE INDEX packages_data_space_live_idx
     ON packages (data_space_id, updated_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX packages_source_package_idx ON packages (source_package_id)
+    WHERE source_package_id IS NOT NULL;
+CREATE INDEX package_revisions_data_space_idx ON package_revisions (data_space_id);
 
 CREATE TABLE transactions (
     id text PRIMARY KEY
@@ -171,13 +178,15 @@ CREATE TABLE transactions (
         REFERENCES sessions(id, data_space_id)
 );
 
-CREATE INDEX transactions_occurred_idx ON transactions (occurred_at DESC, id DESC);
-CREATE INDEX transactions_origin_actor_idx ON transactions (origin_actor_id, occurred_at DESC);
-CREATE INDEX transactions_live_idx ON transactions (occurred_at DESC) WHERE deleted_at IS NULL;
-CREATE INDEX transactions_paid_occurred_idx ON transactions (payment_status, occurred_at DESC)
-    WHERE deleted_at IS NULL AND payment_status = 'success';
 CREATE INDEX transactions_data_space_occurred_idx
     ON transactions (data_space_id, occurred_at DESC, id DESC);
+CREATE INDEX transactions_data_space_paid_occurred_idx
+    ON transactions (data_space_id, occurred_at)
+    INCLUDE (total, payment_amount, payment_method, current_revision, payment_confirmed_revision)
+    WHERE deleted_at IS NULL AND payment_status = 'success';
+CREATE INDEX transactions_data_space_actor_occurred_idx
+    ON transactions (data_space_id, origin_actor_id, occurred_at DESC, id DESC);
+CREATE INDEX transactions_origin_session_idx ON transactions (origin_session_id);
 
 -- Additive-rollout compatibility for pre-data-space replicas. Remove only in a
 -- future migration after every old replica is known to be gone.
@@ -248,6 +257,12 @@ ALTER TABLE transactions ADD CONSTRAINT transactions_current_revision_space_fkey
     REFERENCES transaction_revisions(transaction_id, revision, data_space_id)
     DEFERRABLE INITIALLY DEFERRED;
 
+CREATE INDEX transaction_revisions_data_space_idx ON transaction_revisions (data_space_id);
+CREATE INDEX transaction_revisions_origin_session_idx
+    ON transaction_revisions (origin_session_id);
+CREATE INDEX transaction_revisions_submitted_session_idx
+    ON transaction_revisions (submitted_by_session_id);
+
 CREATE TABLE transaction_items (
     transaction_id text NOT NULL,
     revision integer NOT NULL,
@@ -275,6 +290,7 @@ CREATE TABLE transaction_items (
 
 CREATE INDEX transaction_items_current_filter_idx
     ON transaction_items (package_id, transaction_id, revision);
+CREATE INDEX transaction_items_data_space_idx ON transaction_items (data_space_id);
 
 CREATE TABLE print_attempts (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -305,6 +321,8 @@ CREATE TABLE print_attempts (
 
 CREATE INDEX print_attempts_transaction_idx
     ON print_attempts (transaction_id, server_received_at DESC);
+CREATE INDEX print_attempts_data_space_idx ON print_attempts (data_space_id);
+CREATE INDEX print_attempts_session_idx ON print_attempts (session_id);
 
 CREATE TABLE audit_events (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -335,6 +353,10 @@ CREATE INDEX audit_events_actor_idx
     ON audit_events (submitted_by_actor_id, server_received_at DESC);
 CREATE INDEX audit_events_data_space_idx
     ON audit_events (data_space_id, server_received_at DESC);
+CREATE INDEX audit_events_origin_session_idx ON audit_events (origin_session_id)
+    WHERE origin_session_id IS NOT NULL;
+CREATE INDEX audit_events_submitted_session_idx ON audit_events (submitted_by_session_id)
+    WHERE submitted_by_session_id IS NOT NULL;
 
 CREATE TABLE sync_changes (
     cursor bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
