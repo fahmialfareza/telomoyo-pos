@@ -61,7 +61,7 @@ func (s *Store) SwitchSession(
 		return domain.Principal{}, dbError(err, "begin mode switch")
 	}
 	defer tx.Rollback(ctx)
-	if _, err = lockTenantAccess(ctx, tx, current); err != nil {
+	if _, err = lockTenantSessionForReplacement(ctx, tx, current); err != nil {
 		return domain.Principal{}, err
 	}
 	if _, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock_shared(hashtextextended($1, 0))`, sandboxGenerationLock+":"+current.TenantID.String()); err != nil {

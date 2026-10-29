@@ -340,10 +340,12 @@ func principalIdentity(principal domain.Principal) domain.MutationIdentity {
 // access to this tenant and the exact originating enrollment.
 func lockMutationIdentity(ctx context.Context, tx pgx.Tx, identity domain.MutationIdentity) (domain.Role, error) {
 	defer observability.StartSegment(ctx, "Postgres.lockMutationIdentity")()
-	return lockMutationIdentityWithTenantLock(ctx, tx, identity, false)
+	return lockMutationIdentityWithTenantLock(ctx, tx, identity, false, false)
 }
 
-func lockMutationIdentityWithTenantLock(ctx context.Context, tx pgx.Tx, identity domain.MutationIdentity, exclusive bool) (domain.Role, error) {
+// consumeSession locks the submitting session FOR UPDATE instead of FOR SHARE,
+// at the same point in the lock order, for callers that will revoke it.
+func lockMutationIdentityWithTenantLock(ctx context.Context, tx pgx.Tx, identity domain.MutationIdentity, exclusive, consumeSession bool) (domain.Role, error) {
 	defer observability.StartSegment(ctx, "Postgres.lockMutationIdentityWithTenantLock")()
 	if identity.TenantID == uuid.Nil || identity.DataSpaceID == uuid.Nil || identity.OriginActorID == uuid.Nil || identity.SubmittedByActorID == uuid.Nil || identity.OriginSessionID == uuid.Nil || identity.SubmittedBySessionID == uuid.Nil {
 		return "", domain.NewError(domain.CodeForbidden, "Pilih usaha yang aktif untuk melanjutkan")
@@ -427,7 +429,11 @@ func lockMutationIdentityWithTenantLock(ctx context.Context, tx pgx.Tx, identity
 		return "", domain.NewError(domain.CodeForbidden, "Identitas operasi tidak sesuai dengan usaha, sesi, atau terminal aktif")
 	}
 	var submitterActive bool
-	if err := tx.QueryRow(ctx, `SELECT revoked_at IS NULL FROM sessions WHERE id = $1 FOR SHARE`, identity.SubmittedBySessionID).Scan(&submitterActive); err != nil {
+	sessionLock := `SELECT revoked_at IS NULL FROM sessions WHERE id = $1 FOR SHARE`
+	if consumeSession {
+		sessionLock = `SELECT revoked_at IS NULL FROM sessions WHERE id = $1 FOR UPDATE`
+	}
+	if err := tx.QueryRow(ctx, sessionLock, identity.SubmittedBySessionID).Scan(&submitterActive); err != nil {
 		return "", dbError(err, "lock submitting session")
 	}
 	if !submitterActive {
@@ -453,10 +459,21 @@ func lockTenantAccess(ctx context.Context, tx pgx.Tx, principal domain.Principal
 	return lockMutationIdentity(ctx, tx, principalIdentity(principal))
 }
 
+// lockTenantSessionForReplacement is lockTenantAccess for callers that revoke
+// the current session. Taking the exclusive row lock up front makes concurrent
+// replacements queue; a share lock upgraded later deadlocks between them.
+func lockTenantSessionForReplacement(ctx context.Context, tx pgx.Tx, principal domain.Principal) (domain.Role, error) {
+	defer observability.StartSegment(ctx, "Postgres.lockTenantSessionForReplacement")()
+	if principal.ContextKind != domain.ContextTenant || principal.MembershipID == uuid.Nil {
+		return "", domain.NewError(domain.CodeContextRequired, "Pilih usaha yang aktif untuk melanjutkan")
+	}
+	return lockMutationIdentityWithTenantLock(ctx, tx, principalIdentity(principal), false, true)
+}
+
 func lockTenantLifecycleAccess(ctx context.Context, tx pgx.Tx, principal domain.Principal) (domain.Role, error) {
 	defer observability.StartSegment(ctx, "Postgres.lockTenantLifecycleAccess")()
 	if !principal.IsTenantContext() || principal.MembershipID == uuid.Nil {
 		return "", domain.NewError(domain.CodeContextRequired, "Pilih usaha yang aktif untuk melanjutkan")
 	}
-	return lockMutationIdentityWithTenantLock(ctx, tx, principalIdentity(principal), true)
+	return lockMutationIdentityWithTenantLock(ctx, tx, principalIdentity(principal), true, false)
 }
