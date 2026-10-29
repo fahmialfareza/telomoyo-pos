@@ -15,8 +15,9 @@ func TestSharedTenantAccessRetainsMerchantPermissionsAndRecovery(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 	legacy, _ := seedSandboxLifecyclePrincipal(t, ctx, store)
-	if _, err := store.ListTenants(ctx, legacy); !domain.IsCode(err, domain.CodeForbidden) {
-		t.Fatalf("business context bypassed management barrier: %v", err)
+	// A Superadmin keeps organization management inside a business context.
+	if _, err := store.ListTenants(ctx, legacy); err != nil {
+		t.Fatalf("business-context Superadmin lost management access: %v", err)
 	}
 	if _, err := store.SwitchContextSession(ctx, legacy, integrationBytes(23), integrationBytes(129), domain.SwitchContextInput{Kind: domain.ContextPlatform}); !domain.IsCode(err, domain.CodeClientUpdateRequired) {
 		t.Fatalf("issued retired platform context: %v", err)
@@ -60,6 +61,9 @@ func TestSharedTenantAccessRetainsMerchantPermissionsAndRecovery(t *testing.T) {
 	staff, err := store.SwitchContextSession(ctx, account, integrationBytes(132), integrationBytes(133), domain.SwitchContextInput{Kind: domain.ContextTenant, TenantID: owner.TenantID})
 	if err != nil || staff.Role != domain.RoleAdmin {
 		t.Fatalf("Admin requires membership approval: %+v %v", staff, err)
+	}
+	if _, err = store.ListTenants(ctx, staff); !domain.IsCode(err, domain.CodeForbidden) {
+		t.Fatalf("business-context Admin bypassed management barrier: %v", err)
 	}
 	if _, err = store.UpdateTenantProfile(ctx, staff, domain.UpdateTenantProfileInput{ExpectedRevision: 2, BusinessName: "Not permitted"}); !domain.IsCode(err, domain.CodeForbidden) {
 		t.Fatalf("Admin changed receipt identity: %v", err)

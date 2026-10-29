@@ -100,12 +100,12 @@ func TestInitialSuperadminCreatesOneForcedChangeAccountAndSafeGlobalProjections(
 func TestInitialSuperadminRefusesConflictingExistingAccountsWithoutMutation(t *testing.T) {
 	for _, test := range []struct {
 		name, username, fullName string
-		role domain.Role
-		active, deleted bool
+		role                     domain.Role
+		active, deleted          bool
 	}{
 		{"active-admin", "initial.owner", "Initial Owner", domain.RoleAdmin, true, false},
 		{"inactive-superadmin", "initial.owner", "Initial Owner", domain.RoleSuperadmin, false, false},
-		{"deleted-superadmin", "initial.owner", "Initial Owner", domain.RoleSuperadmin, true, true},
+		{"deleted-superadmin", "initial.owner", "Initial Owner", domain.RoleSuperadmin, false, true},
 		{"different-name", "initial.owner", "Another Owner", domain.RoleSuperadmin, true, false},
 		{"other-active-superadmin", "other.owner", "Another Owner", domain.RoleSuperadmin, true, false},
 	} {
