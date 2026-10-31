@@ -14,6 +14,7 @@ import (
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/observability"
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/port"
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/usecase"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/newrelic/go-agent/v3/integrations/nrgin"
@@ -61,6 +62,12 @@ func New(deps Dependencies) *gin.Engine {
 		server.transactionContext(),
 		server.accessLog(),
 		server.recovery(),
+		// Compress only when the client sends Accept-Encoding: gzip. Health probes
+		// are tiny and polled often, so they skip the compression overhead.
+		gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{
+			"/api/v1/health/live",
+			"/api/v1/health/ready",
+		})),
 		bodyLimit(),
 	)
 
