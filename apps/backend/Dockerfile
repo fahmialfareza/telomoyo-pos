@@ -92,7 +92,6 @@ ENV TZ=Asia/Jakarta
 ENV GIN_MODE=release
 # Soft heap ceiling for the Go GC; keep it ~85% of the container memory limit
 # and above PASSWORD_HASH_CONCURRENCY x 64 MiB (legacy) Argon2id working memory.
-ENV GOMEMLIMIT=400MiB
 USER 65532:65532
 
 FROM runtime AS migrate
