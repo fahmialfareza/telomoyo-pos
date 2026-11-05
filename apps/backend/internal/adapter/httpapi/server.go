@@ -74,6 +74,7 @@ func New(deps Dependencies) *gin.Engine {
 	api := router.Group("/api/v1")
 	// Public, read-only pages: no session, tenant, or database access required.
 	for _, method := range []string{http.MethodGet, http.MethodHead} {
+		router.Handle(method, "/", server.root)
 		router.Handle(method, "/privacy-policy", server.privacyPolicy)
 		router.Handle(method, "/account-deletion", server.accountDeletion)
 		router.Handle(method, "/legal/styles.css", server.legalStyles)
@@ -473,6 +474,17 @@ func parseUUID(value, field string) (uuid.UUID, error) {
 		return uuid.Nil, domain.Validation("UUID tidak valid", map[string]any{"field": field})
 	}
 	return id, nil
+}
+
+// root answers the bare service URL so browsers and uptime checks get a 200
+// instead of a 404. It touches no database or Redis.
+func (s *Server) root(c *gin.Context) {
+	writeData(c, http.StatusOK, gin.H{
+		"service": "telomoyo-pos",
+		"status":  "ok",
+		"api":     "/api/v1",
+		"health":  "/healthz",
+	})
 }
 
 func (s *Server) live(c *gin.Context) {

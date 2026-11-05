@@ -168,3 +168,18 @@ func TestLegalPagesDoNotIntroduceExternalResourcesOrMutationRoutes(t *testing.T)
 		}
 	}
 }
+
+func TestRootIsPublicWithoutBusinessDependencies(t *testing.T) {
+	router := legalTestRouter("privasi@example.org")
+	for _, method := range []string{http.MethodGet, http.MethodHead} {
+		request := httptest.NewRequest(method, "/", nil)
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("%s / = %d: %s", method, recorder.Code, recorder.Body.String())
+		}
+		if method == http.MethodGet && !strings.Contains(recorder.Body.String(), `"service":"telomoyo-pos"`) {
+			t.Fatalf("unexpected root body: %s", recorder.Body.String())
+		}
+	}
+}
