@@ -194,6 +194,7 @@ const styles = themed(({ colors }) =>
       backgroundColor: colors.primarySoft,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.xs,
+      justifyContent: "center",
     },
     tenantName: {
       fontFamily: typography.bodySemibold,
