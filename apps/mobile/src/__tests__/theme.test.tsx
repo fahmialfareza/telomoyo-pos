@@ -63,12 +63,11 @@ const textPairs: Pair[] = [
   ["sunrise", "card"],
   ["secondary", "card"],
 ];
-// Pre-existing light-palette shortfalls, kept unchanged by the dark-mode work.
-const knownLightExceptions = new Set([
-  "success/card",
-  "success/successSoft",
-  "sunrise/card",
-]);
+const tonalPairs: Pair[] = [
+  ["text", "container"],
+  ["textMuted", "container"],
+  ["onPrimary", "error"],
+];
 
 describe("palettes", () => {
   it("keeps the same token keys in both schemes", () => {
@@ -77,7 +76,7 @@ describe("palettes", () => {
     );
   });
 
-  it.each(textPairs)(
+  it.each([...textPairs, ...tonalPairs])(
     "dark %s on %s meets WCAG AA",
     (foreground, background) => {
       expect(
@@ -86,16 +85,14 @@ describe("palettes", () => {
     },
   );
 
-  it.each(
-    textPairs.filter(
-      ([foreground, background]) =>
-        !knownLightExceptions.has(`${foreground}/${background}`),
-    ),
-  )("light %s on %s meets WCAG AA", (foreground, background) => {
-    expect(
-      contrast(lightColors[foreground], lightColors[background]),
-    ).toBeGreaterThanOrEqual(4.5);
-  });
+  it.each([...textPairs, ...tonalPairs])(
+    "light %s on %s meets WCAG AA",
+    (foreground, background) => {
+      expect(
+        contrast(lightColors[foreground], lightColors[background]),
+      ).toBeGreaterThanOrEqual(4.5);
+    },
+  );
 });
 
 describe("color scheme resolution", () => {
