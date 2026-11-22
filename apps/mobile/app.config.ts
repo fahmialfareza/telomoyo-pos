@@ -3,7 +3,10 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 const ANDROID_APPLICATION_ID = "com.fahmialfareza.sewamotorpos";
 const appVersion = process.env.EXPO_APP_VERSION || "1.0.0";
 const appVersionCode = process.env.EXPO_APP_VERSION_CODE || "1";
-const easProjectId = process.env.EXPO_EAS_PROJECT_ID;
+// Not a secret. The fallback lets EAS CLI commands (eas update, eas env:*)
+// find the project, since they don't load the local .env file.
+const easProjectId =
+  process.env.EXPO_EAS_PROJECT_ID || "a1c4ac91-a553-4ec1-8c37-0824ea42d93d";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
