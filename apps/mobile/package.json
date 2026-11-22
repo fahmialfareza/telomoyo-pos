@@ -4,8 +4,8 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "start": "expo start --dev-client --clear",
-    "dev": "expo start --dev-client --clear",
+    "start": "expo start --dev-client --clear --private-key-path keys/private-key.pem",
+    "dev": "expo start --dev-client --clear --private-key-path keys/private-key.pem",
     "android": "expo run:android",
     "native:prebuild": "expo prebuild --clean --platform android",
     "native:doctor": "expo-modules-autolinking verify -p android",

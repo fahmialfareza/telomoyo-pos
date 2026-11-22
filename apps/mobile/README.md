@@ -69,7 +69,10 @@ builds with identical native code.
   (gitignored), is stored as the EAS secret file variable
   `EXPO_UPDATES_PRIVATE_KEY`, and is backed up in the password manager. In CI,
   pass `--private-key-path "$EXPO_UPDATES_PRIVATE_KEY"` instead. Losing the key
-  means a new store build with a new certificate.
+  means a new store build with a new certificate. Dev-client builds embed the
+  same certificate, so the dev server must sign its manifests too: `pnpm dev`
+  passes `--private-key-path keys/private-key.pem`, and you need that file
+  locally to load JS into a development build.
 - **Local SQLite migrations are forward-only.** Never roll back or republish an
   older update after one that shipped a migration in `src/db/migrations.ts`;
   the device database would be ahead of the code. Fix forward with a new update.
