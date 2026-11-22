@@ -89,12 +89,12 @@ export default function ConflictReviewScreen() {
       />
       <View style={responsive.columns}>
         <SnapshotCard
-          label="VERSI PERANGKAT"
+          label="Versi perangkat"
           tone="local"
           transaction={conflict.localSnapshot}
         />
         <SnapshotCard
-          label="VERSI SERVER"
+          label="Versi server"
           tone="server"
           transaction={conflict.serverSnapshot}
         />

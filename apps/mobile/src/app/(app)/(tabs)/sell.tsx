@@ -323,24 +323,25 @@ const PackageSelectorCard = memo(function PackageSelectorCard({
         <Card
           style={[
             responsive.packageCard,
-            {
-              borderColor: quantity > 0 ? accent : colors.outline,
-              borderLeftColor: accent,
-            },
             ...(quantity > 0 ? [responsive.packageCardSelected] : []),
             ...(pressed ? [responsive.packageCardPressed] : []),
           ]}
         >
           <View style={responsive.packageCopy}>
-            <Text numberOfLines={2} style={responsive.packageName}>
-              {item.name}
-            </Text>
+            <View style={responsive.packageNameRow}>
+              <View
+                style={[responsive.packageDot, { backgroundColor: accent }]}
+              />
+              <Text numberOfLines={2} style={responsive.packageName}>
+                {item.name}
+              </Text>
+            </View>
             {item.description ? (
               <Text numberOfLines={1} style={responsive.description}>
                 {item.description}
               </Text>
             ) : null}
-            <Text style={[responsive.packagePrice, { color: accent }]}>
+            <Text style={responsive.packagePrice}>
               {formatRupiah(item.unitPrice)}
             </Text>
           </View>
@@ -513,24 +514,36 @@ const styles = themed(({ colors, textStyles }) =>
     },
     sectionTitle: { ...textStyles.heading },
     packageCard: {
-      borderLeftWidth: 5,
       flexDirection: "row",
       alignItems: "center",
       gap: spacing.sm,
       paddingVertical: spacing.sm,
     },
-    packageCardSelected: { backgroundColor: colors.surfaceBright },
-    packageCardPressed: { opacity: 0.85 },
+    packageCardSelected: {
+      borderWidth: 1.5,
+      borderColor: colors.primary,
+      backgroundColor: colors.primarySoft,
+    },
+    packageCardPressed: { backgroundColor: colors.container },
     packageCopy: { flex: 1, gap: 2 },
+    packageNameRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    packageDot: { width: 8, height: 8, borderRadius: radius.pill },
     packageName: {
-      fontFamily: typography.heading,
-      fontSize: 18,
+      flexShrink: 1,
+      fontFamily: typography.headingSemibold,
+      fontSize: 17,
       color: colors.text,
     },
     description: { ...textStyles.body, color: colors.textMuted, fontSize: 13 },
     packagePrice: {
-      fontFamily: typography.heading,
-      fontSize: 16,
+      fontFamily: typography.bodyMedium,
+      fontSize: 15,
+      color: colors.textMuted,
+      fontVariant: ["tabular-nums"],
     },
     packageSeparator: { height: spacing.sm },
     stickySummary: {
@@ -612,8 +625,9 @@ const styles = themed(({ colors, textStyles }) =>
       fontSize: 22,
       lineHeight: 28,
       letterSpacing: -0.4,
-      color: colors.primary,
+      color: colors.text,
       textAlign: "right",
+      fontVariant: ["tabular-nums"],
     },
     error: {
       ...textStyles.body,

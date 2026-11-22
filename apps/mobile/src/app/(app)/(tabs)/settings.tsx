@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
+import * as Updates from "expo-updates";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -48,6 +49,7 @@ export default function SettingsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [showTenants, setShowTenants] = useState(false);
   const appearance = useAppearancePreference();
+  const { isUpdatePending } = Updates.useUpdates();
 
   if (showTenants) {
     return <ManagedTenantsScreen onBack={() => setShowTenants(false)} />;
@@ -67,14 +69,14 @@ export default function SettingsScreen() {
           <Text style={styles.username}>@{session?.user.username}</Text>
           <View style={styles.role}>
             <Text style={styles.roleText}>
-              {session?.user.role === "superadmin" ? "SUPERADMIN" : "ADMIN"}
+              {session?.user.role === "superadmin" ? "Superadmin" : "Admin"}
             </Text>
           </View>
         </View>
       </Card>
 
       <ModeOperationCard />
-      <Text style={styles.section}>BISNIS & TENANT</Text>
+      <Text style={styles.section}>Bisnis & tenant</Text>
       <Card padded={false}>
         <MenuRow
           icon="store-outline"
@@ -101,7 +103,7 @@ export default function SettingsScreen() {
         ) : null}
       </Card>
 
-      <Text style={styles.section}>AKUN & KEAMANAN</Text>
+      <Text style={styles.section}>Akun & keamanan</Text>
       <Card padded={false}>
         <MenuRow
           icon="account-outline"
@@ -116,7 +118,7 @@ export default function SettingsScreen() {
           />
         ) : null}
       </Card>
-      <Text style={styles.section}>TAMPILAN</Text>
+      <Text style={styles.section}>Tampilan</Text>
       <Card padded={false}>
         {appearanceOptions.map((option) => (
           <MenuRow
@@ -129,7 +131,7 @@ export default function SettingsScreen() {
           />
         ))}
       </Card>
-      <Text style={styles.section}>TERMINAL</Text>
+      <Text style={styles.section}>Terminal</Text>
       <Card padded={false}>
         <MenuRow
           detail="Bluetooth, printer MPOS, dan lebar kertas"
@@ -161,6 +163,25 @@ export default function SettingsScreen() {
           />
         ) : null}
       </Card>
+      {isUpdatePending ? (
+        <Card padded={false}>
+          <MenuRow
+            detail="Mulai ulang aplikasi untuk memakai versi terbaru"
+            icon="download-circle-outline"
+            onPress={() =>
+              confirm({
+                title: "Pasang pembaruan sekarang?",
+                message:
+                  "Aplikasi akan dimulai ulang. Pastikan tidak ada transaksi yang sedang dibuat.",
+                confirmLabel: "Mulai ulang",
+                onConfirm: () => Updates.reloadAsync(),
+              })
+            }
+            status="Pembaruan siap dipasang"
+            title="Pembaruan aplikasi"
+          />
+        </Card>
+      ) : null}
       <Card padded={false}>
         <MenuRow
           destructive
@@ -196,7 +217,7 @@ export default function SettingsScreen() {
           {error}
         </Text>
       ) : null}
-      <Text style={styles.version}>TELOMOYO POS • v{appVersion}</Text>
+      <Text style={styles.version}>Telomoyo POS · v{appVersion}</Text>
     </AppScreen>
   );
 }
@@ -204,17 +225,15 @@ export default function SettingsScreen() {
 const baseStyles = themed(({ colors, textStyles }) =>
   StyleSheet.create({
     profile: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
       flexDirection: "row",
       alignItems: "center",
       gap: spacing.md,
     },
     avatar: {
-      width: 64,
-      height: 64,
-      borderRadius: radius.lg,
-      backgroundColor: colors.onPrimary,
+      width: 56,
+      height: 56,
+      borderRadius: radius.pill,
+      backgroundColor: colors.primarySoft,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -225,21 +244,26 @@ const baseStyles = themed(({ colors, textStyles }) =>
     },
     profileCopy: { flex: 1, gap: 2 },
     name: {
-      fontFamily: typography.heading,
-      color: colors.onPrimary,
-      fontSize: 18,
+      fontFamily: typography.headingSemibold,
+      color: colors.text,
+      fontSize: 17,
     },
-    username: { ...textStyles.body, color: colors.primarySoft },
+    username: { ...textStyles.body, fontSize: 14, color: colors.textMuted },
     role: {
       marginTop: spacing.xs,
-      backgroundColor: colors.onPrimary,
+      backgroundColor: colors.container,
       borderRadius: radius.pill,
       paddingHorizontal: spacing.sm,
       paddingVertical: 4,
       alignSelf: "flex-start",
     },
-    roleText: { ...textStyles.label, color: colors.primary, fontSize: 10 },
-    section: textStyles.label,
+    roleText: { ...textStyles.label, fontSize: 12 },
+    section: {
+      ...textStyles.label,
+      marginTop: spacing.sm,
+      marginBottom: -spacing.sm,
+      paddingHorizontal: spacing.xs,
+    },
     error: { ...textStyles.body, color: colors.error },
     version: {
       ...textStyles.label,

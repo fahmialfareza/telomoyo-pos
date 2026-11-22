@@ -33,10 +33,13 @@ export default function ProfileScreen() {
       </Card>
       <Card style={responsive.details}>
         <Row label="ID pengguna" value={session.user.id} />
-        <Row label="Peran" value={session.user.role.toUpperCase()} />
+        <Row
+          label="Peran"
+          value={session.user.role === "superadmin" ? "Superadmin" : "Admin"}
+        />
         <Row
           label="Status"
-          value={session.user.active ? "AKTIF" : "NONAKTIF"}
+          value={session.user.active ? "Aktif" : "Nonaktif"}
         />
         <Row label="ID sesi" value={session.sessionId} />
       </Card>
@@ -60,7 +63,7 @@ function Row({ label, value }: { label: string; value: string }) {
   const responsiveText = useResponsiveTextStyles();
   return (
     <View style={responsive.row}>
-      <Text style={responsiveText.label}>{label.toUpperCase()}</Text>
+      <Text style={responsiveText.label}>{label}</Text>
       <Text selectable style={responsive.value}>
         {value}
       </Text>

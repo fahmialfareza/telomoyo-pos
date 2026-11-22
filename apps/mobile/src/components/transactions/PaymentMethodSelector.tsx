@@ -28,7 +28,7 @@ export function PaymentMethodSelector({
   qrisDisabled = false,
   qrisDisabledReason,
   disabled = false,
-  label = "METODE PEMBAYARAN",
+  label = "Metode pembayaran",
   actionHint,
 }: {
   value: SelectablePaymentMethod | null;
@@ -103,13 +103,11 @@ export function PaymentMethodSelector({
 const styles = themed(({ colors, textStyles }) =>
   StyleSheet.create({
     container: { gap: spacing.xs },
-    label: { ...textStyles.label, color: colors.textMuted, fontSize: 10 },
+    label: { ...textStyles.label, color: colors.textMuted, fontSize: 12 },
     option: {
       minHeight: minimumTouchTarget,
       borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.primary,
-      backgroundColor: colors.card,
+      backgroundColor: colors.container,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
@@ -121,16 +119,14 @@ const styles = themed(({ colors, textStyles }) =>
       backgroundColor: colors.primary,
     },
     optionDisabled: {
-      borderColor: colors.outline,
-      backgroundColor: colors.container,
-      opacity: 0.72,
+      opacity: 0.5,
     },
     optionText: {
       flexShrink: 1,
       textAlign: "center",
       fontFamily: typography.bodySemibold,
       fontSize: 14,
-      color: colors.primary,
+      color: colors.text,
     },
     selectedText: { color: colors.onPrimary },
     disabledText: { color: colors.textMuted },
@@ -139,6 +135,6 @@ const styles = themed(({ colors, textStyles }) =>
       color: colors.textMuted,
       fontSize: 11,
     },
-    pressed: { opacity: 0.82 },
+    pressed: { opacity: 0.85 },
   }),
 );

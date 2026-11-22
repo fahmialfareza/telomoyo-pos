@@ -315,7 +315,7 @@ export default function HistoryScreen() {
           </View>
 
           {packageOptions.length > 0 ? (
-            <FilterGroup title="PAKET">
+            <FilterGroup title="Paket">
               <FilterChip
                 label="Semua"
                 onPress={() => setPackageId(undefined)}
@@ -333,7 +333,7 @@ export default function HistoryScreen() {
           ) : null}
 
           {creatorOptions.length > 0 ? (
-            <FilterGroup title="PEMBUAT">
+            <FilterGroup title="Pembuat">
               <FilterChip
                 label="Semua"
                 onPress={() => setCreatorId(undefined)}
@@ -350,7 +350,7 @@ export default function HistoryScreen() {
             </FilterGroup>
           ) : null}
 
-          <FilterGroup title="STATUS SINKRON">
+          <FilterGroup title="Status sinkron">
             {syncFilters.map((filter) => (
               <FilterChip
                 key={filter.label}
@@ -479,8 +479,6 @@ const baseStyles = themed(({ colors, textStyles }) =>
       alignItems: "center",
       gap: spacing.sm,
       borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.primary,
       backgroundColor: colors.primarySoft,
     },
     searchChipText: { ...textStyles.body, color: colors.primary, flex: 1 },
@@ -507,21 +505,18 @@ const baseStyles = themed(({ colors, textStyles }) =>
       minHeight: minimumTouchTarget,
       paddingHorizontal: spacing.md,
       borderRadius: radius.pill,
-      borderWidth: 1,
-      borderColor: colors.outline,
-      backgroundColor: colors.card,
+      backgroundColor: colors.container,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: spacing.xs,
     },
     filterButtonExpanded: {
-      borderColor: colors.primary,
       backgroundColor: colors.primarySoft,
     },
     filterButtonText: {
       ...textStyles.body,
-      color: colors.textMuted,
+      color: colors.text,
       fontFamily: typography.bodyMedium,
     },
     filterButtonTextExpanded: {
@@ -544,7 +539,7 @@ const baseStyles = themed(({ colors, textStyles }) =>
     filterPanel: {
       padding: spacing.md,
       borderRadius: radius.lg,
-      borderWidth: 1,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.outline,
       backgroundColor: colors.card,
       gap: spacing.md,
@@ -595,18 +590,15 @@ const baseStyles = themed(({ colors, textStyles }) =>
       justifyContent: "center",
       paddingHorizontal: spacing.md,
       borderRadius: radius.pill,
-      borderWidth: 1,
-      borderColor: colors.outline,
-      backgroundColor: colors.card,
+      backgroundColor: colors.container,
     },
     filterSelected: {
       backgroundColor: colors.primary,
-      borderColor: colors.primary,
     },
     filterText: { ...textStyles.body, fontFamily: typography.bodyMedium },
     filterTextSelected: { color: colors.onPrimary },
     pressed: {
-      opacity: 0.72,
+      opacity: 0.85,
     },
   }),
 );

@@ -138,7 +138,7 @@ export default function PackagesScreen() {
               <Text
                 style={item.active ? responsive.active : responsive.inactive}
               >
-                {item.active ? "AKTIF" : "NONAKTIF"}
+                {item.active ? "Aktif" : "Nonaktif"}
               </Text>
             </View>
           </Card>

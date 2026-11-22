@@ -133,13 +133,13 @@ const styles = themed(({ colors, textStyles }) =>
       minHeight: minimumTouchTarget,
       backgroundColor: colors.card,
       borderColor: colors.outline,
-      borderWidth: 1,
+      borderWidth: StyleSheet.hairlineWidth,
       borderRadius: radius.lg,
       flexDirection: "row",
       overflow: "hidden",
     },
     accent: {
-      width: 4,
+      width: 3,
     },
     content: {
       flex: 1,
@@ -178,11 +178,12 @@ const styles = themed(({ colors, textStyles }) =>
       fontSize: 12,
     },
     amount: {
-      fontFamily: typography.heading,
+      fontFamily: typography.headingSemibold,
       fontSize: 17,
       lineHeight: 22,
-      color: colors.primary,
+      color: colors.text,
       textAlign: "right",
+      fontVariant: ["tabular-nums"],
     },
     footer: {
       minHeight: 28,
@@ -210,8 +211,7 @@ const styles = themed(({ colors, textStyles }) =>
       alignItems: "flex-end",
     },
     pressed: {
-      backgroundColor: colors.surfaceBright,
-      opacity: 0.86,
+      backgroundColor: colors.container,
     },
   }),
 );

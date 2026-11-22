@@ -143,7 +143,7 @@ export function UserForm({
                 value.active && { color: colors.success },
               ]}
             >
-              {value.active ? "AKTIF" : "NONAKTIF"}
+              {value.active ? "Aktif" : "Nonaktif"}
             </Text>
           </Pressable>
         </>

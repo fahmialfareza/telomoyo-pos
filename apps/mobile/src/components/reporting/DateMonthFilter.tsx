@@ -173,7 +173,7 @@ export function DateMonthFilter({
         >
           <View style={responsive.selectionCopy}>
             <Text style={responsive.selectionCaption}>
-              {mode === "date" ? "TANGGAL DIPILIH" : "BULAN DIPILIH"}
+              {mode === "date" ? "Tanggal dipilih" : "Bulan dipilih"}
             </Text>
             <Text numberOfLines={1} style={responsive.selectionValue}>
               {selectedLabel}
@@ -451,12 +451,9 @@ const styles = themed(({ colors, textStyles }) =>
       alignItems: "center",
       justifyContent: "center",
       borderRadius: radius.pill,
-      borderWidth: 1,
-      borderColor: colors.outline,
-      backgroundColor: colors.card,
+      backgroundColor: colors.container,
     },
     modeButtonSelected: {
-      borderColor: colors.primary,
       backgroundColor: colors.primary,
     },
     modeButtonText: {
@@ -477,9 +474,7 @@ const styles = themed(({ colors, textStyles }) =>
       alignItems: "center",
       justifyContent: "center",
       borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.outline,
-      backgroundColor: colors.card,
+      backgroundColor: colors.container,
     },
     selectionButton: {
       minHeight: 60,
@@ -489,8 +484,6 @@ const styles = themed(({ colors, textStyles }) =>
       gap: spacing.sm,
       paddingHorizontal: spacing.md,
       borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.primary,
       backgroundColor: colors.primarySoft,
     },
     selectionCopy: {
@@ -569,12 +562,9 @@ const styles = themed(({ colors, textStyles }) =>
       alignItems: "center",
       justifyContent: "center",
       borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.outline,
-      backgroundColor: colors.card,
+      backgroundColor: colors.container,
     },
     monthButtonSelected: {
-      borderColor: colors.primary,
       backgroundColor: colors.primary,
     },
     monthButtonText: {

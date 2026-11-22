@@ -37,16 +37,18 @@ export function TransactionRow({
       onPress={onPress}
       style={({ pressed }) => [responsive.card, pressed && responsive.pressed]}
     >
-      <View style={[responsive.accent, { backgroundColor: accent }]} />
       <View style={responsive.content}>
         <View style={responsive.top}>
           <View style={responsive.flex}>
             <Text style={responsive.id}>
               {compactTransactionId(transaction.id, dataMode)}
             </Text>
-            <Text numberOfLines={1} style={responsive.name}>
-              {transaction.items.map((item) => item.name).join(" + ")}
-            </Text>
+            <View style={responsive.nameRow}>
+              <View style={[responsive.accent, { backgroundColor: accent }]} />
+              <Text numberOfLines={1} style={responsive.name}>
+                {transaction.items.map((item) => item.name).join(" + ")}
+              </Text>
+            </View>
           </View>
           <Text style={responsive.amount}>
             {formatRupiah(transaction.total)}
@@ -81,26 +83,32 @@ const styles = themed(({ colors, textStyles }) =>
     card: {
       backgroundColor: colors.card,
       borderColor: colors.outline,
-      borderWidth: 1,
+      borderWidth: StyleSheet.hairlineWidth,
       borderRadius: radius.lg,
-      flexDirection: "row",
       overflow: "hidden",
     },
-    accent: { width: 5 },
+    nameRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      marginTop: 2,
+    },
+    accent: { width: 8, height: 8, borderRadius: radius.pill },
     content: { flex: 1, padding: spacing.md, gap: spacing.sm },
     top: { flexDirection: "row", gap: spacing.sm },
     flex: { flex: 1 },
     id: textStyles.technical,
     name: {
+      flexShrink: 1,
       fontFamily: typography.headingSemibold,
       fontSize: 16,
       color: colors.text,
-      marginTop: 2,
     },
     amount: {
-      fontFamily: typography.heading,
+      fontFamily: typography.headingSemibold,
       fontSize: 16,
-      color: colors.primary,
+      color: colors.text,
+      fontVariant: ["tabular-nums"],
     },
     meta: {
       flexDirection: "row",
@@ -115,13 +123,18 @@ const styles = themed(({ colors, textStyles }) =>
       alignItems: "center",
       gap: spacing.sm,
     },
-    actor: { ...textStyles.body, flex: 1, color: colors.textMuted },
+    actor: {
+      ...textStyles.body,
+      flex: 1,
+      fontSize: 13,
+      color: colors.textMuted,
+    },
     badges: {
       flexDirection: "row",
       justifyContent: "flex-end",
       gap: spacing.xs,
       flexWrap: "wrap",
     },
-    pressed: { opacity: 0.82 },
+    pressed: { backgroundColor: colors.container },
   }),
 );

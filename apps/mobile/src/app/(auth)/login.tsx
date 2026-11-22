@@ -162,7 +162,7 @@ export default function LoginScreen() {
 
       <Pressable accessibilityRole="text" style={responsive.footer}>
         <Text style={responsive.footerText}>
-          ANDROID POS • DATABASE TERENKRIPSI
+          Android POS · Database terenkripsi
         </Text>
       </Pressable>
     </AppScreen>

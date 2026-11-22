@@ -138,7 +138,7 @@ export default function HomeScreen() {
       <Card style={responsive.revenue}>
         <View style={responsive.metricTop}>
           <View>
-            <Text style={responsiveText.label}>PENDAPATAN KOTOR</Text>
+            <Text style={responsiveText.label}>Pendapatan kotor</Text>
             <Text style={responsiveText.price}>
               {loaded ? formatRupiah(stats.gross) : "—"}
             </Text>
@@ -163,7 +163,7 @@ export default function HomeScreen() {
                   backgroundColor:
                     index === stats.buckets.length - 1
                       ? colors.primary
-                      : colors.primarySoft,
+                      : colors.containerHigh,
                 },
               ]}
             />
@@ -174,7 +174,7 @@ export default function HomeScreen() {
       {session?.dataMode === "sandbox" ? (
         <Card style={responsive.sandboxReconciliation}>
           <Text style={responsiveText.label}>
-            QRIS NYATA UNTUK REKONSILIASI
+            QRIS nyata untuk rekonsiliasi
           </Text>
           <Text style={responsive.sandboxAmount}>
             {loaded ? formatRupiah(stats.actualQrisAmount) : "—"}
@@ -275,23 +275,24 @@ export default function HomeScreen() {
 const styles = themed(({ colors, textStyles }) =>
   StyleSheet.create({
     avatar: {
-      width: 44,
-      height: 44,
-      borderRadius: radius.md,
-      backgroundColor: colors.primary,
+      width: 40,
+      height: 40,
+      borderRadius: radius.pill,
+      backgroundColor: colors.primarySoft,
       justifyContent: "center",
       alignItems: "center",
     },
     avatarText: {
-      color: colors.onPrimary,
-      fontFamily: typography.heading,
-      fontSize: 16,
+      color: colors.primary,
+      fontFamily: typography.headingSemibold,
+      fontSize: 15,
     },
-    revenue: { gap: spacing.lg },
+    revenue: { gap: spacing.md },
     revenueNote: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
     loadError: {
       gap: spacing.md,
       backgroundColor: colors.errorSoft,
+      borderWidth: 0,
     },
     loadErrorCopy: { gap: spacing.xs },
     loadErrorTitle: { ...textStyles.heading, color: colors.error },
@@ -303,40 +304,57 @@ const styles = themed(({ colors, textStyles }) =>
     },
     countPill: {
       backgroundColor: colors.successSoft,
-      padding: spacing.sm,
-      borderRadius: radius.md,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderRadius: radius.pill,
     },
-    countText: { ...textStyles.body, color: colors.success, fontSize: 12 },
+    countText: {
+      fontFamily: typography.bodyMedium,
+      color: colors.success,
+      fontSize: 12,
+    },
     chart: {
       height: 68,
       flexDirection: "row",
       alignItems: "flex-end",
-      gap: spacing.sm,
+      gap: spacing.xs,
     },
-    bar: { flex: 1, borderRadius: radius.sm },
+    bar: { flex: 1, borderRadius: radius.pill },
     metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-    smallMetric: { flexGrow: 1, flexBasis: "45%", gap: spacing.xs },
-    packageDot: { width: 28, height: 4, borderRadius: radius.pill },
-    metricLabel: { ...textStyles.label, textTransform: "uppercase" },
+    smallMetric: {
+      flexGrow: 1,
+      flexBasis: "45%",
+      gap: spacing.xs,
+      backgroundColor: colors.container,
+      borderWidth: 0,
+    },
+    packageDot: { width: 8, height: 8, borderRadius: radius.pill },
+    metricLabel: textStyles.label,
     metricValue: {
-      fontFamily: typography.heading,
+      fontFamily: typography.headingSemibold,
       fontSize: 20,
       color: colors.text,
+      fontVariant: ["tabular-nums"],
     },
     sectionHeader: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
     },
-    link: { ...textStyles.body, color: colors.primary },
+    link: {
+      fontFamily: typography.bodyMedium,
+      fontSize: 14,
+      color: colors.primary,
+    },
     empty: { ...textStyles.body, color: colors.textMuted },
     sandboxReconciliation: {
       gap: spacing.xs,
       backgroundColor: colors.warningSoft,
-      borderColor: colors.warning,
+      borderWidth: 0,
     },
     sandboxAmount: {
-      fontFamily: typography.heading,
+      fontFamily: typography.headingSemibold,
+      fontVariant: ["tabular-nums"],
       fontSize: 22,
       color: colors.warning,
     },
