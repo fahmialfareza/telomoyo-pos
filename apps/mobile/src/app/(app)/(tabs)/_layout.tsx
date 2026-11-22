@@ -2,7 +2,7 @@ import { Tabs } from "expo-router";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useWindowDimensions } from "react-native";
+import { StyleSheet, useWindowDimensions } from "react-native";
 import { useResponsiveSizing } from "@/theme/responsive";
 import { useThemeColors } from "@/theme/ThemeContext";
 import { Icon, type IconName } from "@/components/ui/Icon";
@@ -40,19 +40,22 @@ export default function TabsLayout() {
         headerShown: false,
         lazy: true,
         tabBarHideOnKeyboard: true,
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.text,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
           fontFamily: typography.bodyMedium,
-          fontSize: sizing.caption,
-          lineHeight: Math.ceil(sizing.caption * 1.3),
+          fontSize: sizing.caption - 1,
+          lineHeight: Math.ceil((sizing.caption - 1) * 1.3),
         },
         tabBarStyle: {
           height: 56 + insets.bottom + Math.max(0, fontScale - 1) * 16,
           paddingTop: 6,
           paddingBottom: Math.max(6, insets.bottom),
           borderTopColor: colors.outline,
+          borderTopWidth: StyleSheet.hairlineWidth,
           backgroundColor: colors.card,
+          elevation: 0,
+          shadowOpacity: 0,
         },
         tabBarItemStyle: {
           minHeight: minimumTouchTarget,

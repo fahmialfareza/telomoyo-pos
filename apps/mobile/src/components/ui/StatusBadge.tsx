@@ -11,17 +11,17 @@ import { radius, spacing, typography } from "@/theme/tokens";
 type BadgeKind = SyncState | PrintState | "online" | "offline" | "active";
 
 const label: Record<BadgeKind, string> = {
-  pending: "MENUNGGU",
-  synced: "TERSINKRON",
-  conflict: "KONFLIK",
-  error: "ERROR",
-  success: "TERCETAK",
-  failed: "GAGAL CETAK",
-  unknown: "HASIL TAK PASTI",
-  "needs-reprint": "PERLU CETAK ULANG",
-  online: "ONLINE",
-  offline: "OFFLINE",
-  active: "AKTIF",
+  pending: "Menunggu",
+  synced: "Tersinkron",
+  conflict: "Konflik",
+  error: "Error",
+  success: "Tercetak",
+  failed: "Gagal cetak",
+  unknown: "Hasil tak pasti",
+  "needs-reprint": "Perlu cetak ulang",
+  online: "Online",
+  offline: "Offline",
+  active: "Aktif",
 };
 
 export function StatusBadge({ kind }: { kind: BadgeKind }) {
@@ -48,7 +48,7 @@ export function StatusBadge({ kind }: { kind: BadgeKind }) {
 const styles = themed(({ colors }) =>
   StyleSheet.create({
     badge: {
-      minHeight: 26,
+      minHeight: 24,
       borderRadius: radius.pill,
       paddingHorizontal: spacing.sm,
       flexDirection: "row",
@@ -62,9 +62,9 @@ const styles = themed(({ colors }) =>
       borderRadius: radius.pill,
     },
     text: {
-      fontFamily: typography.bodySemibold,
-      fontSize: 10,
-      letterSpacing: 0.25,
+      fontFamily: typography.bodyMedium,
+      fontSize: 12,
+      lineHeight: 16,
     },
     successBackground: { backgroundColor: colors.successSoft },
     successDot: { backgroundColor: colors.success },

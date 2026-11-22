@@ -50,9 +50,9 @@ describe("HistoryTransactionCard", () => {
     expect(screen.getByText("Paket Standard")).toBeTruthy();
     expect(screen.getByText("Rp 150.000")).toBeTruthy();
     expect(screen.getByText("Penyok")).toBeTruthy();
-    expect(screen.getByText("TERSINKRON")).toBeTruthy();
+    expect(screen.getByText("Tersinkron")).toBeTruthy();
     expect(screen.getByText("QRIS")).toBeTruthy();
-    expect(screen.getByText("LUNAS")).toBeTruthy();
+    expect(screen.getByText("Lunas")).toBeTruthy();
   });
 
   it("opens the transaction from one accessible card action", () => {

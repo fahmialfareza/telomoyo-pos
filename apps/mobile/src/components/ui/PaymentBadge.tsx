@@ -19,9 +19,9 @@ export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
         ? "warning"
         : "error";
   const label = {
-    pending: "MENUNGGU BAYAR",
-    success: "LUNAS",
-    failed: "GAGAL BAYAR",
+    pending: "Menunggu bayar",
+    success: "Lunas",
+    failed: "Gagal bayar",
   }[status];
 
   return (
@@ -37,9 +37,7 @@ export function PaymentMethodBadge({ method }: { method: PaymentMethod }) {
   return (
     <View style={[responsive.badge, responsive.methodBackground]}>
       <Text style={[responsive.text, responsive.methodText]}>
-        {method === "legacy"
-          ? "TIDAK TERCATAT"
-          : paymentMethodLabel[method].toUpperCase()}
+        {method === "legacy" ? "Tidak tercatat" : paymentMethodLabel[method]}
       </Text>
     </View>
   );
@@ -48,7 +46,7 @@ export function PaymentMethodBadge({ method }: { method: PaymentMethod }) {
 const styles = themed(({ colors }) =>
   StyleSheet.create({
     badge: {
-      minHeight: 26,
+      minHeight: 24,
       borderRadius: radius.pill,
       paddingHorizontal: spacing.sm,
       flexDirection: "row",
@@ -62,9 +60,9 @@ const styles = themed(({ colors }) =>
       borderRadius: radius.pill,
     },
     text: {
-      fontFamily: typography.bodySemibold,
-      fontSize: 10,
-      letterSpacing: 0.25,
+      fontFamily: typography.bodyMedium,
+      fontSize: 12,
+      lineHeight: 16,
     },
     successBackground: { backgroundColor: colors.successSoft },
     successDot: { backgroundColor: colors.success },
@@ -75,7 +73,7 @@ const styles = themed(({ colors }) =>
     errorBackground: { backgroundColor: colors.errorSoft },
     errorDot: { backgroundColor: colors.error },
     errorText: { color: colors.error },
-    methodBackground: { backgroundColor: colors.primarySoft },
-    methodText: { color: colors.primary },
+    methodBackground: { backgroundColor: colors.container },
+    methodText: { color: colors.textMuted },
   }),
 );

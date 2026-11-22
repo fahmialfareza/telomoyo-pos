@@ -6,7 +6,7 @@ import {
 import { useThemeColors } from "@/theme/ThemeContext";
 import { StyleSheet, Text, View } from "react-native";
 
-import { spacing } from "@/theme/tokens";
+import { radius, spacing } from "@/theme/tokens";
 
 import { Button } from "./Button";
 import { Icon, type IconName } from "./Icon";
@@ -31,7 +31,9 @@ export function StateView({
   const responsiveText = useResponsiveTextStyles();
   return (
     <View style={responsive.wrapper}>
-      <Icon color={colors.textMuted} name={icon} size={36} />
+      <View style={responsive.iconWrap}>
+        <Icon color={colors.textMuted} name={icon} size={28} />
+      </View>
       <Text style={responsiveText.heading}>{title}</Text>
       <Text style={responsive.message}>{message}</Text>
       {actionLabel && onAction ? (
@@ -50,6 +52,15 @@ const styles = themed(({ colors, textStyles }) =>
       paddingHorizontal: spacing.md,
       alignItems: "center",
       gap: spacing.sm,
+    },
+    iconWrap: {
+      width: 56,
+      height: 56,
+      borderRadius: radius.pill,
+      backgroundColor: colors.container,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.xs,
     },
     message: {
       ...textStyles.body,

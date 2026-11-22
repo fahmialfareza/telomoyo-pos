@@ -27,25 +27,35 @@ interface FieldProps extends TextInputProps {
 }
 
 export const Field = forwardRef<TextInputInstance, FieldProps>(function Field(
-  { label, error, hint, secureTextEntry, style, ...props },
+  { label, error, hint, secureTextEntry, style, onFocus, onBlur, ...props },
   ref,
 ) {
   const colors = useThemeColors();
   const responsive = useResponsiveStyles(styles);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [focused, setFocused] = useState(false);
   const isPasswordField = secureTextEntry === true;
 
   return (
     <View style={responsive.wrapper}>
-      <Text style={responsive.label}>{label.toUpperCase()}</Text>
+      <Text style={responsive.label}>{label}</Text>
       <View>
         <TextInput
           ref={ref}
           accessibilityLabel={label}
           placeholderTextColor={colors.textMuted}
           selectionColor={colors.primary}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
+          onFocus={(event) => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
           style={[
             responsive.input,
+            focused && responsive.inputFocused,
             error && responsive.inputError,
             style,
             isPasswordField && responsive.passwordInput,
@@ -89,12 +99,12 @@ const styles = themed(({ colors, textStyles }) =>
     label: textStyles.label,
     input: {
       minHeight: 56,
-      borderWidth: 1,
-      borderColor: colors.outline,
+      borderWidth: 1.5,
+      borderColor: "transparent",
       borderRadius: radius.md,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      backgroundColor: colors.card,
+      backgroundColor: colors.container,
       color: colors.text,
       fontFamily: typography.body,
       fontSize: 16,
@@ -113,6 +123,10 @@ const styles = themed(({ colors, textStyles }) =>
     },
     passwordTogglePressed: {
       opacity: 0.6,
+    },
+    inputFocused: {
+      borderColor: colors.primary,
+      backgroundColor: colors.card,
     },
     inputError: {
       borderColor: colors.error,

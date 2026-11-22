@@ -58,7 +58,7 @@ export function QuantityStepper({
           value >= maximum && responsive.disabled,
         ]}
       >
-        <Icon color={colors.primary} name="plus" />
+        <Icon color={colors.text} name="plus" />
       </Pressable>
     </View>
   );
@@ -70,10 +70,8 @@ const styles = themed(({ colors }) =>
       minHeight: minimumTouchTarget,
       flexDirection: "row",
       alignItems: "center",
-      borderWidth: 1,
-      borderColor: colors.outline,
       borderRadius: radius.pill,
-      backgroundColor: colors.surfaceBright,
+      backgroundColor: colors.container,
       overflow: "hidden",
     },
     control: {
@@ -88,6 +86,7 @@ const styles = themed(({ colors }) =>
       fontFamily: typography.heading,
       color: colors.text,
       fontSize: 18,
+      fontVariant: ["tabular-nums"],
     },
     pressed: { backgroundColor: colors.containerHigh },
     disabled: { opacity: 0.35 },

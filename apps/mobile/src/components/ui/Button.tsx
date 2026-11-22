@@ -53,7 +53,9 @@ export function Button({
       ? colors.onPrimary
       : variant === "danger"
         ? colors.error
-        : colors.primary;
+        : variant === "secondary"
+          ? colors.text
+          : colors.primary;
 
   return (
     <Pressable
@@ -94,32 +96,16 @@ const styles = themed(({ colors }) =>
       gap: spacing.sm,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      borderWidth: 1,
     },
     compact: {
       minHeight: minimumTouchTarget,
       alignSelf: "flex-start",
     },
-    primary: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
-    },
-    secondary: {
-      backgroundColor: colors.card,
-      borderColor: colors.primary,
-    },
-    danger: {
-      backgroundColor: colors.card,
-      borderColor: colors.error,
-    },
-    dangerSolid: {
-      backgroundColor: colors.error,
-      borderColor: colors.error,
-    },
-    ghost: {
-      backgroundColor: "transparent",
-      borderColor: "transparent",
-    },
+    primary: { backgroundColor: colors.primary },
+    secondary: { backgroundColor: colors.container },
+    danger: { backgroundColor: colors.errorSoft },
+    dangerSolid: { backgroundColor: colors.error },
+    ghost: { backgroundColor: "transparent" },
     text: {
       fontFamily: typography.bodySemibold,
       fontSize: 15,
@@ -127,8 +113,7 @@ const styles = themed(({ colors }) =>
       flexShrink: 1,
     },
     pressed: {
-      opacity: 0.8,
-      transform: [{ scale: 0.985 }],
+      opacity: 0.85,
     },
     disabled: {
       opacity: 0.45,

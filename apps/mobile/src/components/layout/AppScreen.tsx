@@ -210,7 +210,7 @@ const styles = themed(({ colors }) =>
       gap: spacing.md,
     },
     footer: {
-      borderTopWidth: 1,
+      borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.outline,
       backgroundColor: colors.card,
     },
@@ -232,8 +232,6 @@ const styles = themed(({ colors }) =>
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: colors.warningSoft,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.warning,
     },
     sandboxBannerText: {
       color: colors.warning,
@@ -248,8 +246,6 @@ const styles = themed(({ colors }) =>
       alignItems: "center",
       gap: spacing.sm,
       backgroundColor: colors.primarySoft,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.primary,
     },
     recoveryNoticeText: {
       flex: 1,

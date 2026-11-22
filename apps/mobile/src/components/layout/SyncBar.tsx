@@ -26,7 +26,11 @@ export function SyncBar() {
     <Pressable
       accessibilityRole="button"
       onPress={() => router.push("/sync")}
-      style={[responsive.bar, !online && responsive.offline]}
+      style={({ pressed }) => [
+        responsive.bar,
+        !online && responsive.offline,
+        pressed && responsive.pressed,
+      ]}
     >
       <View style={responsive.left}>
         <View
@@ -35,14 +39,12 @@ export function SyncBar() {
             online ? responsive.dotOnline : responsive.dotOffline,
           ]}
         />
-        <Text style={responsive.text}>
-          {online ? "SISTEM ONLINE" : "MODE OFFLINE"}
-        </Text>
+        <Text style={responsive.text}>{online ? "Online" : "Offline"}</Text>
       </View>
       <View style={responsive.right}>
         <Text style={responsive.detail}>{label}</Text>
         <Icon
-          color={colors.onPrimary}
+          color={colors.textMuted}
           name={syncing ? "sync" : "chevron-right"}
           size={16}
         />
@@ -61,20 +63,25 @@ function relativeTime(iso: string): string {
   return `${Math.floor(minutes / 60)} jam lalu`;
 }
 
-const styles = themed(({ colors, scheme }) =>
+const styles = themed(({ colors }) =>
   StyleSheet.create({
     bar: {
-      minHeight: 48,
+      minHeight: 40,
       paddingVertical: spacing.xs,
       paddingHorizontal: spacing.md,
-      backgroundColor: colors.primary,
+      backgroundColor: colors.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.outline,
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
       gap: spacing.sm,
     },
     offline: {
-      backgroundColor: colors.warning,
+      backgroundColor: colors.warningSoft,
+    },
+    pressed: {
+      backgroundColor: colors.container,
     },
     left: {
       flexShrink: 1,
@@ -89,19 +96,18 @@ const styles = themed(({ colors, scheme }) =>
       justifyContent: "flex-end",
       gap: 2,
     },
-    dot: { width: 7, height: 7, borderRadius: 4 },
-    // The bar sits on primary/warning, which flip from dark to light fills.
-    dotOnline: { backgroundColor: scheme === "dark" ? "#0B6B47" : "#65E6AD" },
-    dotOffline: { backgroundColor: scheme === "dark" ? "#5C3B00" : "#FFE1A8" },
+    dot: { width: 8, height: 8, borderRadius: 4 },
+    dotOnline: { backgroundColor: colors.success },
+    dotOffline: { backgroundColor: colors.warning },
     text: {
-      color: colors.onPrimary,
-      fontFamily: typography.bodySemibold,
-      fontSize: 10,
+      color: colors.text,
+      fontFamily: typography.bodyMedium,
+      fontSize: 12,
     },
     detail: {
-      color: colors.onPrimary,
+      color: colors.textMuted,
       fontFamily: typography.body,
-      fontSize: 11,
+      fontSize: 12,
       maxWidth: "80%",
     },
   }),

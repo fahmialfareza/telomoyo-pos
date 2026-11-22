@@ -40,7 +40,7 @@ export function PageHeader({
           onPress={onBack ?? (() => router.back())}
           style={responsive.back}
         >
-          <Icon color={colors.primary} name="arrow-left" />
+          <Icon color={colors.text} name="chevron-left" size={28} />
         </Pressable>
       ) : null}
       <View style={responsive.copy}>
@@ -77,6 +77,7 @@ const styles = themed(({ colors, textStyles }) =>
     },
     subtitle: {
       ...textStyles.body,
+      fontSize: 14,
       color: colors.textMuted,
       marginTop: 2,
     },

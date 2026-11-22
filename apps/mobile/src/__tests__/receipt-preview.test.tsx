@@ -308,7 +308,7 @@ it.each([32, 48] as const)(
       backgroundColor: colors.primary,
     });
     expect(footer.getByRole("button", { name: "Cetak nanti" })).toHaveStyle({
-      borderColor: colors.primary,
+      backgroundColor: colors.container,
     });
     expect(
       within(screen.getByTestId("screen-content")).queryByRole("button", {
@@ -418,7 +418,7 @@ it("describes simulator success and retains the exact document sent, not an acci
     footer.getByRole("button", { name: "Kembali ke Tambah Transaksi" }),
   ).toHaveStyle({ backgroundColor: colors.primary });
   expect(footer.getByRole("button", { name: "Cetak salinan" })).toHaveStyle({
-    borderColor: colors.primary,
+    backgroundColor: colors.container,
   });
   fireEvent.press(
     footer.getByRole("button", { name: "Kembali ke Tambah Transaksi" }),

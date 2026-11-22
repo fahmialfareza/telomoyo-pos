@@ -38,7 +38,7 @@ export function IconButton({
       {loading ? (
         <ActivityIndicator color={colors.primary} />
       ) : (
-        <Icon name={icon} color={colors.primary} />
+        <Icon name={icon} color={colors.text} size={22} />
       )}
     </Pressable>
   );
@@ -52,12 +52,10 @@ const styles = themed(({ colors }) =>
       flexShrink: 0,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.outline,
+      backgroundColor: colors.container,
       borderRadius: radius.md,
     },
-    pressed: { backgroundColor: colors.primarySoft },
+    pressed: { backgroundColor: colors.containerHigh },
     disabled: { opacity: 0.5 },
   }),
 );

@@ -80,7 +80,7 @@ describe("responsive UI sizing", () => {
     expect(base.input.lineHeight).toBe(9);
   });
 
-  it("uses red outlined cancellation and red filled destructive confirmation", () => {
+  it("uses red tonal cancellation and red filled destructive confirmation", () => {
     const screen = render(
       <View>
         <Button variant="danger">Batal</Button>
@@ -93,8 +93,7 @@ describe("responsive UI sizing", () => {
       ),
     ).toMatchObject({
       minHeight: 48,
-      borderColor: colors.error,
-      backgroundColor: colors.card,
+      backgroundColor: colors.errorSoft,
     });
     expect(
       StyleSheet.flatten(screen.getByText("Batal").props.style).color,

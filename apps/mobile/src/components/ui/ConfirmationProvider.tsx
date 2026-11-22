@@ -213,7 +213,7 @@ const styles = themed(({ colors }) =>
   StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundColor: "rgba(9,9,11,0.45)",
       alignItems: "center",
       justifyContent: "center",
     },
@@ -221,7 +221,7 @@ const styles = themed(({ colors }) =>
       width: "100%",
       maxWidth: 400,
       maxHeight: "100%",
-      borderRadius: radius.lg,
+      borderRadius: radius.xl,
       backgroundColor: colors.card,
       flexShrink: 1,
     },
