@@ -197,8 +197,6 @@ const styles = themed(({ colors, textStyles }) =>
       padding: spacing.sm,
       borderRadius: radius.md,
       backgroundColor: colors.warningSoft,
-      borderWidth: 1,
-      borderColor: colors.warning,
       alignItems: "center",
     },
     sandboxNoticeTitle: {
