@@ -22,7 +22,9 @@
     "clean": "rm -rf node_modules .turbo apps/**/node_modules apps/**/.turbo apps/**/.expo apps/**/dist packages/**/node_modules packages/**/dist dist",
     "reset": "pnpm run clean && pnpm install --frozen-lockfile",
     "refresh-lockfile": "rm -f pnpm-lock.yaml && pnpm install",
-    "release:mobile": "scripts/tag-release.sh"
+    "release:mobile": "scripts/tag-release.sh",
+    "update:mobile:preview": "pnpm --filter @sewa-motor/mobile run update:preview",
+    "update:mobile": "pnpm --filter @sewa-motor/mobile run update:production"
   },
   "devDependencies": {
     "@redocly/cli": "^2.0.0",

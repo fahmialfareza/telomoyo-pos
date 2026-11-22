@@ -49,6 +49,31 @@ the generated Android project cannot retain stale values.
 signed APK/AAB still requires EAS project ownership, keystore/Play
 configuration, and an environment-specific API URL.
 
+## Over-the-air updates
+
+Production and preview builds load JS/asset updates from EAS Update on their
+build's channel. A downloaded update applies on the next cold start; startup
+never waits for the network, so offline devices keep running the bundle they
+have. `runtimeVersion` uses the fingerprint policy, so an update only reaches
+builds with identical native code.
+
+- **What can ship OTA:** JS, styles, and assets. Anything that changes the
+  fingerprint (new or bumped native dependencies, Expo upgrades, config plugins,
+  `app.config.ts` native settings, a new app version) needs a store build via
+  `pnpm release:mobile`. `eas update` publishes to the runtime it computes, so
+  an incompatible update is never delivered to an older build.
+- **Publishing:** test on the preview channel with a preview APK first, then
+  `pnpm update:mobile:preview` / `pnpm update:mobile` from the repo root.
+- **Code signing:** devices only accept bundles signed by the key matching
+  `certs/certificate.pem`. The private key lives at `keys/private-key.pem`
+  (gitignored), is stored as the EAS secret file variable
+  `EXPO_UPDATES_PRIVATE_KEY`, and is backed up in the password manager. In CI,
+  pass `--private-key-path "$EXPO_UPDATES_PRIVATE_KEY"` instead. Losing the key
+  means a new store build with a new certificate.
+- **Local SQLite migrations are forward-only.** Never roll back or republish an
+  older update after one that shipped a migration in `src/db/migrations.ts`;
+  the device database would be ahead of the code. Fix forward with a new update.
+
 For the responsive controls and management/transaction workflow changes, use
 the [mobile UI acceptance checklist](../../docs/mobile-ui-acceptance.md). Native
 keyboard, footer placement, and Bluetooth/integrated MPOS printing still need

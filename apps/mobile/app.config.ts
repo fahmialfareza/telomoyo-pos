@@ -3,6 +3,7 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 const ANDROID_APPLICATION_ID = "com.fahmialfareza.sewamotorpos";
 const appVersion = process.env.EXPO_APP_VERSION || "1.0.0";
 const appVersionCode = process.env.EXPO_APP_VERSION_CODE || "1";
+const easProjectId = process.env.EXPO_EAS_PROJECT_ID;
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -114,13 +115,28 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "http://10.0.2.2:8000/api/v1",
     enableDemoLogin: process.env.EXPO_PUBLIC_ENABLE_DEMO_LOGIN === "true",
     eas: {
-      projectId: process.env.EXPO_EAS_PROJECT_ID,
+      projectId: easProjectId,
     },
   },
+  // Fingerprint ties each OTA update to the exact native build it was made
+  // for, so a JS bundle can never reach a binary with different native code.
   runtimeVersion: {
-    policy: "appVersion",
+    policy: "fingerprint",
   },
-  updates: {
-    enabled: false,
-  },
+  // Updates download in the background and apply on the next cold start, so
+  // the app never blocks startup on the network or reloads mid-transaction.
+  // Bundles must be signed with keys/private-key.pem (see README).
+  updates: easProjectId
+    ? {
+        enabled: true,
+        url: `https://u.expo.dev/${easProjectId}`,
+        checkAutomatically: "ON_LOAD",
+        fallbackToCacheTimeout: 0,
+        codeSigningCertificate: "./certs/certificate.pem",
+        codeSigningMetadata: {
+          keyid: "main",
+          alg: "rsa-v1_5-sha256",
+        },
+      }
+    : { enabled: false },
 });

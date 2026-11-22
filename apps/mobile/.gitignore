@@ -6,3 +6,5 @@ coverage/
 *.jks
 *.keystore
 google-services.json
+keys/
+!certs/certificate.pem
