@@ -28,12 +28,8 @@ import {
   spacing,
   typography,
 } from "@/theme/tokens";
-import {
-  currentJakartaDate,
-  currentJakartaMonth,
-  reportingRange,
-  type ReportingMode,
-} from "@/utils/time";
+import { useReportingPeriod } from "@/reporting/period-store";
+import { currentJakartaDate, reportingRange } from "@/utils/time";
 
 const pageSize = 20;
 
@@ -53,9 +49,15 @@ export default function HistoryScreen() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [searchExpanded, setSearchExpanded] = useState(false);
-  const [mode, setMode] = useState<ReportingMode>("date");
-  const [selectedDate, setSelectedDate] = useState(currentJakartaDate);
-  const [selectedMonth, setSelectedMonth] = useState(currentJakartaMonth);
+  const {
+    mode,
+    date: selectedDate,
+    month: selectedMonth,
+    setMode,
+    setDate: setSelectedDate,
+    setMonth: setSelectedMonth,
+    reset: resetPeriod,
+  } = useReportingPeriod();
   const [packageId, setPackageId] = useState<string | undefined>();
   const [creatorId, setCreatorId] = useState<string | undefined>();
   const [syncState, setSyncState] = useState<SyncState | undefined>();
@@ -171,10 +173,7 @@ export default function HistoryScreen() {
   };
 
   const resetFilters = () => {
-    const now = new Date();
-    setMode("date");
-    setSelectedDate(currentJakartaDate(now));
-    setSelectedMonth(currentJakartaMonth(now));
+    resetPeriod();
     setPackageId(undefined);
     setCreatorId(undefined);
     setSyncState(undefined);
@@ -244,7 +243,7 @@ export default function HistoryScreen() {
 
       <View style={styles.resultToolbar}>
         <View style={styles.resultSummary}>
-          <Text style={styles.resultTitle}>TRANSAKSI</Text>
+          <Text style={styles.resultTitle}>Transaksi</Text>
           <Text style={styles.resultCount}>
             {loading && transactions.length === 0
               ? "Memuat riwayat…"

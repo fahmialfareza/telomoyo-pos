@@ -20,12 +20,8 @@ import type { DashboardStats, Transaction } from "@/domain/types";
 import { useSyncRuntime } from "@/sync/SyncProvider";
 import { radius, spacing, typography } from "@/theme/tokens";
 import { formatRupiah, initials } from "@/utils/format";
-import {
-  currentJakartaDate,
-  currentJakartaMonth,
-  reportingRange,
-  type ReportingMode,
-} from "@/utils/time";
+import { useReportingPeriod } from "@/reporting/period-store";
+import { reportingRange } from "@/utils/time";
 
 const emptyStats: DashboardStats = {
   gross: 0,
@@ -43,9 +39,14 @@ export default function HomeScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const { lastSyncedAt, pendingCount } = useSyncRuntime();
-  const [mode, setMode] = useState<ReportingMode>("date");
-  const [selectedDate, setSelectedDate] = useState(currentJakartaDate);
-  const [selectedMonth, setSelectedMonth] = useState(currentJakartaMonth);
+  const {
+    mode,
+    date: selectedDate,
+    month: selectedMonth,
+    setMode,
+    setDate: setSelectedDate,
+    setMonth: setSelectedMonth,
+  } = useReportingPeriod();
   const [stats, setStats] = useState(emptyStats);
   const [recent, setRecent] = useState<Transaction[]>([]);
   const [loaded, setLoaded] = useState(false);

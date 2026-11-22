@@ -25,21 +25,22 @@ import { useThemeColors } from "@/theme/ThemeContext";
 import { radius, spacing, typography } from "@/theme/tokens";
 import { toUserFacingErrorMessage } from "@/utils/errors";
 import { formatRupiah } from "@/utils/format";
-import {
-  currentJakartaDate,
-  currentJakartaMonth,
-  reportingRange,
-  type ReportingMode,
-} from "@/utils/time";
+import { useReportingPeriod } from "@/reporting/period-store";
+import { reportingRange } from "@/utils/time";
 
 export default function RecapScreen() {
   const colors = useThemeColors();
   const styles = useResponsiveStyles(baseStyles);
   const { session } = useAuth();
   const { pendingCount } = useSyncRuntime();
-  const [mode, setMode] = useState<ReportingMode>("date");
-  const [selectedDate, setSelectedDate] = useState(currentJakartaDate);
-  const [selectedMonth, setSelectedMonth] = useState(currentJakartaMonth);
+  const {
+    mode,
+    date: selectedDate,
+    month: selectedMonth,
+    setMode,
+    setDate: setSelectedDate,
+    setMonth: setSelectedMonth,
+  } = useReportingPeriod();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [printing, setPrinting] = useState(false);

@@ -1,3 +1,5 @@
+import { useReportingPeriodStore } from "@/reporting/period-store";
+
 jest.mock("react-native-keyboard-controller", () =>
   jest.requireActual("react-native-keyboard-controller/jest"),
 );
@@ -23,6 +25,11 @@ jest.mock("@shopify/flash-list", () => {
       });
     }),
   };
+});
+
+beforeEach(() => {
+  // The reporting period is shared app state; start every test from "today".
+  useReportingPeriodStore.getState().reset();
 });
 
 afterEach(() => {
