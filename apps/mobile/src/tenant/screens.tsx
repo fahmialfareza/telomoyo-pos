@@ -86,7 +86,7 @@ function RolePicker({
   const textStyles = useResponsiveTextStyles();
   return (
     <View style={styles.card}>
-      <Text style={textStyles.label}>PERAN PENGGUNA</Text>
+      <Text style={textStyles.label}>Peran pengguna</Text>
       <ActionGroup horizontal>
         {(["admin", "superadmin"] as const).map((value) => (
           <Button
@@ -251,7 +251,7 @@ export function ContextsScreen() {
       ) : null}
       {contexts.value?.canManageOrganization ? (
         <View style={styles.businessSection}>
-          <Text style={textStyles.label}>PENGELOLAAN</Text>
+          <Text style={textStyles.label}>Pengelolaan</Text>
           <Card padded={false}>
             <MenuRow
               icon="store-cog-outline"
@@ -385,7 +385,7 @@ export function ManagedTenantsScreen({ onBack }: { onBack?: () => void } = {}) {
       ) : null}
       {tenants.value?.length ? (
         <View style={styles.businessSection}>
-          <Text style={textStyles.label}>DAFTAR BISNIS</Text>
+          <Text style={textStyles.label}>Daftar bisnis</Text>
           <Card padded={false}>
             {tenants.value.map((tenant) =>
               editing?.id === tenant.id ? null : (
@@ -410,7 +410,7 @@ export function ManagedTenantsScreen({ onBack }: { onBack?: () => void } = {}) {
       ) : null}
       {editing ? (
         <Card key={editing.id} style={styles.card}>
-          <Text style={textStyles.label}>UBAH BISNIS</Text>
+          <Text style={textStyles.label}>Ubah bisnis</Text>
           <Text style={textStyles.heading}>{editing.name}</Text>
           <Text style={styles.body}>
             {editing.slug} • {tenantStatusLabel(editing.status)}
@@ -590,7 +590,7 @@ export function ManagedTenantsScreen({ onBack }: { onBack?: () => void } = {}) {
         operasional tanpa menghilangkan riwayat.
       </Text>
       <View style={styles.businessSection}>
-        <Text style={textStyles.label}>PENGELOLAAN</Text>
+        <Text style={textStyles.label}>Pengelolaan</Text>
         <Card padded={false}>
           <MenuRow
             icon="history"
@@ -870,7 +870,7 @@ export function ManagedUserEditor({
       ) : (
         <>
           <Card style={styles.card}>
-            <Text style={textStyles.label}>IDENTITAS AKUN</Text>
+            <Text style={textStyles.label}>Identitas akun</Text>
             <Text style={textStyles.heading}>{member.fullName}</Text>
             <Text style={styles.body}>@{member.username}</Text>
             <Text style={styles.body}>
@@ -886,7 +886,7 @@ export function ManagedUserEditor({
             />
             <View style={styles.toggle}>
               <View style={styles.flex}>
-                <Text style={textStyles.label}>STATUS AKUN</Text>
+                <Text style={textStyles.label}>Status akun</Text>
                 <Text style={styles.body}>
                   {active
                     ? "Aktif — dapat masuk dan memilih bisnis"

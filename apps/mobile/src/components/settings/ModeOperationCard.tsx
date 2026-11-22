@@ -166,7 +166,7 @@ export function ModeOperationCard() {
     >
       <View style={responsive.header}>
         <View style={responsive.copy}>
-          <Text style={responsive.label}>MODE OPERASI</Text>
+          <Text style={responsive.label}>Mode operasi</Text>
           <Text style={responsive.title}>
             {sandbox ? "Mode Uji" : "Mode Produksi"}
           </Text>
@@ -324,7 +324,7 @@ const styles = themed(({ colors, textStyles }) =>
     card: { gap: spacing.md },
     sandboxCard: {
       backgroundColor: colors.warningSoft,
-      borderColor: colors.warning,
+      borderWidth: 0,
     },
     header: {
       flexDirection: "row",
@@ -332,7 +332,7 @@ const styles = themed(({ colors, textStyles }) =>
       gap: spacing.sm,
     },
     copy: { flex: 1 },
-    label: { ...textStyles.label, color: colors.primary, fontSize: 10 },
+    label: { ...textStyles.label, fontSize: 12 },
     title: { ...textStyles.heading, marginTop: 2 },
     description: { ...textStyles.body, color: colors.textMuted },
     badge: {
@@ -342,7 +342,7 @@ const styles = themed(({ colors, textStyles }) =>
       backgroundColor: colors.successSoft,
     },
     sandboxBadge: { backgroundColor: colors.warning },
-    badgeText: { ...textStyles.label, color: colors.success, fontSize: 10 },
+    badgeText: { ...textStyles.label, color: colors.success, fontSize: 12 },
     sandboxBadgeText: { color: colors.onPrimary },
     generation: { ...textStyles.technical, color: colors.warning },
     hint: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },

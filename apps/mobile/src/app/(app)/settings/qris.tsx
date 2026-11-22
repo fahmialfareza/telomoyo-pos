@@ -65,7 +65,7 @@ function QrisSummaryCard({ qris, status }: QrisSummaryCardProps) {
         </View>
         <View style={styles.lockCopy}>
           <Text style={textStyles.label}>
-            {saved ? "QRIS STATIS TERKUNCI" : "QRIS STATIS TERBACA"}
+            {saved ? "QRIS statis terkunci" : "QRIS statis terbaca"}
           </Text>
           <Text style={styles.lockHint}>
             {saved
@@ -565,11 +565,23 @@ const baseStyles = themed(({ colors, textStyles }) =>
       ...textStyles.body,
       fontFamily: typography.bodySemibold,
     },
-    info: { gap: spacing.xs, backgroundColor: colors.primarySoft },
+    info: {
+      gap: spacing.xs,
+      backgroundColor: colors.primarySoft,
+      borderWidth: 0,
+    },
     infoTitle: { ...textStyles.heading, color: colors.primary },
     infoText: { ...textStyles.body, color: colors.textMuted },
-    savedCard: { gap: spacing.md, backgroundColor: colors.successSoft },
-    candidateCard: { gap: spacing.md, backgroundColor: colors.primarySoft },
+    savedCard: {
+      gap: spacing.md,
+      backgroundColor: colors.successSoft,
+      borderWidth: 0,
+    },
+    candidateCard: {
+      gap: spacing.md,
+      backgroundColor: colors.primarySoft,
+      borderWidth: 0,
+    },
     lockHeader: {
       flexDirection: "row",
       alignItems: "center",

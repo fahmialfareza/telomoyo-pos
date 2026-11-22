@@ -112,7 +112,7 @@ describe("ModeOperationCard Sandbox configuration", () => {
     };
     const screen = render(<ModeOperationCard />);
 
-    expect(screen.queryByText("MODE OPERASI")).toBeNull();
+    expect(screen.queryByText("Mode operasi")).toBeNull();
   });
 
   it("shows the card to an Admin when Sandbox is enabled", () => {
@@ -123,7 +123,7 @@ describe("ModeOperationCard Sandbox configuration", () => {
     };
     const screen = render(<ModeOperationCard />);
 
-    expect(screen.getByText("MODE OPERASI")).toBeTruthy();
+    expect(screen.getByText("Mode operasi")).toBeTruthy();
     expect(
       screen.queryByRole("button", { name: "Nonaktifkan Mode Uji" }),
     ).toBeNull();

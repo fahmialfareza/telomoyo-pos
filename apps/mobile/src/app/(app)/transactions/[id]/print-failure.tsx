@@ -44,7 +44,7 @@ export default function PrintFailureScreen() {
         tetap tersimpan. Kegagalan printer tidak pernah membatalkan transaksi.
       </Text>
       <Card style={responsive.card}>
-        <Text style={responsiveText.label}>DETAIL PRINTER</Text>
+        <Text style={responsiveText.label}>Detail printer</Text>
         <Text style={responsive.message}>
           {message ?? "Tidak ada detail tambahan."}
         </Text>

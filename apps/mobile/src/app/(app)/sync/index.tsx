@@ -292,7 +292,7 @@ export default function SyncCenterScreen() {
         ))
       )}
       <Card style={styles.note}>
-        <Text style={textStyles.label}>CARA KERJA</Text>
+        <Text style={textStyles.label}>Cara kerja</Text>
         <Text style={styles.detail}>
           Sinkron dipicu setelah login, perubahan lokal, koneksi pulih, aplikasi
           aktif kembali, tombol manual, dan background task. Background task
@@ -317,14 +317,22 @@ const baseStyles = themed(({ colors, textStyles }) =>
       color: colors.text,
     },
     detail: { ...textStyles.body, color: colors.textMuted },
-    cursor: { ...textStyles.technical, fontSize: 9 },
-    errorCard: { gap: spacing.xs, backgroundColor: colors.errorSoft },
+    cursor: { ...textStyles.technical, fontSize: 11 },
+    errorCard: {
+      gap: spacing.xs,
+      backgroundColor: colors.errorSoft,
+      borderWidth: 0,
+    },
     errorTitle: { ...textStyles.heading, color: colors.error },
     errorHint: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
     recoveryError: { ...textStyles.body, color: colors.error },
     conflict: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
     conflictCopy: { flex: 1 },
     conflictId: { ...textStyles.technical, color: colors.primary },
-    note: { gap: spacing.sm, backgroundColor: colors.surfaceBright },
+    note: {
+      gap: spacing.sm,
+      backgroundColor: colors.container,
+      borderWidth: 0,
+    },
   }),
 );

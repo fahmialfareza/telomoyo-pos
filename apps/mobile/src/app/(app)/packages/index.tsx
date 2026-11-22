@@ -167,16 +167,17 @@ const styles = themed(({ colors, textStyles }) =>
     description: { ...textStyles.body, color: colors.textMuted, fontSize: 12 },
     revision: {
       ...textStyles.technical,
-      fontSize: 9,
+      fontSize: 11,
       marginTop: spacing.xs,
     },
     right: { alignItems: "flex-end" },
     price: {
-      fontFamily: typography.heading,
-      color: colors.primary,
+      fontFamily: typography.headingSemibold,
+      color: colors.text,
       fontSize: 16,
+      fontVariant: ["tabular-nums"],
     },
-    active: { ...textStyles.label, color: colors.success, fontSize: 9 },
-    inactive: { ...textStyles.label, color: colors.textMuted, fontSize: 9 },
+    active: { ...textStyles.label, color: colors.success, fontSize: 12 },
+    inactive: { ...textStyles.label, color: colors.textMuted, fontSize: 12 },
   }),
 );

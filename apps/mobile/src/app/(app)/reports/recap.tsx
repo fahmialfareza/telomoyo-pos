@@ -199,14 +199,14 @@ export default function RecapScreen() {
 
           <View style={styles.methodRow}>
             <Card style={styles.method}>
-              <Text style={styles.label}>TUNAI</Text>
+              <Text style={styles.label}>Tunai</Text>
               <Text style={styles.methodValue}>
                 {stats ? formatRupiah(stats.cashAmount) : "—"}
               </Text>
             </Card>
             <Card style={styles.method}>
               <Text style={styles.label}>
-                {session?.dataMode === "sandbox" ? "QRIS NYATA" : "QRIS"}
+                {session?.dataMode === "sandbox" ? "QRIS nyata" : "QRIS"}
               </Text>
               <Text style={styles.methodValue}>
                 {stats ? formatRupiah(stats.actualQrisAmount) : "—"}
@@ -215,7 +215,7 @@ export default function RecapScreen() {
           </View>
 
           <Card padded={false}>
-            <Text style={[styles.label, styles.tableTitle]}>PER PAKET</Text>
+            <Text style={[styles.label, styles.tableTitle]}>Per paket</Text>
             {stats && stats.quantities.length === 0 ? (
               <Text style={[styles.meta, styles.packageRow]}>
                 Belum ada paket terjual pada periode ini.
@@ -288,7 +288,7 @@ const baseStyles = themed(({ colors, textStyles }) =>
   StyleSheet.create({
     warning: {
       backgroundColor: colors.warningSoft,
-      borderColor: colors.warning,
+      borderWidth: 0,
     },
     warningText: { ...textStyles.body, color: colors.warning },
     summary: { gap: spacing.xs },
@@ -298,9 +298,10 @@ const baseStyles = themed(({ colors, textStyles }) =>
     methodRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
     method: { flexGrow: 1, flexBasis: "45%", gap: spacing.xs },
     methodValue: {
-      fontFamily: typography.heading,
+      fontFamily: typography.headingSemibold,
       fontSize: 20,
       color: colors.text,
+      fontVariant: ["tabular-nums"],
     },
     tableTitle: {
       paddingHorizontal: spacing.md,
@@ -315,7 +316,7 @@ const baseStyles = themed(({ colors, textStyles }) =>
       borderBottomColor: colors.outline,
       borderBottomWidth: StyleSheet.hairlineWidth,
     },
-    accent: { width: 4, alignSelf: "stretch", borderRadius: radius.pill },
+    accent: { width: 8, height: 8, borderRadius: radius.pill },
     packageCopy: { flex: 1 },
     packageName: {
       ...textStyles.body,
@@ -325,6 +326,7 @@ const baseStyles = themed(({ colors, textStyles }) =>
       ...textStyles.body,
       fontFamily: typography.bodySemibold,
       textAlign: "right",
+      fontVariant: ["tabular-nums"],
     },
     error: { ...textStyles.body, color: colors.error },
     success: { ...textStyles.body, color: colors.success },

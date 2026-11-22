@@ -595,7 +595,7 @@ const styles = themed(({ colors, textStyles }) =>
     summaryLineCalculation: {
       ...textStyles.label,
       color: colors.textMuted,
-      fontSize: 10,
+      fontSize: 12,
     },
     summaryLineTotal: {
       ...textStyles.body,

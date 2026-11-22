@@ -136,7 +136,7 @@ export default function LoginScreen() {
 
       {demoEnabled ? (
         <Card style={responsive.demo}>
-          <Text style={responsive.demoLabel}>KHUSUS DEVELOPMENT BUILD</Text>
+          <Text style={responsive.demoLabel}>Khusus development build</Text>
           <Text style={responsive.help}>
             Sesi demo tidak menghubungi backend dan tidak tersedia pada preview
             atau production.
@@ -206,11 +206,15 @@ const styles = themed(({ colors, textStyles }) =>
       padding: spacing.sm,
       borderRadius: radius.md,
     },
-    demo: { gap: spacing.sm, backgroundColor: colors.primarySoft },
+    demo: {
+      gap: spacing.sm,
+      backgroundColor: colors.primarySoft,
+      borderWidth: 0,
+    },
     demoLabel: { ...textStyles.label, color: colors.primary },
     demoActions: { flexDirection: "row", gap: spacing.sm },
     demoButton: { flex: 1 },
     footer: { alignItems: "center" },
-    footerText: { ...textStyles.label, fontSize: 10 },
+    footerText: { ...textStyles.label, fontSize: 12 },
   }),
 );

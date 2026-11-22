@@ -159,7 +159,7 @@ function SnapshotCard({
       </Text>
       <Text style={responsive.revision}>Revisi #{transaction.revision}</Text>
       {transaction.deletedAt ? (
-        <Text style={responsive.deleted}>DIHAPUS DI SERVER</Text>
+        <Text style={responsive.deleted}>Dihapus di server</Text>
       ) : null}
       {transaction.items.map((item) => (
         <View key={item.packageId} style={responsive.snapshotLine}>
@@ -185,12 +185,17 @@ const styles = themed(({ colors, textStyles }) =>
     itemName: { ...textStyles.body, flex: 1 },
     quantity: { ...textStyles.body, fontFamily: typography.bodySemibold },
     amount: {
-      fontFamily: typography.heading,
+      fontFamily: typography.headingSemibold,
       fontSize: 20,
-      color: colors.primary,
+      color: colors.text,
       textAlign: "right",
+      fontVariant: ["tabular-nums"],
     },
-    warning: { gap: spacing.xs, backgroundColor: colors.warningSoft },
+    warning: {
+      gap: spacing.xs,
+      backgroundColor: colors.warningSoft,
+      borderWidth: 0,
+    },
     warningTitle: { ...textStyles.heading, color: colors.warning },
     muted: { ...textStyles.body, color: colors.textMuted },
     deleted: { ...textStyles.label, color: colors.error },

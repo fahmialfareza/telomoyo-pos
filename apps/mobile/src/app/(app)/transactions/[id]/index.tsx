@@ -401,11 +401,11 @@ export default function TransactionDetailScreen() {
       <Card style={styles.receipt} testID="transaction-summary-card">
         <View style={styles.metaRow}>
           <View>
-            <Text style={textStyles.label}>KASIR ASAL</Text>
+            <Text style={textStyles.label}>Kasir asal</Text>
             <Text style={styles.metaValue}>{transaction.originActorName}</Text>
           </View>
           <View style={styles.alignRight}>
-            <Text style={textStyles.label}>REVISI</Text>
+            <Text style={textStyles.label}>Revisi</Text>
             <Text style={styles.metaValue}>#{transaction.revision}</Text>
           </View>
         </View>
@@ -436,7 +436,7 @@ export default function TransactionDetailScreen() {
       <Card style={[styles.payment, styles.paymentSuccess]}>
         <View style={styles.paymentHeader}>
           <View style={styles.paymentCopy}>
-            <Text style={textStyles.label}>PEMBAYARAN</Text>
+            <Text style={textStyles.label}>Pembayaran</Text>
             <Text style={styles.paymentTitle}>Pembayaran berhasil</Text>
           </View>
           <PaymentStatusBadge status={transaction.paymentStatus} />
@@ -460,7 +460,7 @@ export default function TransactionDetailScreen() {
       </Card>
 
       <Card style={styles.audit}>
-        <Text style={textStyles.label}>JEJAK PERUBAHAN</Text>
+        <Text style={textStyles.label}>Jejak perubahan</Text>
         <Text style={styles.muted}>
           Dibuat oleh {transaction.originActorName}
         </Text>
@@ -494,9 +494,17 @@ export default function TransactionDetailScreen() {
 const baseStyles = themed(({ colors, textStyles }) =>
   StyleSheet.create({
     badges: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
-    conflict: { gap: spacing.sm, backgroundColor: colors.warningSoft },
+    conflict: {
+      gap: spacing.sm,
+      backgroundColor: colors.warningSoft,
+      borderWidth: 0,
+    },
     conflictTitle: { ...textStyles.heading, color: colors.warning },
-    syncBlocked: { gap: spacing.sm, backgroundColor: colors.errorSoft },
+    syncBlocked: {
+      gap: spacing.sm,
+      backgroundColor: colors.errorSoft,
+      borderWidth: 0,
+    },
     syncBlockedTitle: { ...textStyles.heading, color: colors.error },
     muted: { ...textStyles.body, color: colors.textMuted },
     receipt: { gap: spacing.md },
@@ -507,7 +515,7 @@ const baseStyles = themed(({ colors, textStyles }) =>
       marginTop: spacing.xs,
     },
     alignRight: { alignItems: "flex-end" },
-    rule: { height: 1, backgroundColor: colors.outline },
+    rule: { height: StyleSheet.hairlineWidth, backgroundColor: colors.outline },
     item: { flexDirection: "row", gap: spacing.sm },
     itemCopy: { flex: 1 },
     itemName: {
@@ -516,20 +524,25 @@ const baseStyles = themed(({ colors, textStyles }) =>
       color: colors.text,
     },
     itemTotal: {
-      fontFamily: typography.heading,
+      fontFamily: typography.headingSemibold,
       fontSize: 16,
-      color: colors.primary,
+      color: colors.text,
+      fontVariant: ["tabular-nums"],
     },
-    snapshot: { ...textStyles.technical, marginTop: spacing.xs, fontSize: 9 },
+    snapshot: { ...textStyles.technical, marginTop: spacing.xs, fontSize: 11 },
     total: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
     },
     totalLabel: { ...textStyles.heading },
-    audit: { gap: spacing.xs, backgroundColor: colors.surfaceBright },
+    audit: {
+      gap: spacing.xs,
+      backgroundColor: colors.container,
+      borderWidth: 0,
+    },
     payment: { gap: spacing.sm },
-    paymentSuccess: { backgroundColor: colors.successSoft },
+    paymentSuccess: { backgroundColor: colors.successSoft, borderWidth: 0 },
     paymentHeader: {
       flexDirection: "row",
       alignItems: "flex-start",
@@ -537,9 +550,13 @@ const baseStyles = themed(({ colors, textStyles }) =>
     },
     paymentCopy: { flex: 1 },
     paymentTitle: { ...textStyles.heading, marginTop: spacing.xs },
-    printedInfo: { gap: spacing.xs, backgroundColor: colors.container },
+    printedInfo: {
+      gap: spacing.xs,
+      backgroundColor: colors.container,
+      borderWidth: 0,
+    },
     printedInfoTitle: { ...textStyles.heading, color: colors.textMuted },
-    terminal: { ...textStyles.technical, fontSize: 9 },
+    terminal: { ...textStyles.technical, fontSize: 11 },
     onlineOnly: {
       ...textStyles.body,
       color: colors.textMuted,

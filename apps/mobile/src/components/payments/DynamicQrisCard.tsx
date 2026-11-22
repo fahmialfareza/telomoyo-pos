@@ -43,7 +43,7 @@ export function DynamicQrisCard({
             <Icon color={colors.warning} name="qrcode-remove" size={24} />
           </View>
           <View style={responsive.headerCopy}>
-            <Text style={responsive.eyebrow}>QRIS NOMINAL OTOMATIS</Text>
+            <Text style={responsive.eyebrow}>QRIS nominal otomatis</Text>
             <Text style={responsive.title}>Kode pembayaran belum tersedia</Text>
           </View>
         </View>
@@ -65,7 +65,7 @@ export function DynamicQrisCard({
     <Card style={responsive.ready}>
       {sandbox ? (
         <View accessibilityRole="alert" style={responsive.sandboxNotice}>
-          <Text style={responsive.sandboxNoticeTitle}>QRIS UJI NYATA</Text>
+          <Text style={responsive.sandboxNoticeTitle}>QRIS uji nyata</Text>
           <Text style={responsive.sandboxNoticeText}>
             {formattedAmount} akan masuk ke rekening merchant.
           </Text>
@@ -76,7 +76,7 @@ export function DynamicQrisCard({
           <Icon color={colors.primary} name="qrcode-scan" size={24} />
         </View>
         <View style={responsive.headerCopy}>
-          <Text style={responsive.eyebrow}>QRIS NOMINAL OTOMATIS</Text>
+          <Text style={responsive.eyebrow}>QRIS nominal otomatis</Text>
           <Text style={responsive.title}>Pindai untuk membayar</Text>
         </View>
       </View>
@@ -97,7 +97,7 @@ export function DynamicQrisCard({
       </View>
       <View style={responsive.amountBlock}>
         <Text style={responsive.amountLabel}>
-          {sandbox ? "NOMINAL QRIS NYATA" : "TOTAL PEMBAYARAN"}
+          {sandbox ? "Nominal QRIS nyata" : "Total pembayaran"}
         </Text>
         <Text style={responsive.amount}>{formattedAmount}</Text>
         {sandbox && orderTotal !== undefined ? (
@@ -123,12 +123,11 @@ const styles = themed(({ colors, textStyles }) =>
     ready: {
       gap: spacing.md,
       alignItems: "stretch",
-      borderColor: colors.primary,
-      backgroundColor: colors.surfaceBright,
     },
     unavailable: {
       gap: spacing.md,
       backgroundColor: colors.warningSoft,
+      borderWidth: 0,
     },
     header: {
       flexDirection: "row",
@@ -152,7 +151,7 @@ const styles = themed(({ colors, textStyles }) =>
       justifyContent: "center",
       backgroundColor: colors.card,
     },
-    eyebrow: { ...textStyles.label, color: colors.primary, fontSize: 10 },
+    eyebrow: { ...textStyles.label, fontSize: 12 },
     title: { ...textStyles.heading, marginTop: 2 },
     qrFrame: {
       alignSelf: "center",
@@ -162,12 +161,13 @@ const styles = themed(({ colors, textStyles }) =>
       backgroundColor: colors.card,
     },
     amountBlock: { alignItems: "center", gap: spacing.xs },
-    amountLabel: { ...textStyles.label, fontSize: 10 },
+    amountLabel: { ...textStyles.label, fontSize: 12 },
     amount: {
       fontFamily: typography.price,
       fontSize: 28,
       lineHeight: 36,
-      color: colors.primary,
+      color: colors.text,
+      fontVariant: ["tabular-nums"],
     },
     merchant: {
       alignItems: "center",

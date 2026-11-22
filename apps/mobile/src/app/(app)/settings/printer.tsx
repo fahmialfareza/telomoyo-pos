@@ -66,7 +66,7 @@ export default function PrinterSettingsScreen() {
         subtitle="Development build diperlukan"
         title="Pengaturan Printer"
       />
-      <Text style={responsiveText.label}>JENIS PRINTER</Text>
+      <Text style={responsiveText.label}>Jenis printer</Text>
       <View style={responsive.options}>
         {(Object.keys(adapterLabels) as PrinterConfig["adapter"][]).map(
           (adapter) => (
@@ -101,7 +101,7 @@ export default function PrinterSettingsScreen() {
           ),
         )}
       </View>
-      <Text style={responsiveText.label}>LEBAR KERTAS</Text>
+      <Text style={responsiveText.label}>Lebar kertas</Text>
       <View style={responsive.options}>
         {([32, 48] as const).map((columns) => (
           <Pressable
@@ -156,7 +156,7 @@ export default function PrinterSettingsScreen() {
         </Pressable>
       ))}
       <Card style={responsive.current}>
-        <Text style={responsiveText.label}>KONFIGURASI AKTIF</Text>
+        <Text style={responsiveText.label}>Konfigurasi aktif</Text>
         <Text style={responsive.deviceName}>{config.displayName}</Text>
         <Text style={responsive.deviceId}>
           {config.address ?? "Tidak memerlukan alamat perangkat"}
@@ -198,7 +198,11 @@ const styles = themed(({ colors, textStyles }) =>
       color: colors.text,
     },
     deviceId: { ...textStyles.technical, marginTop: spacing.xs },
-    current: { gap: spacing.xs, backgroundColor: colors.primarySoft },
+    current: {
+      gap: spacing.xs,
+      backgroundColor: colors.primarySoft,
+      borderWidth: 0,
+    },
     message: { ...textStyles.body, color: colors.secondary },
   }),
 );

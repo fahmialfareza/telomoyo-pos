@@ -255,7 +255,7 @@ describe("QRIS settings image flow", () => {
     const screen = render(<QrisSettingsScreen />);
 
     await waitFor(() => {
-      expect(screen.getByText("QRIS STATIS TERKUNCI")).toBeTruthy();
+      expect(screen.getByText("QRIS statis terkunci")).toBeTruthy();
     });
     expect(screen.UNSAFE_queryAllByType(TextInput)).toHaveLength(0);
     expect(screen.getByText("Payload tidak dapat diedit manual.")).toBeTruthy();
@@ -277,7 +277,7 @@ describe("QRIS settings image flow", () => {
     fireEvent.press(screen.getByRole("button", { name: "Pilih gambar QRIS" }));
 
     await waitFor(() => {
-      expect(screen.getByText("QRIS STATIS TERBACA")).toBeTruthy();
+      expect(screen.getByText("QRIS statis terbaca")).toBeTruthy();
     });
     expect(mockScanFromURL).toHaveBeenCalledWith("file:///qris.jpg", ["qr"]);
     expect(mockWriteQrisConfig).not.toHaveBeenCalled();
@@ -288,7 +288,7 @@ describe("QRIS settings image flow", () => {
       expect(mockWriteQrisConfig).toHaveBeenCalledWith({
         staticPayload: STATIC_QRIS,
       });
-      expect(screen.getByText("QRIS STATIS TERKUNCI")).toBeTruthy();
+      expect(screen.getByText("QRIS statis terkunci")).toBeTruthy();
     });
     expect(mockApiRequest).toHaveBeenCalledWith("/tenant/qris", {
       method: "PUT",
@@ -303,7 +303,7 @@ describe("QRIS settings image flow", () => {
     const screen = render(<QrisSettingsScreen />);
 
     await waitFor(() => {
-      expect(screen.getByText("QRIS STATIS TERKUNCI")).toBeTruthy();
+      expect(screen.getByText("QRIS statis terkunci")).toBeTruthy();
     });
     fireEvent.press(screen.getByRole("button", { name: "Ganti QRIS statis" }));
 
@@ -323,7 +323,7 @@ describe("QRIS settings image flow", () => {
     expect(mockClearQrisConfig).not.toHaveBeenCalled();
 
     fireEvent.press(screen.getByRole("button", { name: "Batal mengganti" }));
-    expect(screen.getByText("QRIS STATIS TERKUNCI")).toBeTruthy();
+    expect(screen.getByText("QRIS statis terkunci")).toBeTruthy();
   });
 
   it("does not open the camera when permission is denied", async () => {
@@ -391,7 +391,7 @@ describe("QRIS settings image flow", () => {
       await screen.findByRole("button", { name: "Pilih gambar QRIS" }),
     );
     fireEvent.press(await screen.findByRole("button", { name: "Batalkan" }));
-    expect(screen.queryByText("QRIS STATIS TERBACA")).toBeNull();
+    expect(screen.queryByText("QRIS statis terbaca")).toBeNull();
     expect(
       screen.getByRole("button", { name: "Pilih gambar QRIS" }),
     ).toBeTruthy();
@@ -411,7 +411,7 @@ describe("QRIS settings image flow", () => {
       await screen.findByRole("button", { name: "Ganti QRIS statis" }),
     );
     fireEvent.press(screen.getByRole("button", { name: "Batal" }));
-    expect(screen.getByText("QRIS STATIS TERKUNCI")).toBeTruthy();
+    expect(screen.getByText("QRIS statis terkunci")).toBeTruthy();
     expect(
       screen.queryByRole("button", { name: "Pilih gambar QRIS" }),
     ).toBeNull();
@@ -425,7 +425,7 @@ describe("QRIS settings image flow", () => {
     const screen = render(<QrisSettingsScreen />);
 
     await waitFor(() => {
-      expect(screen.getByText("QRIS STATIS TERBACA")).toBeTruthy();
+      expect(screen.getByText("QRIS statis terbaca")).toBeTruthy();
     });
     expect(mockScanFromURL).toHaveBeenCalledWith("file:///pending.jpg", ["qr"]);
     expect(mockWriteQrisConfig).not.toHaveBeenCalled();

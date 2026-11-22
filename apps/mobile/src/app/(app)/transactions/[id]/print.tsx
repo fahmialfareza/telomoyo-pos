@@ -384,7 +384,9 @@ export default function PrintTransactionScreen() {
         }
       />
       <View style={[styles.icon, success && styles.iconSuccess]}>
-        <Text style={styles.iconGlyph}>{success ? "✓" : "✓"}</Text>
+        <Text style={[styles.iconGlyph, success && styles.iconGlyphSuccess]}>
+          ✓
+        </Text>
       </View>
       <Text style={styles.title}>
         {success
@@ -469,20 +471,21 @@ export default function PrintTransactionScreen() {
 const baseStyles = themed(({ colors, textStyles }) =>
   StyleSheet.create({
     icon: {
-      width: 84,
-      height: 84,
-      borderRadius: radius.xl,
-      backgroundColor: colors.primary,
+      width: 72,
+      height: 72,
+      borderRadius: radius.pill,
+      backgroundColor: colors.primarySoft,
       alignSelf: "center",
       alignItems: "center",
       justifyContent: "center",
     },
-    iconSuccess: { backgroundColor: colors.success },
+    iconSuccess: { backgroundColor: colors.successSoft },
     iconGlyph: {
       fontFamily: typography.heading,
-      fontSize: 46,
-      color: colors.onPrimary,
+      fontSize: 36,
+      color: colors.primary,
     },
+    iconGlyphSuccess: { color: colors.success },
     title: { ...textStyles.title, textAlign: "center" },
     subtitle: {
       ...textStyles.body,
@@ -499,18 +502,21 @@ const baseStyles = themed(({ colors, textStyles }) =>
     },
     id: {
       ...textStyles.technical,
-      color: colors.primary,
       flexShrink: 1,
       maxWidth: "100%",
     },
     line: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
     lineName: { ...textStyles.body, flex: 1 },
-    lineValue: { ...textStyles.body, fontFamily: typography.bodySemibold },
+    lineValue: {
+      ...textStyles.body,
+      fontFamily: typography.bodySemibold,
+      fontVariant: ["tabular-nums"],
+    },
     total: {
       marginTop: spacing.sm,
       paddingTop: spacing.md,
       borderTopColor: colors.outline,
-      borderTopWidth: 1,
+      borderTopWidth: StyleSheet.hairlineWidth,
       flexDirection: "row",
       flexWrap: "wrap",
       gap: spacing.sm,
@@ -528,7 +534,7 @@ const baseStyles = themed(({ colors, textStyles }) =>
     testWarning: {
       gap: spacing.xs,
       backgroundColor: colors.warningSoft,
-      borderColor: colors.warning,
+      borderWidth: 0,
     },
     testWarningTitle: {
       ...textStyles.heading,

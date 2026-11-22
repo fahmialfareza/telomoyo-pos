@@ -326,7 +326,11 @@ export default function CorrectTransactionScreen() {
 
 const styles = themed(({ colors, textStyles }) =>
   StyleSheet.create({
-    notice: { gap: spacing.xs, backgroundColor: colors.primarySoft },
+    notice: {
+      gap: spacing.xs,
+      backgroundColor: colors.primarySoft,
+      borderWidth: 0,
+    },
     noticeTitle: { ...textStyles.heading, color: colors.primary },
     muted: { ...textStyles.body, color: colors.textMuted },
     line: { flexDirection: "row", alignItems: "center", gap: spacing.sm },

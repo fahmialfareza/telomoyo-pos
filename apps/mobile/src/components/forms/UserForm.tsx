@@ -101,7 +101,7 @@ export function UserForm({
           value={value.temporaryPassword}
         />
       ) : null}
-      <Text style={responsiveText.label}>PERAN PENGGUNA</Text>
+      <Text style={responsiveText.label}>Peran pengguna</Text>
       <View style={responsive.options}>
         {(["admin", "superadmin"] as const).map((role) => (
           <Pressable
@@ -130,7 +130,7 @@ export function UserForm({
       </View>
       {!create ? (
         <>
-          <Text style={responsiveText.label}>STATUS AKUN</Text>
+          <Text style={responsiveText.label}>Status akun</Text>
           <Pressable
             onPress={() =>
               setValue((current) => ({ ...current, active: !current.active }))

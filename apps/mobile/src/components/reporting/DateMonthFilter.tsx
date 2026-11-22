@@ -218,7 +218,7 @@ export function DateMonthFilter({
             <View accessibilityViewIsModal style={responsive.modalCard}>
               <View style={responsive.modalHeading}>
                 <View style={responsive.modalTitleCopy}>
-                  <Text style={responsive.modalEyebrow}>PILIH TANGGAL</Text>
+                  <Text style={responsive.modalEyebrow}>Pilih tanggal</Text>
                   <Text style={responsive.modalTitle}>
                     {formatDate(calendarDateFromPicker(dateDraft))}
                   </Text>
@@ -365,7 +365,7 @@ function MonthPickerModal({
         <View accessibilityViewIsModal style={responsive.modalCard}>
           <View style={responsive.modalHeading}>
             <View style={responsive.modalTitleCopy}>
-              <Text style={responsive.modalEyebrow}>PILIH BULAN</Text>
+              <Text style={responsive.modalEyebrow}>Pilih bulan</Text>
               <Text style={responsive.modalTitle}>Periode laporan</Text>
             </View>
             <Pressable
