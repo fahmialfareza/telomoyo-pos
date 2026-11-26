@@ -12,6 +12,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthProvider } from "@/auth/AuthProvider";
+import { Sentry } from "@/observability/sentry";
 import { useAuthStore } from "@/auth/auth-store";
 import { AppQueryProvider } from "@/api/query-client";
 import { SyncProvider } from "@/sync/SyncProvider";
@@ -77,7 +78,7 @@ function AppRoutes() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -133,3 +134,5 @@ const baseStyles = themed(({ colors, textStyles }) =>
     },
   }),
 );
+
+export default Sentry.wrap(RootLayout);

@@ -27,6 +27,7 @@
     "@noble/curves": "^2.2.0",
     "@react-native-community/datetimepicker": "9.2.1",
     "@react-native-community/netinfo": "^12.0.1",
+    "@sentry/react-native": "~8.28.1",
     "@sewa-motor/api-client": "workspace:*",
     "@shopify/flash-list": "2.3.2",
     "@tanstack/react-query": "^5.103.1",

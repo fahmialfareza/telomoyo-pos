@@ -90,6 +90,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-font",
     "@react-native-community/datetimepicker",
     [
+      "@sentry/react-native",
+      {
+        organization: "fahmi-alfareza",
+        project: "telomoyo-pos-mobile",
+        url: "https://sentry.io/",
+        // Source maps upload only when SENTRY_AUTH_TOKEN is set (EAS secret),
+        // so builds without the token still succeed.
+        disableAutoUpload: !process.env.SENTRY_AUTH_TOKEN,
+      },
+    ],
+    [
       "expo-build-properties",
       {
         android: {
