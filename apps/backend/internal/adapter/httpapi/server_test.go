@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/domain"
+	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/observability"
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/port"
 	"github.com/fahmialfareza/sewa-motor-app/apps/backend/internal/usecase"
 	"github.com/gin-gonic/gin"
@@ -471,5 +472,44 @@ func TestPublicWebRequestLogHasFailClosedProductionScope(t *testing.T) {
 	}
 	if strings.Contains(log, `"tenant.id"`) || strings.Contains(log, `"data.space_id"`) {
 		t.Fatalf("public request invented business scope: %s", log)
+	}
+}
+
+func TestWriteErrorReportsOnlyServerFailuresAsErrors(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	logger := observability.Logger()
+	var output bytes.Buffer
+	previousOutput := logger.Out
+	logger.SetOutput(&output)
+	defer logger.SetOutput(previousOutput)
+
+	for _, tc := range []struct {
+		name      string
+		err       error
+		status    int
+		wantLevel string
+	}{
+		{"invalid credentials", domain.NewError(domain.CodeInvalidCredentials, "wrong password"), http.StatusUnauthorized, "warning"},
+		{"internal failure", domain.WrapInternal(errors.New("db down"), "load"), http.StatusInternalServerError, "error"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			output.Reset()
+			recorder := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(recorder)
+			c.Request = httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", nil)
+
+			writeError(c, tc.err)
+
+			if recorder.Code != tc.status {
+				t.Fatalf("status=%d, want %d", recorder.Code, tc.status)
+			}
+			var entry map[string]any
+			if err := json.Unmarshal(output.Bytes(), &entry); err != nil {
+				t.Fatalf("decode log %q: %v", output.String(), err)
+			}
+			if entry["level"] != tc.wantLevel {
+				t.Fatalf("log level=%v, want %s: %s", entry["level"], tc.wantLevel, output.String())
+			}
+		})
 	}
 }

@@ -416,8 +416,21 @@ func writePageWithMore(c *gin.Context, data any, nextCursor string, hasMore bool
 
 func writeError(c *gin.Context, err error) {
 	domainErr := domain.AsError(err)
-	observability.NoticeError(c.Request.Context(), err, "http."+c.HandlerName())
 	status := errorStatus(domainErr.Code)
+	if status >= http.StatusInternalServerError {
+		observability.NoticeError(c.Request.Context(), err, "http."+c.HandlerName())
+	} else {
+		// Expected client errors (bad credentials, validation, conflicts) are
+		// logged but not reported to New Relic, so the error rate reflects
+		// genuine server failures only.
+		observability.Logger().
+			WithContext(c.Request.Context()).
+			WithFields(observability.DataScopeLogFields(c.Request.Context())).
+			WithField("code", domainErr.Code).
+			WithField("status", status).
+			WithField("operation", "http."+c.HandlerName()).
+			Warn("client error")
+	}
 	details := domainErr.Details
 	if details == nil {
 		details = map[string]any{}

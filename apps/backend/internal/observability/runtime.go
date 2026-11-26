@@ -55,6 +55,12 @@ func New(config Config) (*Runtime, error) {
 		newrelic.ConfigLicense(config.LicenseKey),
 		newrelic.ConfigDistributedTracerEnabled(config.DistributedTracing),
 		newrelic.ConfigAppLogEnabled(true),
+		// Expected client responses are not server failures; keep them out of
+		// the error rate so real 5xx errors stay visible.
+		func(cfg *newrelic.Config) {
+			cfg.ErrorCollector.IgnoreStatusCodes = append(cfg.ErrorCollector.IgnoreStatusCodes,
+				400, 401, 403, 404, 409, 410, 422, 426, 429)
+		},
 		newrelic.ConfigAppLogForwardingEnabled(config.LogForwarding),
 		newrelic.ConfigAppLogDecoratingEnabled(!config.LogForwarding),
 		agentlogrus.ConfigLogger(logger),
