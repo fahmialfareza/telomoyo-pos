@@ -59,5 +59,8 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+# The OTA code-signing certificate is public and must reach EAS Build; EAS
+# ignores nested .gitignore exceptions to a parent rule.
+!apps/mobile/certs/certificate.pem
 
 __debug**
