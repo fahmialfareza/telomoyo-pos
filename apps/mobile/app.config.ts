@@ -95,9 +95,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         organization: "fahmi-alfareza",
         project: "telomoyo-pos-mobile",
         url: "https://sentry.io/",
-        // Source maps upload only when SENTRY_AUTH_TOKEN is set (EAS secret),
-        // so builds without the token still succeed.
-        disableAutoUpload: !process.env.SENTRY_AUTH_TOKEN,
+        // Keep this config free of env-dependent values: it feeds the
+        // fingerprint runtime version, which must match locally and on EAS.
+        // EAS uploads source maps with the SENTRY_AUTH_TOKEN secret; for a
+        // local release build without it, set SENTRY_DISABLE_AUTO_UPLOAD=true.
       },
     ],
     [
